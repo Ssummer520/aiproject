@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"travel-api/internal/contextkeys"
 	"travel-api/services/bff/application"
 )
 
@@ -19,14 +20,23 @@ func NewBFFHandler() *BFFHandler {
 	}
 }
 
+func userIDFromRequest(r *http.Request) string {
+	v := r.Context().Value(contextkeys.UserID)
+	if v == nil {
+		return ""
+	}
+	s, _ := v.(string)
+	return s
+}
+
 func (h *BFFHandler) GetHomePage(w http.ResponseWriter, r *http.Request) {
-	// Support multi-language from header
 	lang := r.Header.Get("Accept-Language")
 	if lang == "" {
 		lang = "en"
 	}
+	userID := userIDFromRequest(r)
 
-	data := h.service.GetHomePageData(lang)
+	data := h.service.GetHomePageData(lang, userID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
@@ -52,13 +62,20 @@ func (h *BFFHandler) HandleDestinations(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	userID := userIDFromRequest(r)
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "login_required"})
+		return
+	}
+
 	switch action {
 	case "favorite":
-		isFav := h.service.ToggleFavorite(id)
+		isFav := h.service.ToggleFavorite(userID, id)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "is_favorite": isFav})
 	case "view":
-		h.service.AddToHistory(id)
+		h.service.AddToHistory(userID, id)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
 	default:

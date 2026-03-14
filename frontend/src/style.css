@@ -108,6 +108,73 @@ body {
   transition: opacity 0.25s ease-out;
 }
 
+/* 顶部搜索框（Klook 风格） */
+.hero-search {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 18px;
+  background: rgba(15, 23, 42, 0.28);
+  border-radius: 999px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.hero-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 0.95rem;
+  min-width: 320px;
+  max-width: 420px;
+}
+
+.hero-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-search-btn {
+  border: none;
+  outline: none;
+  border-radius: 999px;
+  padding: 8px 20px;
+  background: var(--klook-orange);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(255, 91, 0, 0.45);
+}
+
+.hero-search-btn:hover {
+  background: var(--klook-orange-hover);
+  transform: translateY(-1px);
+}
+
+.hero-search-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 91, 0, 0.35);
+}
+
+@media (max-width: 640px) {
+  .hero-search {
+    width: 100%;
+    justify-content: center;
+    padding-right: 10px;
+  }
+
+  .hero-search-input {
+    min-width: 0;
+    width: 100%;
+    max-width: 220px;
+  }
+}
+
 .hero .page-title {
   color: #fff;
   font-size: 2.25rem;
@@ -228,8 +295,19 @@ body {
 .promo-title {
   font-size: 0.95rem;
   font-weight: 600;
-  margin: 0 0 8px;
+  margin: 0 0 8px 0;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.promo-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--klook-orange), var(--klook-amber));
 }
 
 .promo-desc {
@@ -736,6 +814,188 @@ body {
 
 .section {
   margin-bottom: 40px;
+}
+
+/* ========== 底部营销 Feed：灵感 / 活动 ========== */
+.section-feed-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.4fr);
+  gap: 24px;
+}
+
+.section-feed-col {
+  min-width: 0;
+}
+
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feed-card {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.feed-badge {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 0.75rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(0, 203, 208, 0.12);
+  color: var(--klook-cyan);
+}
+
+.feed-badge--hot {
+  background: rgba(255, 91, 0, 0.12);
+  color: var(--klook-orange);
+}
+
+.feed-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.feed-desc {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.feed-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.feed-tag {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.feed-list--compact {
+  gap: 10px;
+}
+
+.feed-card--compact {
+  padding: 12px 14px;
+}
+
+.feed-card--compact .feed-title {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.feed-card--compact .feed-desc {
+  font-size: 0.8rem;
+  margin-bottom: 0;
+}
+
+@media (max-width: 960px) {
+  .section-feed-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ========== 热门城市活动 & 城市榜单 ========== */
+.section-hot-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.6fr);
+  gap: 24px;
+}
+
+.section-hot-col {
+  min-width: 0;
+}
+
+.hot-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hot-activity-item {
+  padding: 10px 2px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.hot-activity-item:last-child {
+  border-bottom: none;
+}
+
+.hot-activity-title {
+  font-size: 0.96rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.hot-activity-desc {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.hot-city-rank {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hot-city-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.hot-city-index {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.hot-city-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.hot-city-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 960px) {
+  .section-hot-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ========== 周边目的地：Klook 风格独立背景区块 ========== */

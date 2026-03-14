@@ -10,6 +10,7 @@ const messages = {
       wishlist: 'Wishlist',
       history: 'History',
       search: 'Search',
+      hangzhouHot: 'Popular Destinations around Hangzhou',
       where: 'Where',
       when: 'When',
       who: 'Who',
@@ -32,9 +33,12 @@ const messages = {
       locationHint: 'Based on your location'
     },
     nearby: {
-      title: 'Explore Nearby {city}',
-      viewAll: 'View all destinations',
-      away: '{dist} km away'
+      title: 'Popular Destinations around Hangzhou',
+      viewAll: 'View all',
+      away: '{dist}km away'
+    },
+    hotActivities: {
+      title: 'Nearby Hangzhou Hot Activities'
     },
     trust: {
       securePayment: 'Secure Payment',
@@ -56,7 +60,9 @@ const messages = {
       frequentSearch: 'Frequently searched cities',
       inspiration: 'Inspiration',
       categories: 'Explore by Category',
-      travelGuide: 'Travel Guides'
+      travelGuide: 'Travel Guides',
+      travelBlog: 'Travel Stories & Tips',
+      readMore: 'Read Story'
     },
     activities: {
       shanghai: {
@@ -82,6 +88,7 @@ const messages = {
       wishlist: '收藏夹',
       history: '最近浏览',
       search: '搜索',
+      hangzhouHot: '杭州周边的热门目的地',
       where: '地点',
       when: '时间',
       who: '人数',
@@ -104,9 +111,12 @@ const messages = {
       locationHint: '基于你的位置'
     },
     nearby: {
-      title: '{city}周边探索',
-      viewAll: '查看全部目的地',
-      away: '距离 {dist} km'
+      title: '杭州周边的热门目的地',
+      viewAll: '查看全部',
+      away: '距离 {dist}km'
+    },
+    hotActivities: {
+      title: '杭州周边热门活动'
     },
     trust: {
       securePayment: '安全支付',
@@ -128,7 +138,9 @@ const messages = {
       frequentSearch: '这些城市正在被频繁搜索',
       inspiration: '灵感推荐',
       categories: '按分类探索',
-      travelGuide: '旅行指南'
+      travelGuide: '旅行指南',
+      travelBlog: '旅行故事与灵感',
+      readMore: '阅读全文'
     },
     activities: {
       shanghai: {

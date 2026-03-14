@@ -5,22 +5,23 @@
         <span class="logo-icon">✈️</span>
         <span>ChinaTravel</span>
       </a>
+      
       <nav class="header-nav">
-        <a href="#" class="header-nav-link">{{ $t('nav.destinations') }}</a>
-        <a href="#" class="header-nav-link">{{ $t('nav.experiences') }}</a>
         <a href="#" class="header-nav-link">{{ $t('nav.guides') }}</a>
         <a href="#" class="header-nav-link">{{ $t('nav.myTrips') }}</a>
         <a href="#" class="header-nav-link" @click.prevent="scrollToHistory">{{ $t('nav.history') }}</a>
         <a href="#" class="header-nav-link" @click.prevent="scrollToWishlist">{{ $t('nav.wishlist') }}</a>
       </nav>
+
       <div class="header-actions">
         <button class="map-toggle-header">
           <span class="map-icon">🗺️</span>
           <span>Map</span>
         </button>
         <button class="action-btn" @click="toggleLang" title="Switch Language/Currency">🌐 {{ locale.toUpperCase() }}</button>
+        
         <div class="user-profile">
-          <span class="user-name">Hi, Alan</span>
+          <div class="user-name">Alan Wang</div>
           <div class="user-avatar">A</div>
         </div>
       </div>
@@ -66,12 +67,42 @@
     <div class="page-layout">
       <!-- 左侧：过滤器 (Booking 风格) -->
       <aside class="sidebar sidebar-left">
+        <!-- Categories Widget (Replaces simple filter) -->
+        <div class="sidebar-widget categories-widget">
+          <h3 class="filter-title">{{ $t('common.categories') }}</h3>
+          <div class="sidebar-category-list">
+            <div v-for="cat in visibleCategories" :key="cat.id" class="cat-group">
+              <a href="#" 
+                 class="sidebar-cat-item" 
+                 :class="{ active: expandedCats.has(cat.id) }"
+                 @click.prevent="toggleCat(cat.id)"
+              >
+                <div class="cat-main">
+                  <span class="cat-icon">{{ cat.icon }}</span>
+                  <span>{{ cat.label }}</span>
+                </div>
+                <span v-if="cat.children && cat.children.length" class="cat-chevron" :class="{ rotated: expandedCats.has(cat.id) }">›</span>
+              </a>
+              
+              <div v-if="expandedCats.has(cat.id) && cat.children && cat.children.length" class="cat-children">
+                <a v-for="child in cat.children" :key="child.id" href="#" class="sidebar-cat-child">
+                  {{ child.label }}
+                </a>
+              </div>
+            </div>
+            
+            <button v-if="categoryTree.length > 6" class="cat-show-more" :class="{ expanded: showAllCats }" @click="showAllCats = !showAllCats">
+              {{ showAllCats ? 'Show Less' : 'Show More' }}
+            </button>
+          </div>
+        </div>
+
         <div class="sidebar-widget nearby-widget">
-          <h3 class="filter-title">{{ $t('nearby.title', { city: 'Hangzhou' }) }}</h3>
+          <h3 class="filter-title">{{ $t('nearby.title') }}</h3>
           <div v-if="nearbyLoading" class="loading">Loading...</div>
           <div v-else-if="nearbyError" class="error">{{ nearbyError }}</div>
           <div v-else class="nearby-list-unified">
-            <a v-for="d in nearby.slice(0, 5)" :key="d.id" class="nearby-item-unified" href="#" @click.prevent="goDest(d)">
+            <a v-for="d in nearby.slice(0, 5)" :key="d.id" class="nearby-item-unified" href="#" @click.prevent="openDetail(d)">
               <div class="name">
                 <div class="icon-box">📍</div>
                 <span>{{ d.name }}</span>
@@ -80,77 +111,13 @@
             </a>
           </div>
         </div>
-
-        <div class="filter-section">
-          <h3 class="filter-title">Popular Destinations</h3>
-          <ul class="filter-list">
-            <li><label><input type="checkbox" checked> Hangzhou</label></li>
-            <li><label><input type="checkbox"> Shanghai</label></li>
-            <li><label><input type="checkbox"> Beijing</label></li>
-            <li><label><input type="checkbox"> Xi'an</label></li>
-            <li><label><input type="checkbox"> Chengdu</label></li>
-          </ul>
-        </div>
-        <div class="filter-section">
-          <h3 class="filter-title">Trip Type</h3>
-          <ul class="filter-list">
-            <li><label><input type="checkbox"> Family Friendly</label></li>
-            <li><label><input type="checkbox"> Nature & Parks</label></li>
-            <li><label><input type="checkbox"> Historical Sites</label></li>
-            <li><label><input type="checkbox"> Foodie Tours</label></li>
-          </ul>
-        </div>
-        <div class="filter-section">
-          <h3 class="filter-title">Price Range</h3>
-          <input type="range" min="0" max="1000" step="50" class="price-slider">
-          <div class="price-labels">
-            <span>0¥</span>
-            <span>1000¥+</span>
-          </div>
-        </div>
-        <div class="filter-section">
-          <h3 class="filter-title">Trust Signals</h3>
-          <ul class="filter-list">
-            <li><label><input type="checkbox"> Free Cancellation</label></li>
-            <li><label><input type="checkbox"> Instant Confirmation</label></li>
-          </ul>
-        </div>
       </aside>
 
       <!-- 主内容区 -->
       <main class="page-main">
         <div class="content-wrap">
-          <!-- Experience Categories (Klook/Trip Style) -->
-          <section class="section">
-            <h2 class="section-title">{{ $t('common.categories') }}</h2>
-            <div class="category-grid">
-              <div class="category-card">
-                <span class="cat-icon">🎢</span>
-                <span>Theme Parks</span>
-              </div>
-              <div class="category-card">
-                <span class="cat-icon">🏛️</span>
-                <span>Museums</span>
-              </div>
-              <div class="category-card">
-                <span class="cat-icon">🏕️</span>
-                <span>Camping</span>
-              </div>
-              <div class="category-card">
-                <span class="cat-icon">🚄</span>
-                <span>Trains</span>
-              </div>
-              <div class="category-card">
-                <span class="cat-icon">🍜</span>
-                <span>Food Tours</span>
-              </div>
-              <div class="category-card">
-                <span class="cat-icon">💆</span>
-                <span>Spas</span>
-              </div>
-            </div>
-          </section>
-
+          <!-- Experience Categories (Klook/Trip Style) - REMOVED, MOVED TO HEADER -->
+          
           <!-- 首页推荐：轮播布局 (Airbnb Style) -->
           <section class="section">
             <div class="section-header">
@@ -201,6 +168,30 @@
             </div>
           </section>
 
+          <section class="section">
+            <div class="section-header">
+              <div class="header-left">
+                <h2 class="section-title">{{ $t('hotActivities.title') }}</h2>
+              </div>
+              <div class="carousel-nav-mini">
+                <button @click="scrollNearbyActivities(-1)" class="carousel-nav-btn">‹</button>
+                <button @click="scrollNearbyActivities(1)" class="carousel-nav-btn">›</button>
+              </div>
+            </div>
+            <div ref="nearbyActivitiesRef" class="card-carousel card-carousel--horizontal card-carousel--silky">
+              <a v-for="(d, idx) in nearby" :key="'nearby-' + idx" class="dest-card carousel-item" href="#" @click.prevent="openDetail(d)">
+                <div class="cover-wrap">
+                  <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" />
+                  <div class="card-badge">HOT</div>
+                </div>
+                <div class="body">
+                  <div class="name">{{ d.name }}</div>
+                  <div class="meta">{{ d.city }} · {{ d.distance_km }}km</div>
+                </div>
+              </a>
+            </div>
+          </section>
+
           <section class="section travel-guide">
             <h2 class="section-title">{{ $t('common.travelGuide') }}</h2>
             <div class="guide-grid">
@@ -208,14 +199,45 @@
                 <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400" alt="Guide 1" class="guide-img" />
                 <div class="guide-info">
                   <h3>Top 10 Street Foods in Chengdu</h3>
-                  <span>Read more →</span>
+                  <span>{{ $t('common.readMore') }} →</span>
                 </div>
               </div>
               <div class="guide-card">
                 <img src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=400" alt="Guide 2" class="guide-img" />
                 <div class="guide-info">
                   <h3>Hidden Gems of Beijing</h3>
-                  <span>Read more →</span>
+                  <span>{{ $t('common.readMore') }} →</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Travel Blog/Stories Section -->
+          <section class="section travel-blog">
+            <h2 class="section-title">{{ $t('common.travelBlog') }}</h2>
+            <div class="blog-grid">
+              <div class="blog-card blog-card-lg">
+                <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800" class="blog-img" />
+                <div class="blog-content">
+                  <span class="blog-tag">Road Trip</span>
+                  <h3>Switzerland of the East: A Week in Tibet</h3>
+                  <p>Discovering the hidden valleys and sacred mountains of the Himalayas.</p>
+                </div>
+              </div>
+              <div class="blog-col">
+                <div class="blog-card blog-card-sm">
+                  <img src="https://images.unsplash.com/photo-1528127269322-539801943592?w=600" class="blog-img" />
+                  <div class="blog-content">
+                    <span class="blog-tag">Culture</span>
+                    <h3>The Ancient Art of Tea Making in Hangzhou</h3>
+                  </div>
+                </div>
+                <div class="blog-card blog-card-sm">
+                  <img src="https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=600" class="blog-img" />
+                  <div class="blog-content">
+                    <span class="blog-tag">Food</span>
+                    <h3>Why Spicy Food is Life in Sichuan</h3>
+                  </div>
                 </div>
               </div>
             </div>
@@ -423,6 +445,79 @@ const wishlist = ref([])
 const activeSidebarTab = ref('history')
 const showDetailModal = ref(false)
 const currentDest = ref(null)
+const categoryTree = ref([
+  { id: 'all', icon: '🔥', label: 'All', children: [] },
+  { 
+    id: 'theme-parks', icon: '🎢', label: 'Theme Parks', 
+    children: [
+      { id: 'disney', label: 'Disney Resort' },
+      { id: 'universal', label: 'Universal Studios' },
+      { id: 'happy-valley', label: 'Happy Valley' }
+    ] 
+  },
+  { 
+    id: 'museums', icon: '🏛️', label: 'Museums',
+    children: [
+      { id: 'history', label: 'History Museums' },
+      { id: 'art', label: 'Art Galleries' },
+      { id: 'science', label: 'Science Centers' }
+    ]
+  },
+  { 
+    id: 'camping', icon: '🏕️', label: 'Camping',
+    children: [
+      { id: 'glamping', label: 'Glamping' },
+      { id: 'rv', label: 'RV Parks' }
+    ]
+  },
+  { 
+    id: 'trains', icon: '🚄', label: 'Trains',
+    children: [
+      { id: 'high-speed', label: 'High Speed Rail' },
+      { id: 'scenic', label: 'Scenic Routes' }
+    ]
+  },
+  { 
+    id: 'food', icon: '🍜', label: 'Food Tours',
+    children: [
+      { id: 'street', label: 'Street Food' },
+      { id: 'fine-dining', label: 'Fine Dining' }
+    ]
+  },
+  { 
+    id: 'spas', icon: '💆', label: 'Spas',
+    children: [
+      { id: 'massage', label: 'Massage' },
+      { id: 'onsen', label: 'Onsen / Hot Springs' }
+    ]
+  },
+  { id: 'nature', icon: '🏔️', label: 'Nature', children: [] },
+  { id: 'shows', icon: '🎭', label: 'Shows', children: [] },
+])
+
+const expandedCats = ref(new Set(['all']))
+const showAllCats = ref(false)
+
+function toggleCat(id) {
+  if (expandedCats.value.has(id)) {
+    expandedCats.value.delete(id)
+  } else {
+    expandedCats.value.add(id)
+  }
+}
+
+const visibleCategories = computed(() => {
+  return showAllCats.value ? categoryTree.value : categoryTree.value.slice(0, 6)
+})
+
+const nearbyActivitiesRef = ref(null)
+
+function scrollNearbyActivities(dir) {
+  if (nearbyActivitiesRef.value) {
+    const scrollAmount = 300 + 16 // itemWidth + gap
+    nearbyActivitiesRef.value.scrollBy({ left: scrollAmount * dir, behavior: 'smooth' })
+  }
+}
 
 function openDetail(d) {
   currentDest.value = d

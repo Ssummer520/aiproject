@@ -96,10 +96,6 @@ body {
   color: var(--text);
 }
 
-.header-nav-link::after {
-  display: none;
-}
-
 .header-actions {
   display: flex;
   align-items: center;
@@ -1628,77 +1624,102 @@ body {
   }
 }
 
-/* ========== 目的地卡片：现代卡片式设计 ========== */
+/* ========== 推荐卡片：精致优化 ========== */
 .dest-card {
   display: block;
   background: var(--card);
   border-radius: var(--radius-lg);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .dest-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-lg);
-  border-color: transparent;
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  border-color: rgba(255, 56, 92, 0.1);
 }
 
 .dest-card .cover-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3; /* Standard travel card ratio */
+  aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #ebebeb;
+  background: #f0f0f0;
 }
 
 .dest-card .cover {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dest-card:hover .cover {
-  transform: scale(1.08);
+  transform: scale(1.1) rotate(0.5deg);
 }
 
 .dest-card .body {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   gap: 8px;
 }
 
 .dest-card .name {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 800;
+  font-size: 1.05rem;
   line-height: 1.3;
   color: var(--text);
   margin: 0;
-}
-
-.dest-card .rating {
-  font-weight: 600;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .dest-card .meta {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
+  font-weight: 500;
+}
+
+.card-carousel--silky {
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.card-carousel--silky .carousel-item {
+  scroll-snap-align: start;
+}
+
+.carousel-nav-mini {
+  display: flex;
+  gap: 8px;
+}
+
+.carousel-nav-mini .carousel-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.carousel-nav-mini .carousel-nav-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
 }
 
 .dest-card .tags {
@@ -1844,9 +1865,229 @@ body {
   color: var(--danger);
 }
 
-/* ========== Section Styling ========== */
-.section {
-  margin-bottom: 64px;
+/* ========== Section Header Hover Effect ========== */
+.section-header .view-all-link {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.section-header:hover .view-all-link {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ========== Sidebar Category Widget (Nested) ========== */
+.categories-widget {
+  margin-bottom: 32px;
+}
+
+.sidebar-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cat-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-cat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.sidebar-cat-item:hover,
+.sidebar-cat-item.active {
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.cat-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-cat-item .cat-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+}
+
+.sidebar-cat-item span:last-child {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cat-chevron {
+  font-size: 1.2rem;
+  font-weight: 400;
+  transition: transform 0.3s;
+  color: var(--text-light);
+}
+
+.cat-chevron.rotated {
+  transform: rotate(90deg);
+}
+
+.cat-children {
+  display: flex;
+  flex-direction: column;
+  padding-left: 48px;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  animation: slide-down 0.3s ease;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sidebar-cat-child {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.sidebar-cat-child:hover {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.cat-show-more {
+  background: var(--bg-soft);
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+  text-align: center;
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cat-show-more:hover {
+  background: #fff;
+  border-color: #ddd;
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  text-decoration: none;
+}
+
+.cat-show-more::after {
+  content: '↓';
+  font-size: 0.8rem;
+  transition: transform 0.3s;
+}
+
+.cat-show-more.expanded::after {
+  transform: rotate(180deg);
+}
+
+/* ========== Header Sub-Row (Categories) - REMOVED ========== */
+
+/* ========== Travel Blog Section ========== */
+.blog-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+}
+
+.blog-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.blog-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.blog-card-lg {
+  height: 400px;
+}
+
+.blog-card-sm {
+  height: 188px;
+}
+
+.blog-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.blog-card:hover .blog-img {
+  transform: scale(1.05);
+}
+
+.blog-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 32px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blog-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.blog-content h3 {
+  font-size: 1.5rem;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.blog-card-sm .blog-content h3 {
+  font-size: 1.1rem;
+}
+
+.blog-content p {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.9;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .section-title {

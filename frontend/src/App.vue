@@ -363,17 +363,48 @@
       <!-- 右侧：最近浏览 & 信任信号 (Airbnb/Booking 风格) -->
       <aside class="sidebar sidebar-right">
         <div class="sidebar-widget">
-          <h3 class="widget-title">{{ $t('common.recentlyViewed') }}</h3>
-          <div v-if="recent.length" class="mini-card-list">
-            <a v-for="d in recent.slice(0, 3)" :key="d.id" class="mini-card" href="#" @click.prevent="goDest(d)">
-              <img :src="d.cover" :alt="d.name" class="mini-thumb" @error="onImgError" />
-              <div class="mini-info">
-                <span class="mini-name">{{ d.name }}</span>
-                <span class="mini-meta">★ {{ d.rating }}</span>
-              </div>
-            </a>
+          <div class="widget-tabs">
+            <button 
+              class="widget-tab-btn" 
+              :class="{ active: activeSidebarTab === 'history' }"
+              @click="activeSidebarTab = 'history'"
+            >
+              {{ $t('common.recentlyViewed') }}
+            </button>
+            <button 
+              class="widget-tab-btn" 
+              :class="{ active: activeSidebarTab === 'wishlist' }"
+              @click="activeSidebarTab = 'wishlist'"
+            >
+              Wishlist
+            </button>
           </div>
-          <p v-else class="empty-hint">{{ $t('common.noRecent') }}</p>
+          
+          <div class="mini-card-list" v-if="activeSidebarTab === 'history'">
+            <div v-if="history.length">
+              <a v-for="d in history" :key="d.id" class="mini-card" href="#" @click.prevent="goDest(d)">
+                <img :src="d.cover" :alt="d.name" class="mini-thumb" @error="onImgError" />
+                <div class="mini-info">
+                  <span class="mini-name">{{ d.name }}</span>
+                  <span class="mini-meta">★ {{ d.rating }}</span>
+                </div>
+              </a>
+            </div>
+            <p v-else class="empty-hint">{{ $t('common.noRecent') }}</p>
+          </div>
+
+          <div class="mini-card-list" v-if="activeSidebarTab === 'wishlist'">
+            <div v-if="wishlist.length">
+              <a v-for="d in wishlist" :key="d.id" class="mini-card" href="#" @click.prevent="goDest(d)">
+                <img :src="d.cover" :alt="d.name" class="mini-thumb" @error="onImgError" />
+                <div class="mini-info">
+                  <span class="mini-name">{{ d.name }}</span>
+                  <span class="mini-meta">★ {{ d.rating }}</span>
+                </div>
+              </a>
+            </div>
+            <p v-else class="empty-hint">Your wishlist is empty</p>
+          </div>
         </div>
 
         <div class="sidebar-widget promo-widget">
@@ -453,8 +484,9 @@ function onSearch() {
 }
 
 const tab = ref('recent')
-const recent = ref([])
-const favorites = ref([])
+const history = ref([])
+const wishlist = ref([])
+const activeSidebarTab = ref('history')
 const recentFavLoading = ref(true)
 const recentFavError = ref('')
 
@@ -479,6 +511,8 @@ async function fetchHomePage() {
     recommendations.value = data.recommendations || []
     nearby.value = data.nearby || []
     deals.value = data.deals || []
+    history.value = data.history || []
+    wishlist.value = data.wishlist || []
   } catch (e) {
     recError.value = 'Failed to load home page'
   } finally {
@@ -487,30 +521,14 @@ async function fetchHomePage() {
   }
 }
 
-async function fetchRecentFavorites() {
-  recentFavLoading.value = true
-  recentFavError.value = ''
-  try {
-    // BFF could also handle this, but for now we migrate slowly
-    const res = await fetch(API + '/home') 
-    // ... we'll use same home data for simplicity
-    const data = await res.json()
-    recent.value = data.recommendations.slice(0, 3) 
-    favorites.value = []
-  } catch (e) {
-    recentFavError.value = e.message || '加载失败'
-  } finally {
-    recentFavLoading.value = false
-  }
-}
-
-const recCarouselRef = ref(null)
-const carouselPaused = ref(false)
-
 function goDest(d) {
-  fetch(API + '/view?id=' + d.id, { method: 'POST' }).catch(() => {})
-  fetchRecentFavorites() // 刷新最近浏览
-  // 可在此跳转详情页： router.push('/dest/' + d.id)
+  fetch(API + '/view', { 
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: d.id })
+  }).then(() => {
+    fetchHomePage() // Refresh to update history
+  })
 }
 
 async function toggleFav(d) {
@@ -519,14 +537,7 @@ async function toggleFav(d) {
     const data = await res.json()
     if (data.ok) {
       d.is_favorite = data.is_favorite
-      await fetchRecentFavorites()
-      // 更新推荐和周边列表中的同一条
-      const update = (list) => {
-        const item = list.find((x) => x.id === d.id)
-        if (item) item.is_favorite = data.is_favorite
-      }
-      update(recommendations.value)
-      update(nearby.value)
+      fetchHomePage() // Refresh to update wishlist and recommendations
     }
   } catch (e) {
     console.error(e)
@@ -550,7 +561,6 @@ watch(locale, () => {
 })
 
 onMounted(() => {
-  fetchRecentFavorites()
   fetchHomePage()
   heroTimer = setInterval(() => {
     heroIndex.value = (heroIndex.value + 1) % heroImages.length

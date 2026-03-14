@@ -25,10 +25,12 @@ func main() {
 	mux := http.NewServeMux()
 	// BFF Route for home page data
 	mux.HandleFunc("/api/home", bffHandler.GetHomePage)
+	mux.HandleFunc("/api/favorite", bffHandler.ToggleFavorite)
+	mux.HandleFunc("/api/view", bffHandler.RecordView)
 
 	// Keep old routes for compatibility while migrating frontend
 	// ... we'll update frontend to use /api/home soon
-	
+
 	log.Println("Server listening on http://localhost:8080")
 	if err := http.ListenAndServe(":8080", cors(mux)); err != nil {
 		log.Fatal("Server failed:", err)

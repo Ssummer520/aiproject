@@ -560,10 +560,34 @@ body {
   margin-bottom: 20px;
 }
 
-.widget-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin: 0 0 16px;
+.widget-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.widget-tab-btn {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.widget-tab-btn:hover {
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.widget-tab-btn.active {
+  background: var(--accent-soft);
+  color: var(--primary);
 }
 
 .mini-card-list {

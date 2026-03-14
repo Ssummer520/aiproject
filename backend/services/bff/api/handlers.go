@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+
 	"travel-api/services/bff/application"
 )
 
@@ -31,4 +33,51 @@ func (h *BFFHandler) GetHomePage(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
+}
+
+func (h *BFFHandler) ToggleFavorite(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	idStr := r.URL.Query().Get("id")
+	id, _ := strconv.Atoi(idStr)
+	if id == 0 {
+		// Try parsing from body if not in query
+		type req struct {
+			ID int `json:"id"`
+		}
+		var rr req
+		if err := json.NewDecoder(r.Body).Decode(&rr); err == nil {
+			id = rr.ID
+		}
+	}
+
+	if id == 0 {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	isFav := h.service.ToggleFavorite(id)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "is_favorite": isFav})
+}
+
+func (h *BFFHandler) RecordView(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	type req struct {
+		ID int `json:"id"`
+	}
+	var rr req
+	if err := json.NewDecoder(r.Body).Decode(&rr); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	h.service.AddToHistory(rr.ID)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
 }

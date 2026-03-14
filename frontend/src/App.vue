@@ -1,6 +1,6 @@
 <template>
-  <div class="travel-home">
-    <header class="site-header">
+  <div class="travel-home" @mousemove="handleMouseMove">
+    <header class="site-header" :class="{ 'header--visible': headerVisible }">
       <a href="/" class="header-logo">
         <span class="logo-icon">✈️</span>
         <span>ChinaTravel</span>
@@ -10,8 +10,14 @@
         <a href="#" class="header-nav-link">{{ $t('nav.experiences') }}</a>
         <a href="#" class="header-nav-link">{{ $t('nav.guides') }}</a>
         <a href="#" class="header-nav-link">{{ $t('nav.myTrips') }}</a>
+        <a href="#" class="header-nav-link" @click.prevent="scrollToHistory">{{ $t('nav.history') }}</a>
+        <a href="#" class="header-nav-link" @click.prevent="scrollToWishlist">{{ $t('nav.wishlist') }}</a>
       </nav>
       <div class="header-actions">
+        <button class="map-toggle-header">
+          <span class="map-icon">🗺️</span>
+          <span>Map</span>
+        </button>
         <button class="action-btn" @click="toggleLang" title="Switch Language/Currency">🌐 {{ locale.toUpperCase() }}</button>
         <div class="user-profile">
           <span class="user-name">Hi, Alan</span>
@@ -37,22 +43,11 @@
         
         <div class="hero-search-container">
           <div class="hero-search-bar">
-            <div class="search-section">
-              <label>{{ $t('nav.where') }}</label>
-              <input v-model="keyword" type="text" :placeholder="$t('hero.searchPlaceholder')" />
-            </div>
-            <div class="search-divider"></div>
-            <div class="search-section">
-              <label>{{ $t('nav.when') }}</label>
-              <input type="text" :placeholder="$t('nav.when')" />
-            </div>
-            <div class="search-divider"></div>
-            <div class="search-section">
-              <label>{{ $t('nav.who') }}</label>
-              <input type="text" :placeholder="$t('nav.who')" />
+            <div class="search-input-group">
+              <span class="search-icon-static">🔍</span>
+              <input v-model="keyword" type="text" class="omnibox-input" :placeholder="$t('hero.searchPlaceholder')" />
             </div>
             <button class="search-submit" @click="onSearch">
-              <span class="search-icon">🔍</span>
               <span>{{ $t('nav.search') }}</span>
             </button>
           </div>
@@ -66,22 +61,26 @@
           </div>
         </div>
       </div>
-      <div class="hero-dots">
-        <button
-          v-for="(_, i) in heroImages"
-          :key="i"
-          type="button"
-          class="hero-dot"
-          :class="{ active: i === heroIndex }"
-          :aria-label="`切换到第 ${i + 1} 张`"
-          @click="heroIndex = i"
-        />
-      </div>
     </div>
 
     <div class="page-layout">
       <!-- 左侧：过滤器 (Booking 风格) -->
       <aside class="sidebar sidebar-left">
+        <div class="sidebar-widget nearby-widget">
+          <h3 class="filter-title">{{ $t('nearby.title', { city: 'Hangzhou' }) }}</h3>
+          <div v-if="nearbyLoading" class="loading">Loading...</div>
+          <div v-else-if="nearbyError" class="error">{{ nearbyError }}</div>
+          <div v-else class="nearby-list-unified">
+            <a v-for="d in nearby.slice(0, 5)" :key="d.id" class="nearby-item-unified" href="#" @click.prevent="goDest(d)">
+              <div class="name">
+                <div class="icon-box">📍</div>
+                <span>{{ d.name }}</span>
+              </div>
+              <span class="dist">{{ d.distance_km }}km</span>
+            </a>
+          </div>
+        </div>
+
         <div class="filter-section">
           <h3 class="filter-title">Popular Destinations</h3>
           <ul class="filter-list">
@@ -121,296 +120,139 @@
       <!-- 主内容区 -->
       <main class="page-main">
         <div class="content-wrap">
-          <!-- Deals 促销区 (Booking 风格) -->
-          <section class="section section-deals">
-            <div class="section-header">
-              <h2 class="section-title">{{ $t('deals.title') }}</h2>
-              <div class="countdown-timer">{{ $t('deals.endsIn') }}: <span>12:45:03</span></div>
-            </div>
-            <div class="deals-grid">
-              <div 
-                v-for="deal in deals" 
-                :key="deal.id" 
-                class="deal-card" 
-                :class="'deal-card--' + deal.type"
-              >
-                <div class="deal-content">
-                  <h3>{{ deal.title }}</h3>
-                  <p>{{ deal.description }}</p>
-                  <button class="deal-btn">
-                    {{ deal.type === 'primary' ? $t('deals.claimNow') : (deal.type === 'secondary' ? $t('deals.getCoupon') : $t('deals.explore')) }}
-                  </button>
-                </div>
-                <div v-if="deal.badge" class="deal-badge">{{ deal.badge }}</div>
+          <!-- Experience Categories (Klook/Trip Style) -->
+          <section class="section">
+            <h2 class="section-title">{{ $t('common.categories') }}</h2>
+            <div class="category-grid">
+              <div class="category-card">
+                <span class="cat-icon">🎢</span>
+                <span>Theme Parks</span>
+              </div>
+              <div class="category-card">
+                <span class="cat-icon">🏛️</span>
+                <span>Museums</span>
+              </div>
+              <div class="category-card">
+                <span class="cat-icon">🏕️</span>
+                <span>Camping</span>
+              </div>
+              <div class="category-card">
+                <span class="cat-icon">🚄</span>
+                <span>Trains</span>
+              </div>
+              <div class="category-card">
+                <span class="cat-icon">🍜</span>
+                <span>Food Tours</span>
+              </div>
+              <div class="category-card">
+                <span class="cat-icon">💆</span>
+                <span>Spas</span>
               </div>
             </div>
           </section>
 
-          <!-- 小屏时在主内容区显示最近浏览/收藏 (侧边栏隐藏时) -->
-    <section class="section section-recent-fav-mobile">
-      <h2 class="section-title">最近浏览 / 收藏</h2>
-      <div class="tabs">
-        <button :class="{ active: tab === 'recent' }" @click="tab = 'recent'">最近浏览</button>
-        <button :class="{ active: tab === 'favorites' }" @click="tab = 'favorites'">我的收藏</button>
-      </div>
-      <div v-if="recentFavLoading" class="loading">加载中...</div>
-      <div v-else-if="recentFavError" class="error">{{ recentFavError }}</div>
-      <div v-else class="card-grid">
-        <template v-if="tab === 'recent'">
-          <template v-if="recent.length">
-            <a v-for="d in recent" :key="d.id" class="dest-card" href="#" @click.prevent="goDest(d)">
-              <div class="cover-wrap">
-                <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
-                <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
-              </div>
-              <div class="body">
-                <div class="name">{{ d.name }}</div>
-                <div class="meta">{{ d.city }} · 评分 {{ d.rating }}</div>
-                <div class="tags"><span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span></div>
-              </div>
-            </a>
-          </template>
-          <p v-else class="empty-hint">暂无最近浏览，去首页推荐看看吧</p>
-        </template>
-        <template v-else>
-          <template v-if="favorites.length">
-            <a v-for="d in favorites" :key="d.id" class="dest-card" href="#" @click.prevent="goDest(d)">
-              <div class="cover-wrap">
-                <img :src="d.cover" :alt="d.name" class="cover" @error="onImgError" />
-                <button type="button" class="fav-btn favorited" @click.prevent="toggleFav(d)">♥</button>
-              </div>
-              <div class="body">
-                <div class="name">{{ d.name }}</div>
-                <div class="meta">{{ d.city }} · 评分 {{ d.rating }}</div>
-                <div class="tags"><span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span></div>
-              </div>
-            </a>
-          </template>
-          <p v-else class="empty-hint">暂无收藏，点击卡片上的 ♡ 即可收藏</p>
-        </template>
-      </div>
-    </section>
-
-          <!-- 首页推荐：网格布局 -->
+          <!-- 首页推荐：轮播布局 (Airbnb Style) -->
           <section class="section">
             <div class="section-header">
-              <h2 class="section-title">{{ $t('recommendations.title') }}</h2>
-              <div class="personalization-hint">{{ $t('recommendations.locationHint') }}</div>
+              <div class="header-left">
+                <h2 class="section-title">{{ $t('recommendations.title') }}</h2>
+              </div>
+              <a href="#" class="view-all-link">View all</a>
             </div>
             <div v-if="recLoading" class="loading">Loading...</div>
             <div v-else-if="recError" class="error">{{ recError }}</div>
-            <div v-else class="card-grid">
-              <a
-                v-for="(d, idx) in recommendations"
-                :key="d.id"
-                class="dest-card"
-                href="#"
-                @click.prevent="goDest(d)"
-              >
-                <div class="cover-wrap">
-                  <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
-                  <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
-                  <div class="card-badge" v-if="idx % 5 === 0">{{ $t('common.rareFind') }}</div>
-                </div>
-                <div class="body">
-                  <div class="card-header">
-                    <div class="name">{{ d.name }}</div>
-                    <div class="rating">★ {{ d.rating }}</div>
+            <div 
+              v-else 
+              class="card-carousel card-carousel--horizontal"
+            >
+              <div class="carousel-track">
+                <a
+                  v-for="(d, idx) in displayRecommendations"
+                  :key="'rec-' + idx"
+                  class="dest-card carousel-item"
+                  href="#"
+                  @click.prevent="openDetail(d)"
+                >
+                  <div class="cover-wrap">
+                    <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
+                    <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent.stop="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
+                    <div class="card-badge" v-if="idx % 5 === 0">{{ $t('common.rareFind') }}</div>
                   </div>
-                  <div class="meta">{{ d.city }}</div>
-                  <div class="tags">
-                    <span v-for="t in (d.tags || []).slice(0, 2)" :key="t" class="tag">{{ t }}</span>
+                  <div class="body">
+                    <div class="card-header">
+                      <div class="name">{{ d.name }}</div>
+                      <div class="rating">★ {{ d.rating }}</div>
+                    </div>
+                    <div class="meta">{{ d.city }}</div>
+                    <div class="tags">
+                      <span v-for="t in (d.tags || []).slice(0, 2)" :key="t" class="tag">{{ t }}</span>
+                    </div>
+                    <div class="price">
+                      <span class="amount">¥{{ 168 + idx * 10 }}</span>
+                      <span class="unit">{{ $t('common.night') }}</span>
+                    </div>
+                    <div class="trust-signal">
+                      <span class="reviews">{{ $t('common.reviews', { count: 100 + idx * 50 }) }}</span>
+                      <span class="booked">{{ $t('common.booked', { count: 14 }) }}</span>
+                    </div>
                   </div>
-                  <div class="price">
-                    <span class="amount">¥{{ 168 + idx * 10 }}</span>
-                    <span class="unit">{{ $t('common.night') }}</span>
-                  </div>
-                  <div class="trust-signal">
-                    <span class="reviews">{{ $t('common.reviews', { count: 100 + idx * 50 }) }}</span>
-                    <span class="booked">{{ $t('common.booked', { count: 14 }) }}</span>
-                  </div>
-                </div>
-              </a>
+                </a>
+              </div>
             </div>
           </section>
 
-    <!-- 周边目的地 (欧美用户狂爱) -->
-    <section class="section section-nearby">
-      <div class="section-header">
-        <h2 class="section-title">{{ $t('nearby.title', { city: 'Hangzhou' }) }}</h2>
-        <a href="#" class="view-all">{{ $t('nearby.viewAll') }}</a>
-      </div>
-      <div v-if="nearbyLoading" class="loading">Loading...</div>
-      <div v-else-if="nearbyError" class="error">{{ nearbyError }}</div>
-      <div v-else class="nearby-grid">
-        <a v-for="d in nearby.slice(0, 4)" :key="d.id" class="nearby-card" href="#" @click.prevent="goDest(d)">
-          <img :src="d.cover" :alt="d.name" class="nearby-img" loading="lazy" @error="onImgError" />
-          <div class="nearby-info">
-            <span class="nearby-name">{{ d.name }}</span>
-            <span class="nearby-dist">{{ $t('nearby.away', { dist: d.distance_km }) }}</span>
-          </div>
-        </a>
-      </div>
-    </section>
-
-    <!-- 营销 Feed：灵感推荐 / 专题活动 -->
-    <section class="section section-feed">
-      <div class="section-feed-layout">
-        <div class="section-feed-col section-feed-main">
-          <h2 class="section-title">灵感推荐</h2>
-          <div class="feed-list">
-            <article class="feed-card">
-              <div class="feed-badge">专题</div>
-              <h3 class="feed-title">周末 48 小时 · 杭州慢旅行</h3>
-              <p class="feed-desc">
-                西湖骑行 · 灵隐寺 · 龙井茶园，一次性打卡杭州经典路线，含门票与交通推荐。
-              </p>
-              <div class="feed-tags">
-                <span class="feed-tag">周末游</span>
-                <span class="feed-tag">人文</span>
-                <span class="feed-tag">轻徒步</span>
+          <section class="section travel-guide">
+            <h2 class="section-title">{{ $t('common.travelGuide') }}</h2>
+            <div class="guide-grid">
+              <div class="guide-card">
+                <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400" alt="Guide 1" class="guide-img" />
+                <div class="guide-info">
+                  <h3>Top 10 Street Foods in Chengdu</h3>
+                  <span>Read more →</span>
+                </div>
               </div>
-            </article>
-            <article class="feed-card">
-              <div class="feed-badge feed-badge--hot">限时</div>
-              <h3 class="feed-title">亲子主题乐园精选清单</h3>
-              <p class="feed-desc">
-                上海迪士尼、长隆、海洋公园等热门乐园一站汇总，含亲子优惠套餐与错峰小贴士。
-              </p>
-              <div class="feed-tags">
-                <span class="feed-tag">亲子</span>
-                <span class="feed-tag">乐园</span>
+              <div class="guide-card">
+                <img src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=400" alt="Guide 2" class="guide-img" />
+                <div class="guide-info">
+                  <h3>Hidden Gems of Beijing</h3>
+                  <span>Read more →</span>
+                </div>
               </div>
-            </article>
-          </div>
-        </div>
-        <aside class="section-feed-col section-feed-side">
-          <h2 class="section-title">营销活动 Feed</h2>
-          <div class="feed-list feed-list--compact">
-            <article class="feed-card feed-card--compact">
-              <h3 class="feed-title">春日机酒礼包</h3>
-              <p class="feed-desc">精选东亚航线 + 酒店组合，最高立减 ¥300。</p>
-            </article>
-            <article class="feed-card feed-card--compact">
-              <h3 class="feed-title">买一送一 · 城市一日游</h3>
-              <p class="feed-desc">指定城市观光巴士、城市 walking tour 买一送一。</p>
-            </article>
-            <article class="feed-card feed-card--compact">
-              <h3 class="feed-title">会员日 · 积分加倍</h3>
-              <p class="feed-desc">本周五完成订单，积分奖励 2x，可抵扣下次出行。</p>
-            </article>
-          </div>
-        </aside>
-      </div>
-    </section>
-
-    <!-- 热门城市活动 & 热门城市榜单 -->
-    <section class="section section-hot-cities">
-      <div class="section-hot-layout">
-        <div class="section-hot-col">
-          <h2 class="section-title">热门城市的活动</h2>
-          <ul class="hot-activity-list">
-            <li class="hot-activity-item">
-              <div class="hot-activity-title">上海 · 夜色游船与天际线</div>
-              <p class="hot-activity-desc">
-                沿着黄浦江缓慢驶过，把摩天大楼当作背景板，让城市灯光替你讲完这一天。
-              </p>
-            </li>
-            <li class="hot-activity-item">
-              <div class="hot-activity-title">北京 · 城墙之上的清晨</div>
-              <p class="hot-activity-desc">
-                在人潮之前登上城楼，看第一缕阳光落在屋檐和城砖上，城市忽然安静下来。
-              </p>
-            </li>
-            <li class="hot-activity-item">
-              <div class="hot-activity-title">成都 · 一碗面里的深夜</div>
-              <p class="hot-activity-desc">
-                从巷子口的小馆开始，顺着香味走完一整条夜市，把烟火气当作行程的终点。
-              </p>
-            </li>
-          </ul>
-        </div>
-        <aside class="section-hot-col section-hot-col-rank">
-          <h2 class="section-title">这些城市正在被频繁搜索</h2>
-          <ol class="hot-city-rank">
-            <li class="hot-city-row">
-              <span class="hot-city-index">1</span>
-              <span class="hot-city-name">杭州</span>
-              <span class="hot-city-meta">江南的慢，被安排得刚刚好</span>
-            </li>
-            <li class="hot-city-row">
-              <span class="hot-city-index">2</span>
-              <span class="hot-city-name">上海</span>
-              <span class="hot-city-meta">一座城市，两种时区：白天高效，夜里温柔</span>
-            </li>
-            <li class="hot-city-row">
-              <span class="hot-city-index">3</span>
-              <span class="hot-city-name">成都</span>
-              <span class="hot-city-meta">把行程放慢一拍，生活会替你接上后半句</span>
-            </li>
-            <li class="hot-city-row">
-              <span class="hot-city-index">4</span>
-              <span class="hot-city-name">北京</span>
-              <span class="hot-city-meta">在胡同和天际线之间切换，一次看见两个北京</span>
-            </li>
-          </ol>
-        </aside>
-      </div>
-    </section>
+            </div>
+          </section>
     </div>
       </main>
 
-      <!-- 右侧：最近浏览 & 信任信号 (Airbnb/Booking 风格) -->
+      <!-- 右侧：热门城市活动 & 灵感推荐 -->
       <aside class="sidebar sidebar-right">
-        <div class="sidebar-widget">
-          <div class="widget-tabs">
-            <button 
-              class="widget-tab-btn" 
-              :class="{ active: activeSidebarTab === 'history' }"
-              @click="activeSidebarTab = 'history'"
-            >
-              {{ $t('common.recentlyViewed') }}
-            </button>
-            <button 
-              class="widget-tab-btn" 
-              :class="{ active: activeSidebarTab === 'wishlist' }"
-              @click="activeSidebarTab = 'wishlist'"
-            >
-              Wishlist
-            </button>
-          </div>
-          
-          <div class="mini-card-list" v-if="activeSidebarTab === 'history'">
-            <div v-if="history.length">
-              <a v-for="d in history" :key="d.id" class="mini-card" href="#" @click.prevent="goDest(d)">
-                <img :src="d.cover" :alt="d.name" class="mini-thumb" @error="onImgError" />
-                <div class="mini-info">
-                  <span class="mini-name">{{ d.name }}</span>
-                  <span class="mini-meta">★ {{ d.rating }}</span>
+          <!-- Deals Widget -->
+          <div class="sidebar-widget deals-widget">
+            <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
+            <div class="sidebar-deals-list">
+              <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card" :class="'deal-' + deal.type">
+                <div class="deal-content-mini">
+                  <h4>{{ deal.title }}</h4>
+                  <p>{{ deal.description }}</p>
+                  <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
                 </div>
-              </a>
+              </div>
             </div>
-            <p v-else class="empty-hint">{{ $t('common.noRecent') }}</p>
           </div>
 
-          <div class="mini-card-list" v-if="activeSidebarTab === 'wishlist'">
-            <div v-if="wishlist.length">
-              <a v-for="d in wishlist" :key="d.id" class="mini-card" href="#" @click.prevent="goDest(d)">
-                <img :src="d.cover" :alt="d.name" class="mini-thumb" @error="onImgError" />
-                <div class="mini-info">
-                  <span class="mini-name">{{ d.name }}</span>
-                  <span class="mini-meta">★ {{ d.rating }}</span>
-                </div>
-              </a>
-            </div>
-            <p v-else class="empty-hint">Your wishlist is empty</p>
+        <div class="sidebar-widget inspiration-widget">
+          <h3 class="widget-title">{{ $t('common.inspiration') }}</h3>
+          <div class="inspiration-list">
+            <article class="mini-inspiration">
+              <span class="ins-badge">Topic</span>
+              <h4>48h in Hangzhou</h4>
+              <p>Cycling West Lake & Lingyin Temple</p>
+            </article>
+            <article class="mini-inspiration">
+              <span class="ins-badge hot">Hot</span>
+              <h4>Family Fun List</h4>
+              <p>Top theme parks in Shanghai & beyond</p>
+            </article>
           </div>
-        </div>
-
-        <div class="sidebar-widget promo-widget">
-          <h3 class="widget-title">{{ $t('common.getApp') }}</h3>
-          <p>{{ $t('common.getAppDesc') }}</p>
-          <div class="qr-placeholder">QR Code</div>
         </div>
 
         <div class="sidebar-widget trust-widget">
@@ -433,10 +275,7 @@
     </div>
 
     <!-- 浮动地图按钮 (欧美用户狂爱) -->
-    <button class="map-toggle-btn">
-      <span class="map-icon">🗺️</span>
-      <span>Show Map</span>
-    </button>
+    <!-- Removed as per request, moved to header -->
 
     <!-- 信任信号页脚 -->
     <footer class="site-footer">
@@ -446,14 +285,110 @@
         <span>🌍 {{ $t('trust.globalSupport') }}</span>
       </div>
       <div class="footer-links">
-        <p>© 2026 ChinaTravel, Inc. · <a href="#">Privacy</a> · <a href="#">Terms</a> · <a href="#">Sitemap</a></p>
+        <p>© 2026 ChinaTravel, Inc. · Created by Alan Wang · <a href="#">Privacy</a> · <a href="#">Terms</a></p>
       </div>
     </footer>
+
+    <!-- Destination Detail Modal (Sub-features demo) -->
+    <div v-if="showDetailModal" class="modal-overlay" @click="showDetailModal = false">
+      <div class="modal-content" @click.stop>
+        <button class="modal-close" @click="showDetailModal = false">×</button>
+        <div class="modal-body" v-if="currentDest">
+          <div class="modal-header-section">
+            <img :src="currentDest.cover" :alt="currentDest.name" class="modal-hero-img" />
+            <div class="modal-title-box">
+              <h2>{{ currentDest.name }}</h2>
+              <p>{{ currentDest.city }} · ★ {{ currentDest.rating }} ({{ currentDest.review_count }} reviews)</p>
+            </div>
+          </div>
+          
+          <div class="modal-main-grid">
+            <div class="modal-left-col">
+              <div class="modal-section">
+                <h3>About this place</h3>
+                <p>{{ currentDest.description }}</p>
+                <div class="modal-tags">
+                  <span v-for="t in currentDest.tags" :key="t" class="modal-tag">{{ t }}</span>
+                </div>
+              </div>
+
+              <div class="modal-section">
+                <h3>Amenities</h3>
+                <div class="amenities-grid">
+                  <div v-for="a in currentDest.amenities" :key="a" class="amenity-item">
+                    <span>{{ a }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-section">
+                <h3>Policy</h3>
+                <p class="policy-text">{{ currentDest.policy }}</p>
+              </div>
+              
+              <div class="modal-section">
+                <h3>Reviews</h3>
+                <div class="review-item" v-for="i in 2" :key="i">
+                  <div class="review-header">
+                    <div class="reviewer-avatar">{{ i === 1 ? 'J' : 'M' }}</div>
+                    <div class="reviewer-info">
+                      <strong>{{ i === 1 ? 'John Doe' : 'Maria Garcia' }}</strong>
+                      <span>March 2026</span>
+                    </div>
+                  </div>
+                  <p>Absolutely amazing experience! The view was breathtaking and the local guides were so helpful. Highly recommend to anyone visiting China.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="modal-right-col">
+              <div class="booking-card">
+                <div class="booking-header">
+                  <span class="price">¥{{ currentDest.price }} <span>/ night</span></span>
+                  <span class="rating">★ {{ currentDest.rating }}</span>
+                </div>
+                <div class="booking-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>CHECK-IN</label>
+                      <input type="text" value="03/15/2026" readonly />
+                    </div>
+                    <div class="form-group">
+                      <label>CHECK-OUT</label>
+                      <input type="text" value="03/20/2026" readonly />
+                    </div>
+                  </div>
+                  <div class="form-group full">
+                    <label>GUESTS</label>
+                    <select><option>1 guest</option><option selected>2 guests</option></select>
+                  </div>
+                  <button class="reserve-btn">Reserve</button>
+                  <p class="reserve-hint">You won't be charged yet</p>
+                </div>
+                <div class="booking-total">
+                  <div class="total-row"><span>¥{{ currentDest.price }} x 5 nights</span> <span>¥{{ currentDest.price * 5 }}</span></div>
+                  <div class="total-row"><span>Service fee</span> <span>¥80</span></div>
+                  <hr />
+                  <div class="total-row grand"><span>Total</span> <span>¥{{ currentDest.price * 5 + 80 }}</span></div>
+                </div>
+              </div>
+              
+              <div class="map-widget">
+                <h3>Location</h3>
+                <div class="mini-map-placeholder">
+                  <span>📍 {{ currentDest.lat }}, {{ currentDest.lng }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { locale } = useI18n()
@@ -462,7 +397,7 @@ function toggleLang() {
   locale.value = locale.value === 'en' ? 'zh' : 'en'
 }
 
-const API = '/api'
+const API = '/api/v1'
 
 // 图片加载失败时的兜底图（统一使用西湖）
 const FALLBACK_IMAGE =
@@ -483,14 +418,38 @@ function onSearch() {
   console.log('search:', k)
 }
 
-const tab = ref('recent')
 const history = ref([])
 const wishlist = ref([])
 const activeSidebarTab = ref('history')
-const recentFavLoading = ref(true)
-const recentFavError = ref('')
+const showDetailModal = ref(false)
+const currentDest = ref(null)
+
+function openDetail(d) {
+  currentDest.value = d
+  showDetailModal.value = true
+  goDest(d) // Record view
+}
+
+function scrollToWishlist() {
+  activeSidebarTab.value = 'wishlist'
+  const sidebar = document.querySelector('.sidebar-right')
+  if (sidebar) {
+    sidebar.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+function scrollToHistory() {
+  activeSidebarTab.value = 'history'
+  const sidebar = document.querySelector('.sidebar-right')
+  if (sidebar) {
+    sidebar.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
 
 const recommendations = ref([])
+const displayRecommendations = computed(() => {
+  return recommendations.value.length ? [...recommendations.value, ...recommendations.value] : []
+})
 const recLoading = ref(true)
 const recError = ref('')
 
@@ -522,7 +481,7 @@ async function fetchHomePage() {
 }
 
 function goDest(d) {
-  fetch(API + '/view', { 
+  fetch(`${API}/destinations/${d.id}/view`, { 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id: d.id })
@@ -533,7 +492,7 @@ function goDest(d) {
 
 async function toggleFav(d) {
   try {
-    const res = await fetch(API + '/favorite?id=' + d.id, { method: 'POST' })
+    const res = await fetch(`${API}/destinations/${d.id}/favorite`, { method: 'POST' })
     const data = await res.json()
     if (data.ok) {
       d.is_favorite = data.is_favorite
@@ -553,8 +512,18 @@ const heroImages = [
 ]
 const heroIndex = ref(0)
 const heroCollapsed = ref(false)
+const headerVisible = ref(false)
 let heroTimer = null
 let scrollListener = null
+let headerTimer = null
+
+function handleMouseMove() {
+  headerVisible.value = true
+  if (headerTimer) clearTimeout(headerTimer)
+  headerTimer = setTimeout(() => {
+    headerVisible.value = false
+  }, 2000) // Hide after 2s of no movement
+}
 
 watch(locale, () => {
   fetchHomePage()

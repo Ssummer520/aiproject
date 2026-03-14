@@ -13,6 +13,10 @@ type Destination struct {
 	Price       float64  `json:"price"`
 	ReviewCount int      `json:"review_count"`
 	BookedCount int      `json:"booked_count"`
+	Description string   `json:"description"`
+	Amenities   []string `json:"amenities"`
+	HostName    string   `json:"host_name"`
+	Policy      string   `json:"policy"`
 }
 
 type Deal struct {

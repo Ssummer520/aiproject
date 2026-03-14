@@ -2,23 +2,22 @@ package application
 
 import (
 	"travel-api/internal/common/models"
-	destInfra "travel-api
+	destInfra "travel-api/services/destination/infrastructure"
+	interactionApp "travel-api/services/interaction/application"
 	promoInfra "travel-api/services/promo/infrastructure"
-	promoInfra "travel-api/services/promo/infrastructure"
-	"travel-api/internal/common/models"
 )
 
+type BFFService struct {
 	destCache      *destInfra.DestinationCache
 	promoCache     *promoInfra.PromoCache
 	interactionApp *interactionApp.InteractionService
-	interactionApp  *interactionApp.InteractionService
 }
 
 func NewBFFService() *BFFService {
+	return &BFFService{
 		destCache:      destInfra.NewDestinationCache(),
 		promoCache:     promoInfra.NewPromoCache(),
 		interactionApp: interactionApp.NewInteractionService(),
-		interactionApp:  interactionApp.NewInteractionService(),
 	}
 }
 
@@ -32,62 +31,65 @@ type HomePageData struct {
 
 func (s *BFFService) GetHomePageData(lang string) HomePageData {
 	// Aggregate from Destination Service
-
-	
-	// Apply translations
-	if lang == "zh" {
-			if dests[i].Name == "West Lake" {
-				dests[i].Name = "西湖"
-			}
-			if dests[i].Name == "The Bund" {
-				dests[i].Name = "外滩"
-			}
-			if dests[i].Name == "Great Wall" {
-				dests[i].Name = "万里长城"
-			}
-			if dests[i].Name == "Yellow Mountain" {
-				dests[i].Name = "黄山"
-			}
-			if dests[i].Name == "Terracotta Army" {
-				dests[i].Name = "兵马俑"
-			}
-
-			
-				if dests[i].Tags[j] == "Nature" {
-					dests[i].Tags[j] = "自然"
-				}
-				if dests[i].Tags[j] == "Culture" {
-					dests[i].Tags[j] = "文化"
-				}
-				if dests[i].Tags[j] == "City" {
-					dests[i].Tags[j] = "城市"
-				}
-				if dests[i].Tags[j] == "History" {
-					dests[i].Tags[j] = "历史"
-				}
-				if dests[i].Tags[j] == "History" { dests[i].Tags[j] = "历史" }
-			}
-		}
-	}
+	dests := s.destCache.ListAll()
 
 	// Update favorite status from Interaction Service
 	for i := range dests {
 		dests[i].IsFavorite = s.interactionApp.IsFavorite(dests[i].ID)
 	}
 
+	// Apply translations
+	if lang == "zh" {
+		for i := range dests {
+			switch dests[i].Name {
+			case "West Lake":
+				dests[i].Name = "西湖"
+				dests[i].Description = "杭州著名的淡水湖，以其自然风光和文化底蕴闻名。"
+				dests[i].Policy = "入住前 48 小时可免费取消。"
+			case "The Bund":
+				dests[i].Name = "外滩"
+				dests[i].Description = "上海标志性的滨江地带，展示了殖民时期建筑和未来感十足的天际线。"
+				dests[i].Policy = "不可退款预订。"
+			case "Great Wall":
+				dests[i].Name = "万里长城"
+				dests[i].Description = "世界七大奇迹之一，横跨中国北方数千英里。"
+				dests[i].Policy = "入住前 24 小时可免费取消。"
+			case "Yellow Mountain":
+				dests[i].Name = "黄山"
+				dests[i].Description = "以奇松、怪石、云海、温泉“四绝”著称。"
+				dests[i].Policy = "入住前 72 小时可申请改期。"
+			case "Terracotta Army":
+				dests[i].Name = "兵马俑"
+				dests[i].Description = "秦始皇陵的随葬品，被誉为“世界第八大奇迹”。"
+				dests[i].Policy = "不支持取消预订。"
+			}
+			for j := range dests[i].Tags {
+				switch dests[i].Tags[j] {
+				case "Nature":
+					dests[i].Tags[j] = "自然"
+				case "Culture":
+					dests[i].Tags[j] = "文化"
+				case "City":
+					dests[i].Tags[j] = "城市"
+				case "History":
+					dests[i].Tags[j] = "历史"
+				}
+			}
+		}
+	}
+
 	// Aggregate from Promo Service
 	deals := s.promoCache.ListDeals()
 	if lang == "zh" {
 		for i := range deals {
-			if deals[i].Title == "Spring Break Deals" {
+			switch deals[i].Title {
+			case "Spring Break Deals":
 				deals[i].Title = "春日大促"
 				deals[i].Description = "满 500 减 80"
-			}
-			if deals[i].Title == "New User Gift" {
+			case "New User Gift":
 				deals[i].Title = "新人礼包"
 				deals[i].Description = "首单立减 30 元"
-			}
-			if deals[i].Title == "Weekend Getaway" {
+			case "Weekend Getaway":
 				deals[i].Title = "周末出逃"
 				deals[i].Description = "本地体验低至 5 折"
 			}
@@ -101,23 +103,19 @@ func (s *BFFService) GetHomePageData(lang string) HomePageData {
 		d, ok := s.destCache.Get(id)
 		if ok {
 			d.IsFavorite = s.interactionApp.IsFavorite(d.ID)
-			// Simple localization again for history items
-				if d.Name == "West Lake" {
+			if lang == "zh" {
+				switch d.Name {
+				case "West Lake":
 					d.Name = "西湖"
-				}
-				if d.Name == "The Bund" {
+				case "The Bund":
 					d.Name = "外滩"
-				}
-				if d.Name == "Great Wall" {
+				case "Great Wall":
 					d.Name = "万里长城"
-				}
-				if d.Name == "Yellow Mountain" {
+				case "Yellow Mountain":
 					d.Name = "黄山"
-				}
-				if d.Name == "Terracotta Army" {
+				case "Terracotta Army":
 					d.Name = "兵马俑"
 				}
-				if d.Name == "Terracotta Army" { d.Name = "兵马俑" }
 			}
 			history = append(history, d)
 		}
@@ -129,22 +127,19 @@ func (s *BFFService) GetHomePageData(lang string) HomePageData {
 		d, ok := s.destCache.Get(id)
 		if ok {
 			d.IsFavorite = true
-				if d.Name == "West Lake" {
+			if lang == "zh" {
+				switch d.Name {
+				case "West Lake":
 					d.Name = "西湖"
-				}
-				if d.Name == "The Bund" {
+				case "The Bund":
 					d.Name = "外滩"
-				}
-				if d.Name == "Great Wall" {
+				case "Great Wall":
 					d.Name = "万里长城"
-				}
-				if d.Name == "Yellow Mountain" {
+				case "Yellow Mountain":
 					d.Name = "黄山"
-				}
-				if d.Name == "Terracotta Army" {
+				case "Terracotta Army":
 					d.Name = "兵马俑"
 				}
-				if d.Name == "Terracotta Army" { d.Name = "兵马俑" }
 			}
 			wishlist = append(wishlist, d)
 		}
@@ -152,8 +147,8 @@ func (s *BFFService) GetHomePageData(lang string) HomePageData {
 
 	return HomePageData{
 		Recommendations: dests,
+		Deals:           deals,
 		Nearby:          dests,
-		Nearby:          dests, 
 		History:         history,
 		Wishlist:        wishlist,
 	}

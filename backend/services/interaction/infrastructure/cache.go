@@ -12,8 +12,11 @@ type InteractionCache struct {
 
 func NewInteractionCache() *InteractionCache {
 	return &InteractionCache{
-		favorites: make(map[int]bool),
-		history:   make([]int, 0),
+		favorites: map[int]bool{
+			1: true, // West Lake
+			3: true, // Great Wall
+		},
+		history: []int{2, 4, 5}, // Shanghai, Yellow Mountain, Terracotta Army
 	}
 }
 

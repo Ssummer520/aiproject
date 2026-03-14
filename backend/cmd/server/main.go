@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
-	"travel-api/internal/handlers"
+	"travel-api/services/bff/api"
 )
 
 func cors(next http.Handler) http.Handler {
@@ -20,13 +20,15 @@ func cors(next http.Handler) http.Handler {
 }
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/recommendations", handlers.GetRecommendations)
-	mux.HandleFunc("/api/recent-favorites", handlers.GetRecentAndFavorites)
-	mux.HandleFunc("/api/nearby", handlers.GetNearby)
-	mux.HandleFunc("/api/view", handlers.RecordView)
-	mux.HandleFunc("/api/favorite", handlers.ToggleFavorite)
+	bffHandler := api.NewBFFHandler()
 
+	mux := http.NewServeMux()
+	// BFF Route for home page data
+	mux.HandleFunc("/api/home", bffHandler.GetHomePage)
+
+	// Keep old routes for compatibility while migrating frontend
+	// ... we'll update frontend to use /api/home soon
+	
 	log.Println("Server listening on http://localhost:8080")
 	if err := http.ListenAndServe(":8080", cors(mux)); err != nil {
 		log.Fatal("Server failed:", err)

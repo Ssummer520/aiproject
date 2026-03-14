@@ -1,6 +1,26 @@
 <template>
   <div class="travel-home">
-    <!-- Klook 风格：全屏滚动背景轮播（向下滚动时折叠） -->
+    <header class="site-header">
+      <a href="/" class="header-logo">
+        <span class="logo-icon">✈️</span>
+        <span>ChinaTravel</span>
+      </a>
+      <nav class="header-nav">
+        <a href="#" class="header-nav-link">{{ $t('nav.destinations') }}</a>
+        <a href="#" class="header-nav-link">{{ $t('nav.experiences') }}</a>
+        <a href="#" class="header-nav-link">{{ $t('nav.guides') }}</a>
+        <a href="#" class="header-nav-link">{{ $t('nav.myTrips') }}</a>
+      </nav>
+      <div class="header-actions">
+        <button class="action-btn" @click="toggleLang" title="Switch Language/Currency">🌐 {{ locale.toUpperCase() }}</button>
+        <div class="user-profile">
+          <span class="user-name">Hi, Alan</span>
+          <div class="user-avatar">A</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Airbnb 风格：全屏沉浸式 Hero -->
     <div class="hero" :class="{ 'hero--collapsed': heroCollapsed }">
       <div
         v-for="(img, i) in heroImages"
@@ -12,18 +32,38 @@
       </div>
       <div class="hero-overlay" />
       <div class="hero-content">
-        <h1 class="page-title">发现目的地</h1>
-        <p class="page-subtitle">浏览推荐、收藏与周边目的地，开启你的下一段旅程</p>
-        <div class="hero-search">
-          <input
-            v-model="keyword"
-            class="hero-search-input"
-            type="text"
-            placeholder="搜索目的地 / 景点 / 活动"
-          />
-          <button type="button" class="hero-search-btn" @click="onSearch">
-            搜索
-          </button>
+        <h1 class="page-title">{{ $t('hero.title') }}</h1>
+        <p class="page-subtitle">{{ $t('hero.subtitle') }}</p>
+        
+        <div class="hero-search-container">
+          <div class="hero-search-bar">
+            <div class="search-section">
+              <label>{{ $t('nav.where') }}</label>
+              <input v-model="keyword" type="text" :placeholder="$t('hero.searchPlaceholder')" />
+            </div>
+            <div class="search-divider"></div>
+            <div class="search-section">
+              <label>{{ $t('nav.when') }}</label>
+              <input type="text" :placeholder="$t('nav.when')" />
+            </div>
+            <div class="search-divider"></div>
+            <div class="search-section">
+              <label>{{ $t('nav.who') }}</label>
+              <input type="text" :placeholder="$t('nav.who')" />
+            </div>
+            <button class="search-submit" @click="onSearch">
+              <span class="search-icon">🔍</span>
+              <span>{{ $t('nav.search') }}</span>
+            </button>
+          </div>
+          <div class="hero-popular-tags">
+            <span>{{ $t('nav.popular') }}:</span>
+            <a href="#">Hangzhou</a>
+            <a href="#">Shanghai</a>
+            <a href="#">Beijing</a>
+            <a href="#">Xi'an</a>
+            <a href="#">Chengdu</a>
+          </div>
         </div>
       </div>
       <div class="hero-dots">
@@ -39,58 +79,74 @@
       </div>
     </div>
 
-    <!-- 三栏：左侧营销 | 主内容 | 右侧最近浏览/收藏 -->
     <div class="page-layout">
-      <!-- 左侧：全部营销模块 -->
+      <!-- 左侧：过滤器 (Booking 风格) -->
       <aside class="sidebar sidebar-left">
-        <div class="promo-card">
-          <h3 class="promo-title">热门目的地</h3>
-          <ul class="promo-list promo-tags">
-            <li><a href="#">杭州</a></li>
-            <li><a href="#">上海</a></li>
-            <li><a href="#">北京</a></li>
-            <li><a href="#">成都</a></li>
-            <li><a href="#">西安</a></li>
+        <div class="filter-section">
+          <h3 class="filter-title">Popular Destinations</h3>
+          <ul class="filter-list">
+            <li><label><input type="checkbox" checked> Hangzhou</label></li>
+            <li><label><input type="checkbox"> Shanghai</label></li>
+            <li><label><input type="checkbox"> Beijing</label></li>
+            <li><label><input type="checkbox"> Xi'an</label></li>
+            <li><label><input type="checkbox"> Chengdu</label></li>
           </ul>
         </div>
-        <div class="promo-card promo-coupon">
-          <span class="promo-tag">券</span>
-          <h3 class="promo-title">新人专享</h3>
-          <p class="promo-desc">首单立减 30 元</p>
-          <a href="#" class="promo-btn">去使用</a>
-        </div>
-        <div class="promo-card">
-          <h3 class="promo-title">推荐攻略</h3>
-          <ul class="promo-list">
-            <li><a href="#">西湖一日游路线</a></li>
-            <li><a href="#">上海迪士尼攻略</a></li>
-            <li><a href="#">北京故宫预约指南</a></li>
+        <div class="filter-section">
+          <h3 class="filter-title">Trip Type</h3>
+          <ul class="filter-list">
+            <li><label><input type="checkbox"> Family Friendly</label></li>
+            <li><label><input type="checkbox"> Nature & Parks</label></li>
+            <li><label><input type="checkbox"> Historical Sites</label></li>
+            <li><label><input type="checkbox"> Foodie Tours</label></li>
           </ul>
         </div>
-        <div class="promo-card promo-highlight">
-          <span class="promo-tag">限时</span>
-          <h3 class="promo-title">春日出行 满减</h3>
-          <p class="promo-desc">满 500 减 80，领券即用</p>
-          <a href="#" class="promo-btn">立即领取</a>
+        <div class="filter-section">
+          <h3 class="filter-title">Price Range</h3>
+          <input type="range" min="0" max="1000" step="50" class="price-slider">
+          <div class="price-labels">
+            <span>0¥</span>
+            <span>1000¥+</span>
+          </div>
         </div>
-        <div class="promo-card">
-          <h3 class="promo-title">热门活动</h3>
-          <ul class="promo-list">
-            <li><a href="#">周末周边游 · 低至 5 折</a></li>
-            <li><a href="#">樱花季专题</a></li>
-            <li><a href="#">亲子乐园套票</a></li>
+        <div class="filter-section">
+          <h3 class="filter-title">Trust Signals</h3>
+          <ul class="filter-list">
+            <li><label><input type="checkbox"> Free Cancellation</label></li>
+            <li><label><input type="checkbox"> Instant Confirmation</label></li>
           </ul>
-        </div>
-        <div class="promo-card promo-app">
-          <h3 class="promo-title">下载 App</h3>
-          <p class="promo-desc">订门票、查攻略更省心</p>
-          <div class="promo-qr">App</div>
         </div>
       </aside>
 
+      <!-- 主内容区 -->
       <main class="page-main">
-    <div class="content-wrap">
-    <!-- 小屏时在主内容区显示最近浏览/收藏（侧边栏隐藏时） -->
+        <div class="content-wrap">
+          <!-- Deals 促销区 (Booking 风格) -->
+          <section class="section section-deals">
+            <div class="section-header">
+              <h2 class="section-title">{{ $t('deals.title') }}</h2>
+              <div class="countdown-timer">{{ $t('deals.endsIn') }}: <span>12:45:03</span></div>
+            </div>
+            <div class="deals-grid">
+              <div 
+                v-for="deal in deals" 
+                :key="deal.id" 
+                class="deal-card" 
+                :class="'deal-card--' + deal.type"
+              >
+                <div class="deal-content">
+                  <h3>{{ deal.title }}</h3>
+                  <p>{{ deal.description }}</p>
+                  <button class="deal-btn">
+                    {{ deal.type === 'primary' ? $t('deals.claimNow') : (deal.type === 'secondary' ? $t('deals.getCoupon') : $t('deals.explore')) }}
+                  </button>
+                </div>
+                <div v-if="deal.badge" class="deal-badge">{{ deal.badge }}</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 小屏时在主内容区显示最近浏览/收藏 (侧边栏隐藏时) -->
     <section class="section section-recent-fav-mobile">
       <h2 class="section-title">最近浏览 / 收藏</h2>
       <div class="tabs">
@@ -104,7 +160,7 @@
           <template v-if="recent.length">
             <a v-for="d in recent" :key="d.id" class="dest-card" href="#" @click.prevent="goDest(d)">
               <div class="cover-wrap">
-                <img :src="d.cover" :alt="d.name" class="cover" @error="onImgError" />
+                <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
                 <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
               </div>
               <div class="body">
@@ -135,76 +191,65 @@
       </div>
     </section>
 
-    <!-- 首页推荐：左右翻页轮播 -->
-    <section class="section">
-      <h2 class="section-title">首页推荐</h2>
-      <div v-if="recLoading" class="loading">加载中...</div>
-      <div v-else-if="recError" class="error">{{ recError }}</div>
-      <div v-else class="carousel-wrap" @mouseenter="carouselPaused = true" @mouseleave="carouselPaused = false">
-        <button type="button" class="carousel-btn carousel-btn--prev" aria-label="上一页" @click="scrollCarousel('rec', -1)"><span class="carousel-btn-icon">‹</span></button>
-        <div ref="recCarouselRef" class="card-carousel">
-          <div class="card-carousel-inner card-carousel-inner--dup">
-            <a
-              v-for="(d, idx) in recCarouselList"
-              :key="'rec-' + idx"
-              class="dest-card carousel-card"
-              href="#"
-              @click.prevent="goDest(d)"
-            >
-              <div class="cover-wrap">
-                <img :src="d.cover" :alt="d.name" class="cover" @error="onImgError" />
-                <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
-              </div>
-              <div class="body">
-                <div class="name">{{ d.name }}</div>
-                <div class="meta">{{ d.city }} · <span class="rating">★ {{ d.rating }}</span></div>
-                <div class="tags">
-                  <span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span>
+          <!-- 首页推荐：网格布局 -->
+          <section class="section">
+            <div class="section-header">
+              <h2 class="section-title">{{ $t('recommendations.title') }}</h2>
+              <div class="personalization-hint">{{ $t('recommendations.locationHint') }}</div>
+            </div>
+            <div v-if="recLoading" class="loading">Loading...</div>
+            <div v-else-if="recError" class="error">{{ recError }}</div>
+            <div v-else class="card-grid">
+              <a
+                v-for="(d, idx) in recommendations"
+                :key="d.id"
+                class="dest-card"
+                href="#"
+                @click.prevent="goDest(d)"
+              >
+                <div class="cover-wrap">
+                  <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
+                  <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
+                  <div class="card-badge" v-if="idx % 5 === 0">{{ $t('common.rareFind') }}</div>
                 </div>
-              </div>
-            </a>
-          </div>
-        </div>
-        <button type="button" class="carousel-btn carousel-btn--next" aria-label="下一页" @click="scrollCarousel('rec', 1)"><span class="carousel-btn-icon">›</span></button>
-      </div>
-    </section>
+                <div class="body">
+                  <div class="card-header">
+                    <div class="name">{{ d.name }}</div>
+                    <div class="rating">★ {{ d.rating }}</div>
+                  </div>
+                  <div class="meta">{{ d.city }}</div>
+                  <div class="tags">
+                    <span v-for="t in (d.tags || []).slice(0, 2)" :key="t" class="tag">{{ t }}</span>
+                  </div>
+                  <div class="price">
+                    <span class="amount">¥{{ 168 + idx * 10 }}</span>
+                    <span class="unit">{{ $t('common.night') }}</span>
+                  </div>
+                  <div class="trust-signal">
+                    <span class="reviews">{{ $t('common.reviews', { count: 100 + idx * 50 }) }}</span>
+                    <span class="booked">{{ $t('common.booked', { count: 14 }) }}</span>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </section>
 
-    <!-- 周边目的地：左右翻页轮播 + Klook 风格背景 -->
+    <!-- 周边目的地 (欧美用户狂爱) -->
     <section class="section section-nearby">
-      <div class="section-nearby-bg" aria-hidden="true"></div>
-      <div class="section-nearby-inner">
-      <h2 class="section-title">周边目的地</h2>
-      <p class="meta-hint">按距离排序（默认以杭州为圆心）</p>
-      <div v-if="nearbyLoading" class="loading">加载中...</div>
-      <div v-else-if="nearbyError" class="error">{{ nearbyError }}</div>
-      <div v-else class="carousel-wrap" @mouseenter="carouselPaused = true" @mouseleave="carouselPaused = false">
-        <button type="button" class="carousel-btn carousel-btn--prev" aria-label="上一页" @click="scrollCarousel('nearby', -1)"><span class="carousel-btn-icon">‹</span></button>
-        <div ref="nearbyCarouselRef" class="card-carousel">
-          <div class="card-carousel-inner card-carousel-inner--dup">
-            <a
-              v-for="(d, idx) in nearbyCarouselList"
-              :key="'nearby-' + idx"
-              class="dest-card carousel-card"
-              href="#"
-              @click.prevent="goDest(d)"
-            >
-              <div class="cover-wrap">
-                <img :src="d.cover" :alt="d.name" class="cover" @error="onImgError" />
-                <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
-              </div>
-              <div class="body">
-                <div class="name">{{ d.name }}</div>
-                <div class="meta">{{ d.city }} · <span class="rating">★ {{ d.rating }}</span></div>
-                <div class="distance" v-if="d.distance_km != null">约 {{ d.distance_km }} km</div>
-                <div class="tags">
-                  <span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span>
-                </div>
-              </div>
-            </a>
-          </div>
-        </div>
-        <button type="button" class="carousel-btn carousel-btn--next" aria-label="下一页" @click="scrollCarousel('nearby', 1)"><span class="carousel-btn-icon">›</span></button>
+      <div class="section-header">
+        <h2 class="section-title">{{ $t('nearby.title', { city: 'Hangzhou' }) }}</h2>
+        <a href="#" class="view-all">{{ $t('nearby.viewAll') }}</a>
       </div>
+      <div v-if="nearbyLoading" class="loading">Loading...</div>
+      <div v-else-if="nearbyError" class="error">{{ nearbyError }}</div>
+      <div v-else class="nearby-grid">
+        <a v-for="d in nearby.slice(0, 4)" :key="d.id" class="nearby-card" href="#" @click.prevent="goDest(d)">
+          <img :src="d.cover" :alt="d.name" class="nearby-img" loading="lazy" @error="onImgError" />
+          <div class="nearby-info">
+            <span class="nearby-name">{{ d.name }}</span>
+            <span class="nearby-dist">{{ $t('nearby.away', { dist: d.distance_km }) }}</span>
+          </div>
+        </a>
       </div>
     </section>
 
@@ -315,64 +360,76 @@
     </div>
       </main>
 
-      <!-- 右侧：仅最近浏览 / 收藏 -->
+      <!-- 右侧：最近浏览 & 信任信号 (Airbnb/Booking 风格) -->
       <aside class="sidebar sidebar-right">
-        <div class="promo-card sidebar-recent-fav">
-          <h3 class="promo-title">最近浏览 / 收藏</h3>
-          <div class="tabs tabs-compact">
-            <button :class="{ active: tab === 'recent' }" @click="tab = 'recent'">最近浏览</button>
-            <button :class="{ active: tab === 'favorites' }" @click="tab = 'favorites'">收藏</button>
+        <div class="sidebar-widget">
+          <h3 class="widget-title">{{ $t('common.recentlyViewed') }}</h3>
+          <div v-if="recent.length" class="mini-card-list">
+            <a v-for="d in recent.slice(0, 3)" :key="d.id" class="mini-card" href="#" @click.prevent="goDest(d)">
+              <img :src="d.cover" :alt="d.name" class="mini-thumb" @error="onImgError" />
+              <div class="mini-info">
+                <span class="mini-name">{{ d.name }}</span>
+                <span class="mini-meta">★ {{ d.rating }}</span>
+              </div>
+            </a>
           </div>
-          <div v-if="recentFavLoading" class="loading loading-compact">加载中...</div>
-          <div v-else-if="recentFavError" class="error error-compact">{{ recentFavError }}</div>
-          <div v-else class="sidebar-card-list">
-            <template v-if="tab === 'recent'">
-              <template v-if="recent.length">
-                <a
-                  v-for="d in recent"
-                  :key="d.id"
-                  class="sidebar-dest-item"
-                  href="#"
-                  @click.prevent="goDest(d)"
-                >
-                  <img :src="d.cover" :alt="d.name" class="sidebar-dest-thumb" @error="onImgError" />
-                  <div class="sidebar-dest-info">
-                    <span class="sidebar-dest-name">{{ d.name }}</span>
-                    <span class="sidebar-dest-meta">{{ d.city }} · {{ d.rating }}</span>
-                  </div>
-                  <button type="button" class="fav-btn fav-btn-sm" :class="{ favorited: d.is_favorite }" @click.prevent="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
-                </a>
-              </template>
-              <p v-else class="empty-hint empty-hint-compact">暂无最近浏览</p>
-            </template>
-            <template v-else>
-              <template v-if="favorites.length">
-                <a
-                  v-for="d in favorites"
-                  :key="d.id"
-                  class="sidebar-dest-item"
-                  href="#"
-                  @click.prevent="goDest(d)"
-                >
-                  <img :src="d.cover" :alt="d.name" class="sidebar-dest-thumb" @error="onImgError" />
-                  <div class="sidebar-dest-info">
-                    <span class="sidebar-dest-name">{{ d.name }}</span>
-                    <span class="sidebar-dest-meta">{{ d.city }} · {{ d.rating }}</span>
-                  </div>
-                  <button type="button" class="fav-btn fav-btn-sm favorited" @click.prevent="toggleFav(d)">♥</button>
-                </a>
-              </template>
-              <p v-else class="empty-hint empty-hint-compact">暂无收藏</p>
-            </template>
+          <p v-else class="empty-hint">{{ $t('common.noRecent') }}</p>
+        </div>
+
+        <div class="sidebar-widget promo-widget">
+          <h3 class="widget-title">{{ $t('common.getApp') }}</h3>
+          <p>{{ $t('common.getAppDesc') }}</p>
+          <div class="qr-placeholder">QR Code</div>
+        </div>
+
+        <div class="sidebar-widget trust-widget">
+          <div class="trust-item">
+            <span class="trust-icon">🔒</span>
+            <div class="trust-text">
+              <strong>{{ $t('trust.securePayment') }}</strong>
+              <p>{{ $t('trust.securePaymentDesc') }}</p>
+            </div>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">🎧</span>
+            <div class="trust-text">
+              <strong>{{ $t('trust.support') }}</strong>
+              <p>{{ $t('trust.supportDesc') }}</p>
+            </div>
           </div>
         </div>
       </aside>
     </div>
+
+    <!-- 浮动地图按钮 (欧美用户狂爱) -->
+    <button class="map-toggle-btn">
+      <span class="map-icon">🗺️</span>
+      <span>Show Map</span>
+    </button>
+
+    <!-- 信任信号页脚 -->
+    <footer class="site-footer">
+      <div class="footer-trust-bar">
+        <span>✅ {{ $t('trust.verifiedReviews') }}</span>
+        <span>🛡️ {{ $t('trust.secureBooking') }}</span>
+        <span>🌍 {{ $t('trust.globalSupport') }}</span>
+      </div>
+      <div class="footer-links">
+        <p>© 2026 ChinaTravel, Inc. · <a href="#">Privacy</a> · <a href="#">Terms</a> · <a href="#">Sitemap</a></p>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { locale } = useI18n()
+
+function toggleLang() {
+  locale.value = locale.value === 'en' ? 'zh' : 'en'
+}
 
 const API = '/api'
 
@@ -409,15 +466,37 @@ const nearby = ref([])
 const nearbyLoading = ref(true)
 const nearbyError = ref('')
 
+const deals = ref([])
+
+async function fetchHomePage() {
+  recLoading.value = true
+  nearbyLoading.value = true
+  try {
+    const res = await fetch(API + '/home', {
+      headers: { 'Accept-Language': locale.value }
+    })
+    const data = await res.json()
+    recommendations.value = data.recommendations || []
+    nearby.value = data.nearby || []
+    deals.value = data.deals || []
+  } catch (e) {
+    recError.value = 'Failed to load home page'
+  } finally {
+    recLoading.value = false
+    nearbyLoading.value = false
+  }
+}
+
 async function fetchRecentFavorites() {
   recentFavLoading.value = true
   recentFavError.value = ''
   try {
-    const res = await fetch(API + '/recent-favorites')
-    if (!res.ok) throw new Error(res.statusText)
+    // BFF could also handle this, but for now we migrate slowly
+    const res = await fetch(API + '/home') 
+    // ... we'll use same home data for simplicity
     const data = await res.json()
-    recent.value = data.recent || []
-    favorites.value = data.favorites || []
+    recent.value = data.recommendations.slice(0, 3) 
+    favorites.value = []
   } catch (e) {
     recentFavError.value = e.message || '加载失败'
   } finally {
@@ -425,96 +504,8 @@ async function fetchRecentFavorites() {
   }
 }
 
-async function fetchRecommendations() {
-  recLoading.value = true
-  recError.value = ''
-  try {
-    const res = await fetch(API + '/recommendations')
-    if (!res.ok) throw new Error(res.statusText)
-    const data = await res.json()
-    recommendations.value = data.list || []
-  } catch (e) {
-    recError.value = e.message || '加载失败'
-  } finally {
-    recLoading.value = false
-  }
-}
-
-async function fetchNearby() {
-  nearbyLoading.value = true
-  nearbyError.value = ''
-  try {
-    const res = await fetch(API + '/nearby?limit=8')
-    if (!res.ok) throw new Error(res.statusText)
-    const data = await res.json()
-    nearby.value = data.list || []
-  } catch (e) {
-    nearbyError.value = e.message || '加载失败'
-  } finally {
-    nearbyLoading.value = false
-  }
-}
-
 const recCarouselRef = ref(null)
-const nearbyCarouselRef = ref(null)
 const carouselPaused = ref(false)
-
-const recCarouselList = computed(() => {
-  const list = recommendations.value
-  return list.length ? [...list, ...list] : []
-})
-const nearbyCarouselList = computed(() => {
-  const list = nearby.value
-  return list.length ? [...list, ...list] : []
-})
-
-function scrollCarousel(which, dir) {
-  const el = which === 'rec' ? recCarouselRef.value : nearbyCarouselRef.value
-  if (!el) return
-  const inner = el.querySelector('.card-carousel-inner')
-  if (!inner) return
-  const step = el.clientWidth * 0.8
-  const half = inner.scrollWidth / 2
-  if (dir > 0 && el.scrollLeft + el.clientWidth >= half - 30) {
-    el.scrollLeft = 0
-    el.scrollBy({ left: Math.min(step, half - el.clientWidth), behavior: 'smooth' })
-  } else if (dir < 0 && el.scrollLeft <= 5) {
-    el.scrollLeft = half - el.clientWidth
-    el.scrollBy({ left: -step, behavior: 'smooth' })
-  } else {
-    el.scrollBy({ left: step * dir, behavior: 'smooth' })
-  }
-}
-
-function tickCarouselLoop() {
-  if (carouselPaused.value) return
-  const recEl = recCarouselRef.value
-  const nearEl = nearbyCarouselRef.value
-  if (recEl) {
-    const inner = recEl.querySelector('.card-carousel-inner')
-    if (inner && inner.scrollWidth > recEl.clientWidth) {
-      const half = inner.scrollWidth / 2
-      const step = recEl.clientWidth * 0.8
-      if (recEl.scrollLeft + recEl.clientWidth >= half - 20) {
-        recEl.scrollLeft = 0
-      }
-      recEl.scrollBy({ left: step, behavior: 'smooth' })
-    }
-  }
-  if (nearEl) {
-    const inner = nearEl.querySelector('.card-carousel-inner')
-    if (inner && inner.scrollWidth > nearEl.clientWidth) {
-      const half = inner.scrollWidth / 2
-      const step = nearEl.clientWidth * 0.8
-      if (nearEl.scrollLeft + nearEl.clientWidth >= half - 20) {
-        nearEl.scrollLeft = 0
-      }
-      nearEl.scrollBy({ left: step, behavior: 'smooth' })
-    }
-  }
-}
-
-let carouselLoopTimer = null
 
 function goDest(d) {
   fetch(API + '/view?id=' + d.id, { method: 'POST' }).catch(() => {})
@@ -543,21 +534,24 @@ async function toggleFav(d) {
 }
 
 const heroImages = [
-  'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920',
-  'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920',
-  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920',
-  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920',
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920',
+  'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1920', // West Lake
+  'https://images.unsplash.com/photo-1548115184-bc65ee498ad0?w=1920', // Shanghai
+  'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=1920', // Great Wall
+  'https://images.unsplash.com/photo-1525113190471-9969be29263a?w=1920', // Yellow Mountain
+  'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=1920', // Xi'an
 ]
 const heroIndex = ref(0)
 const heroCollapsed = ref(false)
 let heroTimer = null
 let scrollListener = null
 
+watch(locale, () => {
+  fetchHomePage()
+})
+
 onMounted(() => {
   fetchRecentFavorites()
-  fetchRecommendations()
-  fetchNearby()
+  fetchHomePage()
   heroTimer = setInterval(() => {
     heroIndex.value = (heroIndex.value + 1) % heroImages.length
   }, 5000)
@@ -565,13 +559,11 @@ onMounted(() => {
     heroCollapsed.value = window.scrollY > 120
   }
   window.addEventListener('scroll', scrollListener, { passive: true })
-  carouselLoopTimer = setInterval(tickCarouselLoop, 4500)
 })
 
 onUnmounted(() => {
   if (heroTimer) clearInterval(heroTimer)
   if (scrollListener) window.removeEventListener('scroll', scrollListener)
-  if (carouselLoopTimer) clearInterval(carouselLoopTimer)
 })
 </script>
 

@@ -119,7 +119,7 @@
           <!-- Experience Categories (Klook/Trip Style) - REMOVED, MOVED TO HEADER -->
           
           <!-- 首页推荐：轮播布局 (Airbnb Style) -->
-          <section class="section">
+          <section class="section recommendations-section">
             <div class="section-header">
               <div class="header-left">
                 <h2 class="section-title">{{ $t('recommendations.title') }}</h2>
@@ -141,7 +141,7 @@
                   @click.prevent="openDetail(d)"
                 >
                   <div class="cover-wrap">
-                    <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
+                    <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onRecCoverError(d.id, $event)" />
                     <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite }" @click.prevent.stop="toggleFav(d)">{{ d.is_favorite ? '♥' : '♡' }}</button>
                     <div class="card-badge" v-if="idx % 5 === 0">{{ $t('common.rareFind') }}</div>
                   </div>
@@ -542,8 +542,21 @@ function scrollToHistory() {
 }
 
 const recommendations = ref([])
+const brokenRecommendationCoverIDs = ref(new Set())
+
+function onRecCoverError(id, e) {
+  brokenRecommendationCoverIDs.value = new Set([...brokenRecommendationCoverIDs.value, id])
+  if (e?.target) {
+    e.target.style.visibility = 'hidden'
+  }
+}
+
+const filteredRecommendations = computed(() => {
+  return (recommendations.value || []).filter((d) => d?.id && d?.cover && !brokenRecommendationCoverIDs.value.has(d.id))
+})
+
 const displayRecommendations = computed(() => {
-  return recommendations.value.length ? [...recommendations.value, ...recommendations.value] : []
+  return filteredRecommendations.value.length ? [...filteredRecommendations.value, ...filteredRecommendations.value] : []
 })
 const recLoading = ref(true)
 const recError = ref('')

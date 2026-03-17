@@ -1,6 +1,8 @@
 package application
 
 import (
+	"strings"
+
 	"travel-api/internal/common/models"
 	bffInfra "travel-api/services/bff/infrastructure"
 	destInfra "travel-api/services/destination/infrastructure"
@@ -14,6 +16,7 @@ type BFFService struct {
 	promoCache     *promoInfra.PromoCache
 	interactionApp *interactionApp.InteractionService
 	statsStore     *bffInfra.StatsStore
+	bookingStore   *bffInfra.BookingStore
 }
 
 func NewBFFService() *BFFService {
@@ -22,6 +25,7 @@ func NewBFFService() *BFFService {
 		promoCache:     promoInfra.NewPromoCache(),
 		interactionApp: interactionApp.NewInteractionService(),
 		statsStore:     bffInfra.NewStatsStore(),
+		bookingStore:   bffInfra.NewBookingStore(),
 	}
 }
 
@@ -36,10 +40,8 @@ type HomePageData struct {
 }
 
 func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
-	// Aggregate from Destination Service
 	dests := s.destCache.ListAll()
 
-	// Update favorite status from Interaction Service (per user)
 	for i := range dests {
 		dests[i].IsFavorite = s.interactionApp.IsFavorite(userID, dests[i].ID)
 	}
@@ -50,26 +52,25 @@ func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
 	if lang == "zh" {
 		for i := range dests {
 			switch dests[i].Name {
-			case "西湖":
+			case "West Lake":
 				dests[i].Description = "杭州著名的淡水湖，以其自然风光和文化底蕴闻名。"
 				dests[i].Policy = "入住前 48 小时可免费取消。"
-			case "外滩":
+			case "The Bund":
 				dests[i].Description = "上海标志性的滨江地带，展示了殖民时期建筑和未来感十足的天际线。"
 				dests[i].Policy = "不可退款预订。"
-			case "万里长城":
+			case "Great Wall":
 				dests[i].Description = "世界七大奇迹之一，横跨中国北方数千英里。"
 				dests[i].Policy = "入住前 24 小时可免费取消。"
-			case "黄山":
-				dests[i].Description = "以奇松、怪石、云海、温泉“四绝”著称。"
+			case "Yellow Mountain":
+				dests[i].Description = "以奇松、怪石、云海、温泉四绝著称。"
 				dests[i].Policy = "入住前 72 小时可申请改期。"
-			case "兵马俑":
-				dests[i].Description = "秦始皇陵的随葬品，被誉为“世界第八大奇迹”。"
+			case "Terracotta Army":
+				dests[i].Description = "秦始皇陵的随葬品，被誉为世界第八大奇迹。"
 				dests[i].Policy = "不支持取消预订。"
 			}
 		}
 	}
 
-	// Aggregate from Promo Service
 	deals := s.promoCache.ListDeals()
 	if lang == "zh" {
 		for i := range deals {
@@ -87,7 +88,6 @@ func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
 		}
 	}
 
-	// Aggregate from Interaction Service (per user; empty if not logged in)
 	historyIDs := s.interactionApp.GetHistory(userID)
 	history := make([]models.Destination, 0)
 	for _, id := range historyIDs {
@@ -110,7 +110,6 @@ func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
 		}
 	}
 
-	// 排行榜：最近一周喜欢最多 = 收藏数排序；周边点击榜 = 浏览量排序
 	trendingIDs := s.statsStore.TopByFavorites(10)
 	trendingThisWeek := make([]models.Destination, 0)
 	for _, id := range trendingIDs {
@@ -186,4 +185,149 @@ func (s *BFFService) ToggleFavorite(userID string, id int) bool {
 func (s *BFFService) AddToHistory(userID string, id int) {
 	s.interactionApp.AddToHistory(userID, id)
 	s.statsStore.IncrementView(id)
+}
+
+func (s *BFFService) SearchDestinations(lang, userID, query, city, category string, minPrice, maxPrice int) map[string]interface{} {
+	dests := s.destCache.ListAll()
+	results := make([]models.Destination, 0)
+
+	for i := range dests {
+		d := &dests[i]
+
+		if query != "" {
+			match := false
+			lowerQuery := strings.ToLower(query)
+			if strings.Contains(strings.ToLower(d.Name), lowerQuery) {
+				match = true
+			}
+			if strings.Contains(strings.ToLower(d.City), lowerQuery) {
+				match = true
+			}
+			if strings.Contains(strings.ToLower(d.Description), lowerQuery) {
+				match = true
+			}
+			if !match {
+				continue
+			}
+		}
+
+		if city != "" && d.City != city {
+			continue
+		}
+
+		if category != "" {
+			found := false
+			for _, tag := range d.Tags {
+				if strings.Contains(strings.ToLower(tag), strings.ToLower(category)) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
+		if minPrice > 0 && int(d.Price) < minPrice {
+			continue
+		}
+		if maxPrice > 0 && int(d.Price) > maxPrice {
+			continue
+		}
+
+		d.IsFavorite = s.interactionApp.IsFavorite(userID, d.ID)
+		applyZhDestination(d, lang)
+		results = append(results, *d)
+	}
+
+	return map[string]interface{}{
+		"results": results,
+		"total":   len(results),
+	}
+}
+
+func (s *BFFService) GetCategoryData(lang, userID, category string) map[string]interface{} {
+	dests := s.destCache.ListAll()
+	results := make([]models.Destination, 0)
+
+	for i := range dests {
+		d := &dests[i]
+
+		found := false
+		lowerCat := strings.ToLower(category)
+		if category == "all" {
+			found = true
+		}
+		for _, tag := range d.Tags {
+			if strings.Contains(strings.ToLower(tag), lowerCat) {
+				found = true
+				break
+			}
+		}
+		if strings.Contains(strings.ToLower(d.Name), lowerCat) {
+			found = true
+		}
+
+		if !found {
+			continue
+		}
+
+		d.IsFavorite = s.interactionApp.IsFavorite(userID, d.ID)
+		applyZhDestination(d, lang)
+		results = append(results, *d)
+	}
+
+	return map[string]interface{}{
+		"results": results,
+		"total":   len(results),
+	}
+}
+
+func (s *BFFService) GetCityData(lang, userID, city string) map[string]interface{} {
+	dests := s.destCache.ListAll()
+	results := make([]models.Destination, 0)
+
+	for i := range dests {
+		d := &dests[i]
+
+		if !strings.Contains(strings.ToLower(d.City), strings.ToLower(city)) {
+			continue
+		}
+
+		d.IsFavorite = s.interactionApp.IsFavorite(userID, d.ID)
+		applyZhDestination(d, lang)
+		results = append(results, *d)
+	}
+
+	return map[string]interface{}{
+		"results": results,
+		"total":   len(results),
+	}
+}
+
+func (s *BFFService) GetDestinationDetail(lang, userID string, id int) models.Destination {
+	d, ok := s.destCache.Get(id)
+	if !ok {
+		return models.Destination{}
+	}
+
+	d.IsFavorite = s.interactionApp.IsFavorite(userID, d.ID)
+	applyZhDestination(&d, lang)
+	s.statsStore.IncrementView(id)
+
+	return d
+}
+
+func (s *BFFService) GetUserBookings(userID string) []models.Booking {
+	return s.bookingStore.GetUserBookings(userID)
+}
+
+func (s *BFFService) CreateBooking(userID string, destID int, checkIn, checkOut string, guests int) models.Booking {
+	d, ok := s.destCache.Get(destID)
+	if !ok {
+		return models.Booking{}
+	}
+
+	booking := s.bookingStore.CreateBooking(userID, d, checkIn, checkOut, guests)
+	return booking
 }

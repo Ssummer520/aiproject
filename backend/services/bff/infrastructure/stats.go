@@ -1,151 +1,155 @@
 package infrastructure
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
-	"sort"
-	"strconv"
 	"sync"
-)
+	"time"
 
-const statsFile = "data/stats.json"
+	"travel-api/internal/common/models"
+)
 
 type StatsStore struct {
 	mu        sync.RWMutex
-	Views     map[int]int `json:"views"`
-	Favorites map[int]int `json:"favorites"`
-	path      string
+	views     map[int]int
+	favorites map[int]int
 }
 
 func NewStatsStore() *StatsStore {
-	s := &StatsStore{
-		Views:     make(map[int]int),
-		Favorites: make(map[int]int),
-		path:      statsFile,
+	return &StatsStore{
+		views:     make(map[int]int),
+		favorites: make(map[int]int),
 	}
-	s.load()
-	return s
-}
-
-func (s *StatsStore) load() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	_ = os.MkdirAll(filepath.Dir(s.path), 0755)
-	b, err := os.ReadFile(s.path)
-	if err != nil {
-		return
-	}
-	var raw struct {
-		Views     map[string]int `json:"views"`
-		Favorites map[string]int `json:"favorites"`
-	}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return
-	}
-	if raw.Views != nil {
-		s.Views = make(map[int]int)
-		for k, v := range raw.Views {
-			id, _ := strconv.Atoi(k)
-			if id > 0 {
-				s.Views[id] = v
-			}
-		}
-	}
-	if raw.Favorites != nil {
-		s.Favorites = make(map[int]int)
-		for k, v := range raw.Favorites {
-			id, _ := strconv.Atoi(k)
-			if id > 0 {
-				s.Favorites[id] = v
-			}
-		}
-	}
-	if s.Views == nil {
-		s.Views = make(map[int]int)
-	}
-	if s.Favorites == nil {
-		s.Favorites = make(map[int]int)
-	}
-}
-
-func (s *StatsStore) save() {
-	raw := struct {
-		Views     map[string]int `json:"views"`
-		Favorites map[string]int `json:"favorites"`
-	}{
-		Views:     make(map[string]int),
-		Favorites: make(map[string]int),
-	}
-	for k, v := range s.Views {
-		raw.Views[strconv.Itoa(k)] = v
-	}
-	for k, v := range s.Favorites {
-		raw.Favorites[strconv.Itoa(k)] = v
-	}
-	b, _ := json.MarshalIndent(raw, "", "  ")
-	_ = os.WriteFile(s.path, b, 0644)
 }
 
 func (s *StatsStore) IncrementView(id int) {
-	if id <= 0 {
-		return
-	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.Views[id]++
-	s.save()
+	s.views[id]++
 }
 
 func (s *StatsStore) IncrementFavorite(id int, delta int) {
-	if id <= 0 {
-		return
-	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.Favorites[id] += delta
-	if s.Favorites[id] < 0 {
-		s.Favorites[id] = 0
-	}
-	s.save()
+	s.favorites[id] += delta
 }
 
-// TopByViews returns destination IDs sorted by view count descending.
 func (s *StatsStore) TopByViews(limit int) []int {
 	s.mu.RLock()
-	type pair struct{ id, count int }
-	var pairs []pair
-	for id, count := range s.Views {
-		pairs = append(pairs, pair{id, count})
+	defer s.mu.RUnlock()
+
+	type pair struct {
+		id    int
+		count int
 	}
-	s.mu.RUnlock()
-	sort.Slice(pairs, func(i, j int) bool { return pairs[i].count > pairs[j].count })
-	if limit <= 0 || limit > len(pairs) {
-		limit = len(pairs)
+
+	var sorted []pair
+	for id, count := range s.views {
+		sorted = append(sorted, pair{id, count})
 	}
-	out := make([]int, 0, limit)
-	for i := 0; i < limit && i < len(pairs); i++ {
-		out = append(out, pairs[i].id)
+
+	// Simple bubble sort
+	for i := 0; i < len(sorted); i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			if sorted[j].count > sorted[i].count {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
 	}
-	return out
+
+	result := make([]int, 0, limit)
+	for i := 0; i < len(sorted) && i < limit; i++ {
+		result = append(result, sorted[i].id)
+	}
+
+	return result
 }
 
-// TopByFavorites returns destination IDs sorted by favorite count descending.
 func (s *StatsStore) TopByFavorites(limit int) []int {
 	s.mu.RLock()
-	type pair struct{ id, count int }
-	var pairs []pair
-	for id, count := range s.Favorites {
-		pairs = append(pairs, pair{id, count})
+	defer s.mu.RUnlock()
+
+	type pair struct {
+		id    int
+		count int
 	}
-	s.mu.RUnlock()
-	sort.Slice(pairs, func(i, j int) bool { return pairs[i].count > pairs[j].count })
-	if limit <= 0 || limit > len(pairs) {
-		limit = len(pairs)
+
+	var sorted []pair
+	for id, count := range s.favorites {
+		sorted = append(sorted, pair{id, count})
 	}
-	out := make([]int, 0, limit)
-	for i := 0; i < limit && i < len(pairs); i++ {
-		out = append(out, pairs[i].id)
+
+	// Simple bubble sort
+	for i := 0; i < len(sorted); i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			if sorted[j].count > sorted[i].count {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
 	}
-	return out
+
+	result := make([]int, 0, limit)
+	for i := 0; i < len(sorted) && i < limit; i++ {
+		result = append(result, sorted[i].id)
+	}
+
+	return result
+}
+
+// BookingStore stores bookings
+type BookingStore struct {
+	mu       sync.RWMutex
+	bookings map[string][]models.Booking
+}
+
+func NewBookingStore() *BookingStore {
+	return &BookingStore{
+		bookings: make(map[string][]models.Booking),
+	}
+}
+
+func (s *BookingStore) CreateBooking(userID string, dest models.Destination, checkIn, checkOut string, guests int) models.Booking {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	booking := models.Booking{
+		ID:            len(s.bookings[userID]) + 1,
+		UserID:        userID,
+		DestinationID: dest.ID,
+		Name:          dest.Name,
+		City:          dest.City,
+		Cover:         dest.Cover,
+		CheckIn:       checkIn,
+		CheckOut:      checkOut,
+		Guests:        guests,
+		TotalPrice:    dest.Price * float64(calculateNights(checkIn, checkOut)),
+		Status:        "confirmed",
+		CreatedAt:     time.Now().Format("2006-01-02"),
+	}
+
+	s.bookings[userID] = append(s.bookings[userID], booking)
+
+	return booking
+}
+
+func (s *BookingStore) GetUserBookings(userID string) []models.Booking {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.bookings[userID]
+}
+
+func calculateNights(checkIn, checkOut string) int {
+	// Simple calculation - in production would parse dates properly
+	inTime, err := time.Parse("2006-01-02", checkIn)
+	if err != nil {
+		return 1
+	}
+	outTime, err := time.Parse("2006-01-02", checkOut)
+	if err != nil {
+		return 1
+	}
+	nights := int(outTime.Sub(inTime).Hours() / 24)
+	if nights <= 0 {
+		return 1
+	}
+	return nights
 }

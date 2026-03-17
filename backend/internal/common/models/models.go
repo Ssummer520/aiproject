@@ -27,3 +27,18 @@ type Deal struct {
 	Badge       string `json:"badge"`
 	Expiry      string `json:"expiry"`
 }
+
+type Booking struct {
+	ID            int     `json:"id"`
+	UserID        string  `json:"user_id"`
+	DestinationID int     `json:"destination_id"`
+	Name          string  `json:"name"`
+	City          string  `json:"city"`
+	Cover         string  `json:"cover"`
+	CheckIn       string  `json:"check_in"`
+	CheckOut      string  `json:"check_out"`
+	Guests        int     `json:"guests"`
+	TotalPrice    float64 `json:"total_price"`
+	Status        string  `json:"status"`
+	CreatedAt     string  `json:"created_at"`
+}

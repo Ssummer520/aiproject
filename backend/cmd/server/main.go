@@ -50,7 +50,11 @@ func main() {
 
 	// BFF (auth middleware sets userID in context; empty if not logged in)
 	mux.Handle("/api/v1/home", authMiddleware(authService, http.HandlerFunc(bffHandler.GetHomePage)))
+	mux.Handle("/api/v1/search", authMiddleware(authService, http.HandlerFunc(bffHandler.Search)))
+	mux.Handle("/api/v1/category/", authMiddleware(authService, http.HandlerFunc(bffHandler.GetCategory)))
+	mux.Handle("/api/v1/city/", authMiddleware(authService, http.HandlerFunc(bffHandler.GetCity)))
 	mux.Handle("/api/v1/destinations/", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleDestinations)))
+	mux.Handle("/api/v1/bookings", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleBookings)))
 
 	log.Println("Server listening on http://localhost:8082")
 	if err := http.ListenAndServe(":8082", cors(mux)); err != nil {

@@ -7,14 +7,14 @@
       </router-link>
 
       <nav class="header-nav">
-        <a href="#" class="header-nav-link">{{ $t('nav.guides') }}</a>
+        <a href="#travel-guide" class="header-nav-link" @click.prevent="scrollToGuide">{{ $t('nav.guides') }}</a>
         <router-link to="/trips" class="header-nav-link">{{ $t('nav.myTrips') }}</router-link>
         <a href="#" class="header-nav-link" @click.prevent="scrollToHistory">{{ $t('nav.history') }}</a>
         <a href="#" class="header-nav-link" @click.prevent="scrollToWishlist">{{ $t('nav.wishlist') }}</a>
       </nav>
 
       <div class="header-actions">
-        <button class="map-toggle-header">
+        <button class="map-toggle-header" @click="showMapModal = true">
           <span class="map-icon">🗺️</span>
           <span>Map</span>
         </button>
@@ -225,7 +225,7 @@
             </div>
           </section>
 
-          <section class="section travel-guide">
+          <section id="travel-guide" class="section travel-guide">
             <h2 class="section-title">{{ $t('common.travelGuide') }}</h2>
             <div class="guide-grid">
               <div class="guide-card">
@@ -440,6 +440,34 @@
         </template>
       </div>
     </div>
+
+    <!-- Map Modal -->
+    <div v-if="showMapModal" class="modal-overlay" @click.self="showMapModal = false">
+      <div class="map-modal">
+        <button class="modal-close" @click="showMapModal = false">×</button>
+        <h2>{{ locale === 'zh' ? '目的地地图' : 'Destination Map' }}</h2>
+        <div class="map-container">
+          <div class="map-placeholder">
+            <div class="map-markers">
+              <div v-for="d in recommendations.slice(0, 5)" :key="d.id" class="map-marker" :style="{ top: (30 + d.id * 10) + '%', left: (20 + d.id * 15) + '%' }">
+                <span class="marker-icon">📍</span>
+                <span class="marker-label">{{ d.name }}</span>
+              </div>
+            </div>
+            <p class="map-hint">{{ locale === 'zh' ? '点击标记查看目的地详情' : 'Click markers to view destination details' }}</p>
+          </div>
+        </div>
+        <div class="map-destinations">
+          <h3>{{ locale === 'zh' ? '热门目的地' : 'Popular Destinations' }}</h3>
+          <div class="map-dest-grid">
+            <router-link v-for="d in recommendations.slice(0, 5)" :key="d.id" :to="'/destination/' + d.id" class="map-dest-card" @click="showMapModal = false">
+              <img :src="d.cover" :alt="d.name" />
+              <span>{{ d.name }}</span>
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -454,6 +482,7 @@ const router = useRouter()
 const { token, user, isLoggedIn, setAuth, clearAuth, authHeaders } = useAuth()
 
 const showAuthModal = ref(null)
+const showMapModal = ref(false)
 const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
@@ -697,6 +726,13 @@ function scrollToWishlist() {
   const sidebar = document.querySelector('.sidebar-right')
   if (sidebar) {
     sidebar.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+function scrollToGuide() {
+  const guide = document.querySelector('#travel-guide, .travel-guide')
+  if (guide) {
+    guide.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 

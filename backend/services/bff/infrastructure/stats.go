@@ -134,7 +134,10 @@ func (s *BookingStore) GetUserBookings(userID string) []models.Booking {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return s.bookings[userID]
+	if bookings, ok := s.bookings[userID]; ok {
+		return bookings
+	}
+	return []models.Booking{}
 }
 
 func calculateNights(checkIn, checkOut string) int {

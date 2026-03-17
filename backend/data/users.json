@@ -16,5 +16,17 @@
     "email": "13622466112aw@gmail.com",
     "password_hash": "d239f881f155384d0525665962e841f3d315da948fdbf937a108ce5296a734c7",
     "created_at": "2026-03-17T23:12:29.12816+08:00"
+  },
+  {
+    "id": "user_9cfe85b0db1a0029",
+    "email": "test2@example.com",
+    "password_hash": "1187217f85650ffe65f5bada64b3f3737693490c35f700338e337aa18e793a23",
+    "created_at": "2026-03-18T07:27:16.563435+08:00"
+  },
+  {
+    "id": "user_9763656365fa8f4e",
+    "email": "demo@test.com",
+    "password_hash": "e30882e8c8b17ea97c2fc6b5ef2dc304f6d1ed02a1e2ec1e12ae9d6b983f3f62",
+    "created_at": "2026-03-18T07:29:16.661105+08:00"
   }
 ]

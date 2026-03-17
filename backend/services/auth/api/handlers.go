@@ -16,6 +16,10 @@ func NewAuthHandler() *AuthHandler {
 	return &AuthHandler{service: application.NewAuthService()}
 }
 
+func NewAuthHandlerWithService(svc *application.AuthService) *AuthHandler {
+	return &AuthHandler{service: svc}
+}
+
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

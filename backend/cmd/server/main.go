@@ -35,7 +35,7 @@ func authMiddleware(authService *authApp.AuthService, next http.Handler) http.Ha
 
 func main() {
 	authService := authApp.NewAuthService()
-	authHandler := authApi.NewAuthHandler()
+	authHandler := authApi.NewAuthHandlerWithService(authService)
 	bffHandler := api.NewBFFHandler()
 
 	mux := http.NewServeMux()
@@ -52,8 +52,8 @@ func main() {
 	mux.Handle("/api/v1/home", authMiddleware(authService, http.HandlerFunc(bffHandler.GetHomePage)))
 	mux.Handle("/api/v1/destinations/", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleDestinations)))
 
-	log.Println("Server listening on http://localhost:8081")
-	if err := http.ListenAndServe(":8081", cors(mux)); err != nil {
+	log.Println("Server listening on http://localhost:8082")
+	if err := http.ListenAndServe(":8082", cors(mux)); err != nil {
 		log.Fatal("Server failed:", err)
 	}
 }

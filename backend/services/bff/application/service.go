@@ -4,7 +4,7 @@ import (
 	"travel-api/internal/common/models"
 	bffInfra "travel-api/services/bff/infrastructure"
 	destInfra "travel-api/services/destination/infrastructure"
-	
+
 	interactionApp "travel-api/services/interaction/application"
 	promoInfra "travel-api/services/promo/infrastructure"
 )
@@ -25,6 +25,7 @@ func NewBFFService() *BFFService {
 	}
 }
 
+type HomePageData struct {
 	Recommendations  []models.Destination `json:"recommendations"`
 	Deals            []models.Deal        `json:"deals"`
 	Nearby           []models.Destination `json:"nearby"`
@@ -32,7 +33,6 @@ func NewBFFService() *BFFService {
 	Wishlist         []models.Destination `json:"wishlist"`
 	TrendingThisWeek []models.Destination `json:"trending_this_week"`
 	MostViewedNearby []models.Destination `json:"most_viewed_nearby"`
-	MostViewedNearby  []models.Destination `json:"most_viewed_nearby"`
 }
 
 func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {

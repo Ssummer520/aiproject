@@ -52,8 +52,8 @@ func main() {
 	mux.Handle("/api/v1/home", authMiddleware(authService, http.HandlerFunc(bffHandler.GetHomePage)))
 	mux.Handle("/api/v1/destinations/", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleDestinations)))
 
-	log.Println("Server listening on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", cors(mux)); err != nil {
+	log.Println("Server listening on http://localhost:8081")
+	if err := http.ListenAndServe(":8081", cors(mux)); err != nil {
 		log.Fatal("Server failed:", err)
 	}
 }

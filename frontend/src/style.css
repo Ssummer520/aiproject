@@ -3062,13 +3062,22 @@ body {
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .currency-btn:hover {
   background: #f5f5f5;
 }
 
+.dropdown-arrow {
+  font-size: 10px;
+  color: #888;
+}
+
 .currency-menu {
+  display: none;
   position: absolute;
   top: 100%;
   right: 0;
@@ -3079,6 +3088,10 @@ body {
   min-width: 200px;
   z-index: 100;
   overflow: hidden;
+}
+
+.currency-menu.show {
+  display: block;
 }
 
 .currency-menu button {

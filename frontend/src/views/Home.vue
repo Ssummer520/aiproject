@@ -22,8 +22,9 @@
         <div class="currency-dropdown">
           <button class="currency-btn" @click="showCurrencyMenu = !showCurrencyMenu">
             {{ currencySymbol }} {{ currency }}
+            <span class="dropdown-arrow">▼</span>
           </button>
-          <div v-if="showCurrencyMenu" class="currency-menu">
+          <div class="currency-menu" :class="{ show: showCurrencyMenu }">
             <button v-for="c in currencies" :key="c.code" :class="{ active: currency === c.code }" @click="selectCurrency(c.code)">
               {{ c.symbol }} {{ c.code }} - {{ c.name }}
             </button>
@@ -598,7 +599,8 @@ function logout() {
   fetchHomePage()
 }
 
-const { currency, setCurrency, formatPrice, getSymbol: currencySymbol, currencySymbols } = useCurrency()
+const { currency, setCurrency, formatPrice, getSymbol, currencySymbols } = useCurrency()
+const currencySymbol = computed(() => getSymbol())
 const showCurrencyMenu = ref(false)
 const currencies = [
   { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
@@ -945,6 +947,9 @@ onMounted(() => {
     heroCollapsed.value = window.scrollY > 120
   }
   window.addEventListener('scroll', scrollListener, { passive: true })
+  
+  // 点击外部关闭货币菜单
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
@@ -953,5 +958,13 @@ onUnmounted(() => {
   if (scrollListener) window.removeEventListener('scroll', scrollListener)
   if (aiHintTimer) clearTimeout(aiHintTimer)
   if (aiPulseTimer) clearTimeout(aiPulseTimer)
+  document.removeEventListener('click', handleClickOutside)
 })
+
+function handleClickOutside(e) {
+  const dropdown = document.querySelector('.currency-dropdown')
+  if (dropdown && !dropdown.contains(e.target)) {
+    showCurrencyMenu.value = false
+  }
+}
 </script>

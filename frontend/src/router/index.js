@@ -38,6 +38,11 @@ const routes = [
     component: () => import('../views/Account.vue')
   },
   {
+    path: '/kline',
+    name: 'KLine',
+    component: () => import('../views/KLine.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../views/NotFound.vue')

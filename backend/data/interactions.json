@@ -11,7 +11,7 @@
     "history": null,
     "favorites": {
       "1": false,
-      "2": false,
+      "2": true,
       "3": false,
       "5": true
     }

@@ -156,3 +156,55 @@ func calculateNights(checkIn, checkOut string) int {
 	}
 	return nights
 }
+
+// NotificationStore stores user notifications
+type NotificationStore struct {
+	mu            sync.RWMutex
+	notifications map[string][]models.Notification
+}
+
+func NewNotificationStore() *NotificationStore {
+	return &NotificationStore{
+		notifications: make(map[string][]models.Notification),
+	}
+}
+
+func (s *NotificationStore) AddNotification(userID string, notification models.Notification) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	notification.ID = len(s.notifications[userID]) + 1
+	notification.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
+	s.notifications[userID] = append([]models.Notification{notification}, s.notifications[userID]...)
+}
+
+func (s *NotificationStore) GetNotifications(userID string) []models.Notification {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if notifications, ok := s.notifications[userID]; ok {
+		return notifications
+	}
+	return []models.Notification{}
+}
+
+func (s *NotificationStore) MarkAsRead(userID string, notificationID int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.notifications[userID] {
+		if s.notifications[userID][i].ID == notificationID {
+			s.notifications[userID][i].Read = true
+			break
+		}
+	}
+}
+
+func (s *NotificationStore) GetUnreadCount(userID string) int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	count := 0
+	for _, n := range s.notifications[userID] {
+		if !n.Read {
+			count++
+		}
+	}
+	return count
+}

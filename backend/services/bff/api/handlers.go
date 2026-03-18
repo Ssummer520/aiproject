@@ -186,3 +186,39 @@ func (h *BFFHandler) HandleBookings(w http.ResponseWriter, r *http.Request) {
 
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
+
+func (h *BFFHandler) HandleNotifications(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromRequest(r)
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "login_required"})
+		return
+	}
+
+	if r.Method == "GET" {
+		notifications := h.service.GetNotifications(userID)
+		unreadCount := h.service.GetUnreadNotificationCount(userID)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"notifications": notifications,
+			"unread_count":  unreadCount,
+		})
+		return
+	}
+
+	if r.Method == "POST" {
+		var req struct {
+			NotificationID int `json:"notification_id"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
+			return
+		}
+		h.service.MarkNotificationAsRead(userID, req.NotificationID)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "marked_as_read"})
+		return
+	}
+
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}

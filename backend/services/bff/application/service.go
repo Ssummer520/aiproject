@@ -12,20 +12,22 @@ import (
 )
 
 type BFFService struct {
-	destCache      *destInfra.DestinationCache
-	promoCache     *promoInfra.PromoCache
-	interactionApp *interactionApp.InteractionService
-	statsStore     *bffInfra.StatsStore
-	bookingStore   *bffInfra.BookingStore
+	destCache         *destInfra.DestinationCache
+	promoCache        *promoInfra.PromoCache
+	interactionApp    *interactionApp.InteractionService
+	statsStore        *bffInfra.StatsStore
+	bookingStore      *bffInfra.BookingStore
+	notificationStore *bffInfra.NotificationStore
 }
 
 func NewBFFService() *BFFService {
 	return &BFFService{
-		destCache:      destInfra.NewDestinationCache(),
-		promoCache:     promoInfra.NewPromoCache(),
-		interactionApp: interactionApp.NewInteractionService(),
-		statsStore:     bffInfra.NewStatsStore(),
-		bookingStore:   bffInfra.NewBookingStore(),
+		destCache:         destInfra.NewDestinationCache(),
+		promoCache:        promoInfra.NewPromoCache(),
+		interactionApp:    interactionApp.NewInteractionService(),
+		statsStore:        bffInfra.NewStatsStore(),
+		bookingStore:      bffInfra.NewBookingStore(),
+		notificationStore: bffInfra.NewNotificationStore(),
 	}
 }
 
@@ -329,5 +331,26 @@ func (s *BFFService) CreateBooking(userID string, destID int, checkIn, checkOut 
 	}
 
 	booking := s.bookingStore.CreateBooking(userID, d, checkIn, checkOut, guests)
+
+	// Add notification
+	s.notificationStore.AddNotification(userID, models.Notification{
+		Type:    "booking_confirmed",
+		Title:   "Booking Confirmed",
+		Message: "Your booking for " + d.Name + " has been confirmed!",
+		Link:    "/trips",
+	})
+
 	return booking
+}
+
+func (s *BFFService) GetNotifications(userID string) []models.Notification {
+	return s.notificationStore.GetNotifications(userID)
+}
+
+func (s *BFFService) GetUnreadNotificationCount(userID string) int {
+	return s.notificationStore.GetUnreadCount(userID)
+}
+
+func (s *BFFService) MarkNotificationAsRead(userID string, notificationID int) {
+	s.notificationStore.MarkAsRead(userID, notificationID)
 }

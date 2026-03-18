@@ -42,3 +42,13 @@ type Booking struct {
 	Status        string  `json:"status"`
 	CreatedAt     string  `json:"created_at"`
 }
+
+type Notification struct {
+	ID        int    `json:"id"`
+	Type      string `json:"type"` // booking_confirmed, booking_cancelled, new_deal, price_drop
+	Title     string `json:"title"`
+	Message   string `json:"message"`
+	Link      string `json:"link"`
+	Read      bool   `json:"read"`
+	CreatedAt string `json:"created_at"`
+}

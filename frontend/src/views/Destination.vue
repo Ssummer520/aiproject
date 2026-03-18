@@ -24,13 +24,23 @@
       <div class="detail-hero">
         <img :src="destination.cover" :alt="destination.name" class="hero-img" @error="onImgError" />
         <button class="back-btn" @click="$router.back()">← Back</button>
-        <button
-          class="fav-btn-large"
-          :class="{ favorited: destination.is_favorite && isLoggedIn }"
-          @click="toggleFav"
-        >
-          {{ (destination.is_favorite && isLoggedIn) ? '♥' : '♡' }}
-        </button>
+        <div class="hero-actions">
+          <button
+            class="fav-btn-large"
+            :class="{ favorited: destination.is_favorite && isLoggedIn }"
+            @click="toggleFav"
+            :title="locale === 'zh' ? '收藏' : 'Add to wishlist'"
+          >
+            {{ (destination.is_favorite && isLoggedIn) ? '♥' : '♡' }}
+          </button>
+          <button
+            class="share-btn-large"
+            @click="shareDestination"
+            :title="locale === 'zh' ? '分享' : 'Share'"
+          >
+            🔗
+          </button>
+        </div>
       </div>
 
       <div class="detail-main">
@@ -263,6 +273,32 @@ async function toggleFav() {
   }
 }
 
+async function shareDestination() {
+  const url = window.location.href
+  const title = destination.value.name
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url })
+    } catch (e) {
+      // User cancelled or error
+    }
+  } else {
+    try {
+      await navigator.clipboard.writeText(url)
+      alert(locale.value === 'zh' ? '链接已复制到剪贴板！' : 'Link copied to clipboard!')
+    } catch (e) {
+      const input = document.createElement('input')
+      input.value = url
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      alert(locale.value === 'zh' ? '链接已复制！' : 'Link copied!')
+    }
+  }
+}
+
 async function doBooking() {
   if (!isLoggedIn.value) {
     showAuthModal.value = 'login'
@@ -380,6 +416,34 @@ onMounted(() => {
 .back-btn:hover {
   background: #fff;
   transform: scale(1.05);
+}
+
+.hero-actions {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.share-btn-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-btn-large:hover {
+  transform: scale(1.1);
+  background: #fff;
 }
 
 .fav-btn-large {

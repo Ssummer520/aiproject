@@ -44,13 +44,49 @@
         <div class="account-card">
           <h2>{{ locale === 'zh' ? '账户设置' : 'Preferences' }}</h2>
           <div class="settings-list">
-            <div class="settings-item">
+            <div class="settings-item" @click="toggleLang">
               <span>{{ locale === 'zh' ? '语言' : 'Language' }}</span>
-              <span class="arrow">{{ locale.toUpperCase() }} ↝</span>
+              <span class="arrow">{{ locale === 'zh' ? '中文' : 'English' }} ↝</span>
+            </div>
+            <div class="settings-item" @click="showCurrencyModal = true">
+              <span>{{ locale === 'zh' ? '货币' : 'Currency' }}</span>
+              <span class="arrow">{{ currency }} {{ currencySymbol }} ↝</span>
             </div>
             <div class="settings-item">
-              <span>{{ locale === 'zh' ? '货币' : 'Currency' }}</span>
-              <span class="arrow">CNY ¥ ↝</span>
+              <span>{{ locale === 'zh' ? '邮件通知' : 'Email Notifications' }}</span>
+              <label class="toggle">
+                <input type="checkbox" v-model="emailNotifications" />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="settings-item">
+              <span>{{ locale === 'zh' ? '推送通知' : 'Push Notifications' }}</span>
+              <label class="toggle">
+                <input type="checkbox" v-model="pushNotifications" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="account-card">
+          <h2>{{ locale === 'zh' ? '我的通知' : 'My Notifications' }}</h2>
+          <div v-if="notificationsLoading" class="loading-state">
+            <div class="spinner"></div>
+          </div>
+          <div v-else-if="notifications.length === 0" class="empty-state">
+            <p>{{ locale === 'zh' ? '暂无通知' : 'No notifications yet' }}</p>
+          </div>
+          <div v-else class="notifications-list">
+            <div v-for="n in notifications" :key="n.id" class="notification-item" :class="{ unread: !n.read }">
+              <div class="notification-icon">
+                {{ n.type === 'booking_confirmed' ? '✓' : '🔔' }}
+              </div>
+              <div class="notification-content">
+                <strong>{{ n.title }}</strong>
+                <p>{{ n.message }}</p>
+                <span class="notification-time">{{ n.created_at }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -94,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
@@ -103,11 +139,20 @@ const { locale } = useI18n()
 const router = useRouter()
 const { isLoggedIn, user, setAuth, clearAuth, authHeaders } = useAuth()
 
+import { useCurrency } from '../composables/useCurrency'
+const { currency, setCurrency, formatPrice, getSymbol: currencySymbol, currencySymbols } = useCurrency()
+
 const showAuthModal = ref(null)
+const showCurrencyModal = ref(false)
 const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const authError = ref('')
+
+const notifications = ref([])
+const notificationsLoading = ref(false)
+const emailNotifications = ref(true)
+const pushNotifications = ref(true)
 
 const API = '/api/v1'
 
@@ -172,15 +217,33 @@ async function doLogout() {
   router.push('/')
 }
 
+async function fetchNotifications() {
+  if (!isLoggedIn.value) return
+  notificationsLoading.value = true
+  try {
+    const res = await fetch(API + '/notifications', { headers: authHeaders() })
+    if (res.ok) {
+      const data = await res.json()
+      notifications.value = data.notifications || []
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    notificationsLoading.value = false
+  }
+}
+
 function goHome() {
   router.push('/')
 }
 
-onMounted(() => {
-  if (!isLoggedIn.value) {
-    showAuthModal.value = 'login'
+watch(isLoggedIn, (newVal) => {
+  if (newVal) {
+    fetchNotifications()
+  } else {
+    notifications.value = []
   }
-})
+}, { immediate: true })
 </script>
 
 <style scoped>

@@ -19,6 +19,16 @@
           <span>Map</span>
         </button>
         <button class="action-btn" @click="toggleLang" title="Switch Language/Currency">🌐 {{ locale.toUpperCase() }}</button>
+        <div class="currency-dropdown">
+          <button class="currency-btn" @click="showCurrencyMenu = !showCurrencyMenu">
+            {{ currencySymbol }} {{ currency }}
+          </button>
+          <div v-if="showCurrencyMenu" class="currency-menu">
+            <button v-for="c in currencies" :key="c.code" :class="{ active: currency === c.code }" @click="selectCurrency(c.code)">
+              {{ c.symbol }} {{ c.code }} - {{ c.name }}
+            </button>
+          </div>
+        </div>
 
         <div class="user-profile" v-if="isLoggedIn">
           <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
@@ -476,6 +486,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { useCurrency } from '../composables/useCurrency'
 
 const { locale } = useI18n()
 const router = useRouter()
@@ -585,6 +596,26 @@ function logout() {
   fetch(API + '/auth/logout', { method: 'POST', headers: authHeaders() }).catch(() => {})
   clearAuth()
   fetchHomePage()
+}
+
+const { currency, setCurrency, formatPrice, getSymbol: currencySymbol, currencySymbols } = useCurrency()
+const showCurrencyMenu = ref(false)
+const currencies = [
+  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'KRW', symbol: '₩', name: 'Korean Won' },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' }
+]
+
+function selectCurrency(code) {
+  setCurrency(code)
+  showCurrencyMenu.value = false
 }
 
 function toggleLang() {

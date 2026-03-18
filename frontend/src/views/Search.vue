@@ -77,6 +77,27 @@
               </div>
             </div>
 
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '评分' : 'Rating' }}</label>
+              <select v-model="filters.rating">
+                <option value="">{{ locale === 'zh' ? '所有评分' : 'Any Rating' }}</option>
+                <option value="5">5 {{ locale === 'zh' ? '星' : 'stars' }}</option>
+                <option value="4">4+ {{ locale === 'zh' ? '星' : 'stars' }}</option>
+                <option value="3">3+ {{ locale === 'zh' ? '星' : 'stars' }}</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '排序方式' : 'Sort By' }}</label>
+              <select v-model="filters.sortBy">
+                <option value="recommended">{{ locale === 'zh' ? '推荐' : 'Recommended' }}</option>
+                <option value="price_low">{{ locale === 'zh' ? '价格从低到高' : 'Price: Low to High' }}</option>
+                <option value="price_high">{{ locale === 'zh' ? '价格从高到低' : 'Price: High to Low' }}</option>
+                <option value="rating">{{ locale === 'zh' ? '评分最高' : 'Highest Rated' }}</option>
+                <option value="popular">{{ locale === 'zh' ? '最热门' : 'Most Popular' }}</option>
+              </select>
+            </div>
+
             <button class="apply-filter-btn" @click="doSearch">{{ locale === 'zh' ? '应用筛选' : 'Apply Filters' }}</button>
           </div>
         </aside>
@@ -192,7 +213,9 @@ const filters = ref({
   city: '',
   category: '',
   minPrice: null,
-  maxPrice: null
+  maxPrice: null,
+  rating: '',
+  sortBy: 'recommended'
 })
 
 const API = '/api/v1'
@@ -222,8 +245,33 @@ async function doSearch() {
     const res = await fetch(`${API}/search?${params}`, {
       headers: { 'Accept-Language': locale.value, ...authHeaders() }
     })
-    const data = await res.json()
-    results.value = data.results || []
+    let data = await res.json()
+    let resultsList = data.results || []
+
+    // Client-side filtering for rating
+    if (filters.value.rating) {
+      resultsList = resultsList.filter(d => d.rating >= parseFloat(filters.value.rating))
+    }
+
+    // Client-side sorting
+    if (filters.value.sortBy) {
+      switch (filters.value.sortBy) {
+        case 'price_low':
+          resultsList.sort((a, b) => a.price - b.price)
+          break
+        case 'price_high':
+          resultsList.sort((a, b) => b.price - a.price)
+          break
+        case 'rating':
+          resultsList.sort((a, b) => b.rating - a.rating)
+          break
+        case 'popular':
+          resultsList.sort((a, b) => (b.booked_count || 0) - (a.booked_count || 0))
+          break
+      }
+    }
+
+    results.value = resultsList
   } catch (e) {
     console.error(e)
     results.value = []

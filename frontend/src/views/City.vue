@@ -16,7 +16,7 @@
 
       <div class="city-header">
         <router-link to="/" class="back-link">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
-        <p v-if="activeCategoryLabel" class="city-active-filter">{{ locale === 'zh' ? '当前筛选：' : 'Filter: ' }}{{ activeCategoryLabel }}</p>
+        <p class="city-header-meta">{{ locale === 'zh' ? '按城市筛选并智能安排行程' : 'Filter by city and plan with AI' }}</p>
       </div>
 
       <section class="city-section city-categories-section">
@@ -94,14 +94,48 @@
 
         <aside class="city-sidebar" v-if="deals.length">
           <div class="city-sidebar-inner">
-            <div class="sidebar-widget deals-widget city-deals-widget">
-              <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
-              <div class="sidebar-deals-list city-sidebar-deals-list">
-                <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
-                  <div class="deal-content-mini">
-                    <h4>{{ deal.title }}</h4>
-                    <p>{{ deal.description }}</p>
-                    <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+            <div class="city-sidebar-stack">
+              <div
+                class="sidebar-widget city-ai-widget"
+                :class="{ 'city-ai-widget--highlight': showAiHint }"
+                @mouseenter="pauseAiHint = true"
+                @mouseleave="pauseAiHint = false"
+              >
+                <div class="city-ai-widget-head">
+                  <div class="city-ai-widget-title-wrap">
+                    <span class="city-ai-widget-badge">AI</span>
+                    <div>
+                      <h3 class="widget-title city-ai-widget-title">{{ locale === 'zh' ? 'AI 行程助手' : 'AI Trip Planner' }}</h3>
+                      <p class="city-ai-widget-text">{{ locale === 'zh' ? cityAiHintZh : cityAiHintEn }}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="city-ai-widget-toggle"
+                    :class="{ 'city-ai-widget-toggle--pulse': aiPulse }"
+                    @click="onAiFloatClick"
+                  >
+                    ✨
+                  </button>
+                </div>
+                <Transition name="city-ai-hint">
+                  <p v-if="showAiHint" class="city-ai-widget-note">{{ locale === 'zh' ? '我可以根据当前城市和分类，给你生成更聪明的玩法建议。' : 'I can turn this city and category into a smarter itinerary.' }}</p>
+                </Transition>
+                <div class="city-ai-quick-actions">
+                  <button type="button" class="city-ai-action" @click="goToSmartSearch('family')">{{ locale === 'zh' ? '亲子玩法' : 'Family trip' }}</button>
+                  <button type="button" class="city-ai-action" @click="goToSmartSearch('food')">{{ locale === 'zh' ? '美食路线' : 'Food route' }}</button>
+                </div>
+              </div>
+
+              <div class="sidebar-widget deals-widget city-deals-widget">
+                <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
+                <div class="sidebar-deals-list city-sidebar-deals-list">
+                  <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
+                    <div class="deal-content-mini">
+                      <h4>{{ deal.title }}</h4>
+                      <p>{{ deal.description }}</p>
+                      <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -198,14 +232,48 @@
 
         <aside class="city-sidebar" v-if="deals.length">
           <div class="city-sidebar-inner">
-            <div class="sidebar-widget deals-widget city-deals-widget">
-              <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
-              <div class="sidebar-deals-list city-sidebar-deals-list">
-                <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
-                  <div class="deal-content-mini">
-                    <h4>{{ deal.title }}</h4>
-                    <p>{{ deal.description }}</p>
-                    <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+            <div class="city-sidebar-stack">
+              <div
+                class="sidebar-widget city-ai-widget"
+                :class="{ 'city-ai-widget--highlight': showAiHint }"
+                @mouseenter="pauseAiHint = true"
+                @mouseleave="pauseAiHint = false"
+              >
+                <div class="city-ai-widget-head">
+                  <div class="city-ai-widget-title-wrap">
+                    <span class="city-ai-widget-badge">AI</span>
+                    <div>
+                      <h3 class="widget-title city-ai-widget-title">{{ locale === 'zh' ? 'AI 行程助手' : 'AI Trip Planner' }}</h3>
+                      <p class="city-ai-widget-text">{{ locale === 'zh' ? cityAiHintZh : cityAiHintEn }}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="city-ai-widget-toggle"
+                    :class="{ 'city-ai-widget-toggle--pulse': aiPulse }"
+                    @click="onAiFloatClick"
+                  >
+                    ✨
+                  </button>
+                </div>
+                <Transition name="city-ai-hint">
+                  <p v-if="showAiHint" class="city-ai-widget-note">{{ locale === 'zh' ? '我可以根据当前城市和分类，给你生成更聪明的玩法建议。' : 'I can turn this city and category into a smarter itinerary.' }}</p>
+                </Transition>
+                <div class="city-ai-quick-actions">
+                  <button type="button" class="city-ai-action" @click="goToSmartSearch('family')">{{ locale === 'zh' ? '亲子玩法' : 'Family trip' }}</button>
+                  <button type="button" class="city-ai-action" @click="goToSmartSearch('food')">{{ locale === 'zh' ? '美食路线' : 'Food route' }}</button>
+                </div>
+              </div>
+
+              <div class="sidebar-widget deals-widget city-deals-widget">
+                <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
+                <div class="sidebar-deals-list city-sidebar-deals-list">
+                  <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
+                    <div class="deal-content-mini">
+                      <h4>{{ deal.title }}</h4>
+                      <p>{{ deal.description }}</p>
+                      <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -214,32 +282,6 @@
         </aside>
       </div>
 
-    </div>
-
-    <div
-      class="city-ai-float-wrap"
-      @mouseenter="pauseAiHint = true"
-      @mouseleave="pauseAiHint = false"
-    >
-      <button
-        type="button"
-        class="city-ai-float-btn"
-        :class="{ 'city-ai-float-btn--open': showAiHint, 'city-ai-float-btn--pulse': aiPulse }"
-        @click="onAiFloatClick"
-        aria-label="AI travel assistant"
-      >
-        <span class="city-ai-float-icon">✨</span>
-      </button>
-      <Transition name="city-ai-hint">
-        <div v-if="showAiHint" class="city-ai-float-hint">
-          <p class="city-ai-float-hint-text">{{ locale === 'zh' ? cityAiHintZh : cityAiHintEn }}</p>
-          <div class="city-ai-quick-actions">
-            <button type="button" class="city-ai-action" @click="goToSmartSearch('family')">{{ locale === 'zh' ? '亲子玩法' : 'Family trip' }}</button>
-            <button type="button" class="city-ai-action" @click="goToSmartSearch('food')">{{ locale === 'zh' ? '美食路线' : 'Food route' }}</button>
-          </div>
-          <span class="city-ai-float-hint-arrow"></span>
-        </div>
-      </Transition>
     </div>
 
   </div>
@@ -765,6 +807,12 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
+.city-sidebar-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .city-deals-widget {
   max-height: calc(100vh - 136px);
   overflow: hidden;
@@ -805,11 +853,99 @@ onUnmounted(() => {
   font-size: 0.95rem;
 }
 
-.city-active-filter {
+.city-header-meta {
   margin: 0;
   color: #717171;
   font-size: 0.92rem;
   font-weight: 600;
+}
+
+.city-ai-widget {
+  border: 1px solid rgba(102, 126, 234, 0.16);
+  background:
+    radial-gradient(circle at top right, rgba(118, 75, 162, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(102, 126, 234, 0.08), rgba(255,255,255,0.92));
+}
+
+.city-ai-widget--highlight {
+  box-shadow: 0 18px 40px rgba(102, 126, 234, 0.16);
+  border-color: rgba(102, 126, 234, 0.28);
+}
+
+.city-ai-widget-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.city-ai-widget-title-wrap {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.city-ai-widget-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  box-shadow: 0 10px 24px rgba(102, 126, 234, 0.28);
+}
+
+.city-ai-widget-title {
+  margin-bottom: 4px;
+}
+
+.city-ai-widget-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.city-ai-widget-toggle {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(102, 126, 234, 0.18);
+  background: rgba(255,255,255,0.9);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.city-ai-widget-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.14);
+}
+
+.city-ai-widget-toggle--pulse {
+  animation: city-ai-btn-pulse 0.6s ease-out;
+}
+
+@keyframes city-ai-btn-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.city-ai-widget-note {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.78);
+  color: #4338ca;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .city-category-grid {
@@ -1062,83 +1198,6 @@ onUnmounted(() => {
   color: #222;
   text-decoration: none;
   font-weight: 700;
-}
-
-.city-ai-float-wrap {
-  position: fixed;
-  right: 24px;
-  bottom: 32px;
-  z-index: 900;
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  gap: 12px;
-}
-
-.city-ai-float-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.45);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.city-ai-float-btn:hover,
-.city-ai-float-btn--open {
-  transform: scale(1.08);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
-}
-
-.city-ai-float-btn--pulse {
-  animation: city-ai-float-pulse 0.6s ease-out;
-}
-
-@keyframes city-ai-float-pulse {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.15); }
-  70% { transform: scale(1.06); }
-  100% { transform: scale(1.08); }
-}
-
-.city-ai-float-icon {
-  font-size: 1.6rem;
-  line-height: 1;
-}
-
-.city-ai-float-hint {
-  position: relative;
-  background: #fff;
-  padding: 14px 16px;
-  border-radius: 14px;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  max-width: 240px;
-}
-
-.city-ai-float-hint-text {
-  margin: 0 0 12px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #222;
-  line-height: 1.45;
-}
-
-.city-ai-float-hint-arrow {
-  position: absolute;
-  right: -6px;
-  top: 50%;
-  transform: translateY(-50%) rotate(45deg);
-  width: 12px;
-  height: 12px;
-  background: #fff;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  border-right: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .city-ai-quick-actions {
@@ -1449,10 +1508,6 @@ onUnmounted(() => {
 
   .city-sidebar-inner {
     transform: translateX(max(0px, calc((100vw - 1200px) / 2 - 24px)));
-  }
-
-  .city-ai-float-wrap {
-    right: 368px;
   }
 }
 </style>

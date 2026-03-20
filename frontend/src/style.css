@@ -184,11 +184,37 @@ body {
   font-weight: 500;
   padding: 10px 12px;
   border-radius: 8px;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s, transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  border: 1px solid transparent;
 }
 
 .header-nav-link:hover {
   background: var(--bg-soft);
+  transform: translateY(-1px);
+}
+
+.header-nav-link.is-active {
+  color: var(--primary);
+  background: rgba(255, 56, 92, 0.08);
+  border-color: rgba(255, 56, 92, 0.12);
+  box-shadow: 0 10px 24px rgba(255, 56, 92, 0.08);
+}
+
+.header-nav-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.header-logo {
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.header-logo:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
 }
 
 .header-actions {

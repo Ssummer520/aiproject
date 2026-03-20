@@ -483,14 +483,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useCurrency } from '../composables/useCurrency'
 
 const { locale } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const { token, user, isLoggedIn, setAuth, clearAuth, authHeaders } = useAuth()
 
 const showAuthModal = ref(null)
@@ -925,6 +926,18 @@ function handleMouseMove() {
   }, 2000)
 }
 
+async function handleRouteFocus(focus) {
+  if (!focus) return
+  await nextTick()
+  if (focus === 'guide') scrollToGuide()
+  if (focus === 'history') scrollToHistory()
+  if (focus === 'wishlist') scrollToWishlist()
+
+  const nextQuery = { ...route.query }
+  delete nextQuery.focus
+  router.replace({ query: nextQuery })
+}
+
 watch(locale, () => {
   fetchHomePage()
 })
@@ -934,6 +947,9 @@ watch(showAuthModal, () => {
 })
 watch(locale, () => {
   searchPlaceholderIndex.value = 0
+})
+watch(() => route.query.focus, (focus) => {
+  if (focus) handleRouteFocus(focus)
 })
 
 onMounted(() => {
@@ -950,6 +966,10 @@ onMounted(() => {
   
   // 点击外部关闭货币菜单
   document.addEventListener('click', handleClickOutside)
+
+  if (route.query.focus) {
+    handleRouteFocus(route.query.focus)
+  }
 })
 
 onUnmounted(() => {

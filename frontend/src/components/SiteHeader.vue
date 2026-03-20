@@ -9,10 +9,10 @@
     </router-link>
 
     <nav class="header-nav">
-      <a href="#travel-guide" class="header-nav-link" @click.prevent="emit('scrollTo', 'guide')">{{ $t('nav.guides') }}</a>
-      <router-link to="/trips" class="header-nav-link">{{ $t('nav.myTrips') }}</router-link>
-      <a href="#" class="header-nav-link" @click.prevent="emit('scrollTo', 'history')">{{ $t('nav.history') }}</a>
-      <a href="#" class="header-nav-link" @click.prevent="emit('scrollTo', 'wishlist')">{{ $t('nav.wishlist') }}</a>
+      <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('guide')">{{ $t('nav.guides') }}</button>
+      <router-link to="/trips" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/trips') }">{{ $t('nav.myTrips') }}</router-link>
+      <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('history')">{{ $t('nav.history') }}</button>
+      <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('wishlist')">{{ $t('nav.wishlist') }}</button>
     </nav>
 
     <div class="header-actions">
@@ -102,8 +102,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useCurrency } from '../composables/useCurrency'
 
@@ -114,6 +115,8 @@ const props = defineProps({
 const emit = defineEmits(['scrollTo', 'loginSuccess'])
 
 const { locale } = useI18n()
+const route = useRoute()
+const router = useRouter()
 const { token, user, isLoggedIn, setAuth, authHeaders } = useAuth()
 const { currency, setCurrency, getSymbol } = useCurrency()
 
@@ -148,6 +151,14 @@ function toggleLang() {
 function selectCurrency(code) {
   setCurrency(code)
   showCurrencyMenu.value = false
+}
+
+function goToSection(section) {
+  if (route.path === '/') {
+    emit('scrollTo', section)
+    return
+  }
+  router.push({ path: '/', query: { focus: section } })
 }
 
 async function logout() {
@@ -260,9 +271,4 @@ onMounted(() => document.addEventListener('click', handleClickOutside))
 onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 watch(showAuthModal, () => { authError.value = ''; authSuccess.value = '' })
-</script>
-
-<script>
-import { watch } from 'vue'
-export default { name: 'SiteHeader' }
 </script>

@@ -368,27 +368,14 @@
     </div>
 
     <!-- 右侧浮动 AI 小助手 -->
-    <div
-      class="ai-float-wrap"
-      @mouseenter="pauseAiHint = true"
-      @mouseleave="pauseAiHint = false"
-    >
-      <button
-        type="button"
-        class="ai-float-btn"
-        :class="{ 'ai-float-btn--open': showAiHint, 'ai-float-btn--pulse': aiPulse }"
-        @click="onAiFloatClick"
-        aria-label="AI travel assistant"
-      >
-        <span class="ai-float-icon">✨</span>
-      </button>
-      <Transition name="ai-hint">
-        <div v-if="showAiHint" class="ai-float-hint">
-          <p class="ai-float-hint-text">{{ locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!' }}</p>
-          <span class="ai-float-hint-arrow"></span>
-        </div>
-      </Transition>
-    </div>
+    <AiAssistantBubble
+      container-class="ai-float-wrap"
+      :hint-text="locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!'"
+      :show-hint="showAiHint"
+      :pulse="aiPulse"
+      @toggle="onAiFloatClick"
+      @hover-change="pauseAiHint = $event"
+    />
 
     <!-- 信任信号页脚 -->
     <footer class="site-footer">
@@ -488,6 +475,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useCurrency } from '../composables/useCurrency'
+import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 
 const { locale } = useI18n()
 const router = useRouter()

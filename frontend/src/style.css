@@ -208,6 +208,16 @@ body {
   cursor: pointer;
 }
 
+.header-nav-link:focus-visible,
+.header-nav-btn:focus-visible,
+.action-btn:focus-visible,
+.currency-btn:focus-visible,
+.signin-btn:focus-visible,
+.logout-btn:focus-visible {
+  outline: 2px solid rgba(255, 56, 92, 0.55);
+  outline-offset: 2px;
+}
+
 .header-logo {
   transition: transform 0.22s ease, opacity 0.22s ease;
 }

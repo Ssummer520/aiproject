@@ -16,7 +16,6 @@
 
       <div class="city-header">
         <router-link to="/" class="back-link">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
-        <p class="city-header-meta">{{ locale === 'zh' ? '按城市筛选并智能安排行程' : 'Filter by city and plan with AI' }}</p>
       </div>
 
       <section class="city-section city-categories-section">
@@ -180,30 +179,6 @@
         <aside class="city-sidebar" v-if="deals.length">
           <div class="city-sidebar-inner">
             <div class="city-sidebar-stack">
-              <div class="city-ai-panel" @mouseenter="pauseAiHint = true" @mouseleave="pauseAiHint = false">
-                <div class="city-ai-inline-wrap">
-                  <button
-                    type="button"
-                    class="ai-float-btn"
-                    :class="{ 'ai-float-btn--open': showAiHint, 'ai-float-btn--pulse': aiPulse }"
-                    @click="onAiFloatClick"
-                    aria-label="AI travel assistant"
-                  >
-                    <span class="ai-float-icon">✨</span>
-                  </button>
-                  <Transition name="ai-hint">
-                    <div v-if="showAiHint" class="ai-float-hint city-ai-inline-hint">
-                      <p class="ai-float-hint-text">{{ locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!' }}</p>
-                      <span class="ai-float-hint-arrow"></span>
-                    </div>
-                  </Transition>
-                </div>
-                <div class="city-ai-quick-actions city-ai-inline-actions">
-                  <button type="button" class="city-ai-action" @click="goToSmartSearch('family')">{{ locale === 'zh' ? '亲子玩法' : 'Family trip' }}</button>
-                  <button type="button" class="city-ai-action" @click="goToSmartSearch('food')">{{ locale === 'zh' ? '美食路线' : 'Food route' }}</button>
-                </div>
-              </div>
-
               <div class="sidebar-widget deals-widget city-deals-widget">
                 <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
                 <div class="sidebar-deals-list city-sidebar-deals-list">
@@ -223,19 +198,29 @@
 
     </div>
 
+    <AiAssistantBubble
+      container-class="ai-float-wrap"
+      :hint-text="locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!'"
+      :show-hint="showAiHint"
+      :open-class-enabled="false"
+      :use-transition="false"
+      :emit-hover="false"
+      @toggle="onAiFloatClick"
+    />
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 import SiteHeader from '../components/SiteHeader.vue'
 
 const { locale } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const { isLoggedIn, authHeaders } = useAuth()
 
 const API = '/api/v1'
@@ -248,10 +233,6 @@ const activeCategory = ref('all')
 const expandedParentCategory = ref('all')
 const showAllCategories = ref(false)
 const showAiHint = ref(false)
-const pauseAiHint = ref(false)
-const aiPulse = ref(false)
-let aiHintTimer = null
-let aiPulseTimer = null
 
 const cityMap = {
   'hangzhou': { name: 'Hangzhou', nameZh: '杭州', image: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200' },
@@ -477,51 +458,8 @@ function toggleParentCategory(category) {
   activeCategory.value = category.id
 }
 
-function startAiHintLoop() {
-  let nextDelayMs = 1000
-  const stopAt = Date.now() + 60000
-
-  function scheduleShow() {
-    if (Date.now() >= stopAt) {
-      showAiHint.value = false
-      return
-    }
-
-    if (aiHintTimer) clearTimeout(aiHintTimer)
-    aiHintTimer = setTimeout(() => {
-      if (Date.now() >= stopAt) {
-        showAiHint.value = false
-        return
-      }
-
-      if (pauseAiHint.value) {
-        scheduleShow()
-        return
-      }
-      showAiHint.value = true
-      aiPulse.value = true
-      if (aiPulseTimer) clearTimeout(aiPulseTimer)
-      aiPulseTimer = setTimeout(() => { aiPulse.value = false }, 600)
-      aiHintTimer = setTimeout(() => {
-        showAiHint.value = false
-        nextDelayMs += 1000
-        scheduleShow()
-      }, 2200)
-    }, nextDelayMs)
-  }
-  scheduleShow()
-}
-
 function onAiFloatClick() {
   showAiHint.value = !showAiHint.value
-}
-
-function goToSmartSearch(mode) {
-  const query = { q: cityTitle.value }
-  if (mode === 'food') {
-    query.category = 'food'
-  }
-  router.push({ path: '/search', query })
 }
 
 watch(() => route.params.city, () => {
@@ -538,12 +476,6 @@ watch(locale, () => {
 onMounted(() => {
   fetchCity()
   fetchCityExtras()
-  startAiHintLoop()
-})
-
-onUnmounted(() => {
-  if (aiHintTimer) clearTimeout(aiHintTimer)
-  if (aiPulseTimer) clearTimeout(aiPulseTimer)
 })
 </script>
 
@@ -734,14 +666,14 @@ onUnmounted(() => {
 
 .city-sidebar {
   min-width: 0;
+  overflow: visible;
 }
 
 .city-sidebar-inner {
-  position: fixed;
+  position: sticky;
   top: 104px;
-  right: 24px;
   width: 320px;
-  z-index: 320;
+  margin-left: auto;
 }
 
 .city-sidebar-stack {
@@ -790,42 +722,6 @@ onUnmounted(() => {
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
-}
-
-.city-header-meta {
-  margin: 0;
-  color: #717171;
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.city-ai-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  margin-bottom: 2px;
-}
-
-.city-ai-inline-wrap {
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  width: 100%;
-}
-
-.city-ai-inline-hint {
-  max-width: 190px;
-}
-
-.city-ai-inline-actions {
-  margin-top: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .city-category-grid {
@@ -1078,22 +974,6 @@ onUnmounted(() => {
   color: #222;
   text-decoration: none;
   font-weight: 700;
-}
-
-.city-ai-quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.city-ai-action {
-  border: 1px solid rgba(255,56,92,0.16);
-  background: rgba(255,56,92,0.06);
-  color: #FF385C;
-  border-radius: 999px;
-  padding: 7px 12px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .card-badges {
@@ -1357,8 +1237,6 @@ onUnmounted(() => {
   .city-body-layout--with-sidebar { grid-template-columns: 1fr; }
   .city-sidebar-inner {
     position: static;
-    right: auto;
-    top: auto;
     width: 100%;
   }
   .city-sidebar-stack { max-height: none; }
@@ -1367,15 +1245,15 @@ onUnmounted(() => {
     max-height: none;
     overflow: visible;
   }
-  .city-ai-panel { align-items: flex-start; }
-  .city-ai-inline-wrap {
-    justify-content: flex-start;
-    flex-direction: row;
-  }
-  .city-ai-inline-actions { justify-content: flex-start; }
   .dest-grid { grid-template-columns: 1fr; }
   .city-header { flex-direction: column; align-items: flex-start; }
   .city-category-grid { flex-wrap: nowrap; }
   .city-category-grid--expanded { flex-wrap: wrap; }
+}
+
+@media (min-width: 1360px) {
+  .city-sidebar-inner {
+    transform: translateX(max(0px, calc((100vw - 1200px) / 2 - 24px)));
+  }
 }
 </style>

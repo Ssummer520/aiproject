@@ -146,6 +146,7 @@ const showCurrencyMenu = ref(false)
 
 function toggleLang() {
   locale.value = locale.value === 'en' ? 'zh' : 'en'
+  showCurrencyMenu.value = false
 }
 
 function selectCurrency(code) {
@@ -154,6 +155,7 @@ function selectCurrency(code) {
 }
 
 function goToSection(section) {
+  showCurrencyMenu.value = false
   if (route.path === '/') {
     emit('scrollTo', section)
     return
@@ -269,6 +271,10 @@ function handleClickOutside(e) {
 
 onMounted(() => document.addEventListener('click', handleClickOutside))
 onUnmounted(() => document.removeEventListener('click', handleClickOutside))
+
+watch(() => route.fullPath, () => {
+  showCurrencyMenu.value = false
+})
 
 watch(showAuthModal, () => { authError.value = ''; authSuccess.value = '' })
 </script>

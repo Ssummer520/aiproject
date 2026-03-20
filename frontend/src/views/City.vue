@@ -79,18 +79,38 @@
         <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
       </div>
 
-      <!-- 空状态 -->
-      <div v-else-if="!filteredResults.length" class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <h3>{{ locale === 'zh' ? '暂无内容' : 'No destinations found' }}</h3>
-        <p>{{ activeCategoryLabel ? (locale === 'zh' ? `当前城市下暂无「${activeCategoryLabel}」相关结果` : `No ${activeCategoryLabel} results in this city yet.`) : (locale === 'zh' ? '该城市暂无可用景点' : 'No destinations available for this city yet.') }}</p>
-        <button v-if="activeCategory !== 'all'" type="button" class="back-home-btn" @click="activeCategory = 'all'">
-          {{ locale === 'zh' ? '查看全部' : 'Show all' }}
-        </button>
-        <router-link v-else to="/" class="back-home-btn">{{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
+      <div v-else-if="!filteredResults.length" class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': deals.length }">
+        <div class="city-main-column">
+          <div class="empty-state city-empty-state">
+            <div class="empty-icon">🔍</div>
+            <h3>{{ locale === 'zh' ? '暂无内容' : 'No destinations found' }}</h3>
+            <p>{{ activeCategoryLabel ? (locale === 'zh' ? `当前城市下暂无「${activeCategoryLabel}」相关结果` : `No ${activeCategoryLabel} results in this city yet.`) : (locale === 'zh' ? '该城市暂无可用景点' : 'No destinations available for this city yet.') }}</p>
+            <button v-if="activeCategory !== 'all'" type="button" class="back-home-btn" @click="activeCategory = 'all'">
+              {{ locale === 'zh' ? '查看全部' : 'Show all' }}
+            </button>
+            <router-link v-else to="/" class="back-home-btn">{{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
+          </div>
+        </div>
+
+        <aside class="city-sidebar" v-if="deals.length">
+          <div class="city-sidebar-inner">
+            <div class="sidebar-widget deals-widget city-deals-widget">
+              <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
+              <div class="sidebar-deals-list city-sidebar-deals-list">
+                <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
+                  <div class="deal-content-mini">
+                    <h4>{{ deal.title }}</h4>
+                    <p>{{ deal.description }}</p>
+                    <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
 
-      <div v-else class="city-body-layout">
+      <div v-else class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': deals.length }">
         <div class="city-main-column">
           <div class="destinations-section">
             <div class="section-header">
@@ -177,14 +197,16 @@
         </div>
 
         <aside class="city-sidebar" v-if="deals.length">
-          <div class="sidebar-widget deals-widget">
-            <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
-            <div class="sidebar-deals-list">
-              <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card" :class="'deal-' + deal.type">
-                <div class="deal-content-mini">
-                  <h4>{{ deal.title }}</h4>
-                  <p>{{ deal.description }}</p>
-                  <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+          <div class="city-sidebar-inner">
+            <div class="sidebar-widget deals-widget city-deals-widget">
+              <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
+              <div class="sidebar-deals-list city-sidebar-deals-list">
+                <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
+                  <div class="deal-content-mini">
+                    <h4>{{ deal.title }}</h4>
+                    <p>{{ deal.description }}</p>
+                    <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -478,9 +500,22 @@ function toggleParentCategory(category) {
 }
 
 function startAiHintLoop() {
+  let nextDelayMs = 1000
+  const stopAt = Date.now() + 60000
+
   function scheduleShow() {
+    if (Date.now() >= stopAt) {
+      showAiHint.value = false
+      return
+    }
+
     if (aiHintTimer) clearTimeout(aiHintTimer)
     aiHintTimer = setTimeout(() => {
+      if (Date.now() >= stopAt) {
+        showAiHint.value = false
+        return
+      }
+
       if (pauseAiHint.value) {
         scheduleShow()
         return
@@ -491,9 +526,10 @@ function startAiHintLoop() {
       aiPulseTimer = setTimeout(() => { aiPulse.value = false }, 600)
       aiHintTimer = setTimeout(() => {
         showAiHint.value = false
-        aiHintTimer = setTimeout(scheduleShow, 8000)
-      }, 4200)
-    }, 1600)
+        nextDelayMs += 1000
+        scheduleShow()
+      }, 2200)
+    }, nextDelayMs)
   }
   scheduleShow()
 }
@@ -700,6 +736,10 @@ onUnmounted(() => {
 }
 
 .city-body-layout {
+  display: block;
+}
+
+.city-body-layout--with-sidebar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 28px;
@@ -710,9 +750,43 @@ onUnmounted(() => {
   min-width: 0;
 }
 
+.city-empty-state {
+  min-height: 320px;
+}
+
 .city-sidebar {
+  min-width: 0;
+}
+
+.city-sidebar-inner {
   position: sticky;
   top: 104px;
+  width: 320px;
+  margin-left: auto;
+}
+
+.city-deals-widget {
+  max-height: calc(100vh - 136px);
+  overflow: hidden;
+}
+
+.city-sidebar-deals-list {
+  max-height: calc(100vh - 236px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.city-sidebar-deals-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.city-sidebar-deals-list::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+}
+
+.city-sidebar-deal-card {
+  min-height: 132px;
 }
 
 .city-header {
@@ -1352,11 +1426,33 @@ onUnmounted(() => {
   .hero-content { padding: 0 20px 32px; }
   .hero-content h1 { font-size: 2.2rem; }
   .city-content { padding: 20px 16px 40px; }
-  .city-body-layout { grid-template-columns: 1fr; }
-  .city-sidebar { position: static; }
+  .city-body-layout--with-sidebar { grid-template-columns: 1fr; }
+  .city-sidebar-inner {
+    position: static;
+    width: 100%;
+  }
+  .city-deals-widget,
+  .city-sidebar-deals-list {
+    max-height: none;
+    overflow: visible;
+  }
   .dest-grid { grid-template-columns: 1fr; }
   .city-header { flex-direction: column; align-items: flex-start; }
   .city-category-grid { flex-wrap: nowrap; }
   .city-category-grid--expanded { flex-wrap: wrap; }
+}
+
+@media (min-width: 1360px) {
+  .city-sidebar {
+    overflow: visible;
+  }
+
+  .city-sidebar-inner {
+    transform: translateX(max(0px, calc((100vw - 1200px) / 2 - 24px)));
+  }
+
+  .city-ai-float-wrap {
+    right: 368px;
+  }
 }
 </style>

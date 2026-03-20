@@ -79,9 +79,9 @@
         <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
       </div>
 
-      <div v-else-if="!filteredResults.length" class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': deals.length }">
+      <div v-else class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': deals.length }">
         <div class="city-main-column">
-          <div class="empty-state city-empty-state">
+          <div v-if="!filteredResults.length" class="empty-state city-empty-state">
             <div class="empty-icon">🔍</div>
             <h3>{{ locale === 'zh' ? '暂无内容' : 'No destinations found' }}</h3>
             <p>{{ activeCategoryLabel ? (locale === 'zh' ? `当前城市下暂无「${activeCategoryLabel}」相关结果` : `No ${activeCategoryLabel} results in this city yet.`) : (locale === 'zh' ? '该城市暂无可用景点' : 'No destinations available for this city yet.') }}</p>
@@ -90,176 +90,115 @@
             </button>
             <router-link v-else to="/" class="back-home-btn">{{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
           </div>
+
+          <template v-else>
+            <div class="destinations-section">
+              <div class="section-header">
+                <h2 class="section-title">
+                  {{ locale === 'zh' ? '热门目的地' : 'Popular Destinations' }}
+                </h2>
+                <span class="dest-count">{{ filteredResults.length }} {{ locale === 'zh' ? '个选择' : 'options' }}</span>
+              </div>
+
+              <div class="dest-grid">
+                <router-link
+                  v-for="(d, idx) in filteredResults"
+                  :key="d.id"
+                  :to="'/destination/' + d.id"
+                  class="dest-card"
+                >
+                  <div class="card-cover">
+                    <img :src="d.cover" :alt="d.name" @error="onImgError" loading="lazy" />
+                    <div class="card-badges">
+                      <span class="badge-tag" v-if="d.tags?.[0]">{{ d.tags[0] }}</span>
+                      <span class="badge-top" v-if="idx === 0">🔥 {{ locale === 'zh' ? '热门' : 'Top' }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="fav-btn"
+                      :class="{ favorited: d.is_favorite && isLoggedIn }"
+                      @click.prevent.stop="toggleFav(d)"
+                    >
+                      {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
+                    </button>
+                    <div class="card-overlay">
+                      <span class="overlay-text">{{ locale === 'zh' ? '查看详情' : 'View Details' }} →</span>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-top">
+                      <div>
+                        <h3 class="dest-name">{{ d.name }}</h3>
+                        <p class="dest-city">📍 {{ d.city }}</p>
+                      </div>
+                      <div class="dest-rating">
+                        <span class="star-icon">★</span>
+                        <span class="rating-val">{{ d.rating }}</span>
+                        <span class="review-count">({{ formatCount(d.review_count) }})</span>
+                      </div>
+                    </div>
+                    <div class="dest-tags">
+                      <span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span>
+                    </div>
+                    <div class="dest-footer">
+                      <div class="dest-price">
+                        <span class="price-amount">¥{{ d.price }}</span>
+                        <span class="price-unit">/ {{ locale === 'zh' ? '人' : 'person' }}</span>
+                      </div>
+                      <div class="dest-bookings" v-if="d.booked_count">
+                        <span>🎫 {{ d.booked_count }} {{ locale === 'zh' ? '人预订' : 'booked' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </router-link>
+              </div>
+            </div>
+
+            <div class="extra-section" v-if="filteredResults.length > 1">
+              <h2 class="section-title">{{ locale === 'zh' ? '精选体验' : 'Featured Experiences' }}</h2>
+              <div class="experience-grid">
+                <div v-for="d in filteredResults.slice(0, 3)" :key="'exp-' + d.id" class="exp-card">
+                  <div class="exp-cover">
+                    <img :src="d.cover" :alt="d.name" @error="onImgError" />
+                  </div>
+                  <div class="exp-body">
+                    <h4>{{ d.name }}</h4>
+                    <p>{{ (d.description || '').substring(0, 80) }}...</p>
+                    <div class="exp-footer">
+                      <span class="exp-price">¥{{ d.price }}</span>
+                      <router-link :to="'/destination/' + d.id" class="exp-btn">
+                        {{ locale === 'zh' ? '立即体验' : 'Book Now' }}
+                      </router-link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
 
         <aside class="city-sidebar" v-if="deals.length">
           <div class="city-sidebar-inner">
             <div class="city-sidebar-stack">
-              <div
-                class="sidebar-widget city-ai-widget"
-                :class="{ 'city-ai-widget--highlight': showAiHint }"
-                @mouseenter="pauseAiHint = true"
-                @mouseleave="pauseAiHint = false"
-              >
-                <div class="city-ai-widget-head">
-                  <div class="city-ai-widget-title-wrap">
-                    <span class="city-ai-widget-badge">AI</span>
-                    <div>
-                      <h3 class="widget-title city-ai-widget-title">{{ locale === 'zh' ? 'AI 行程助手' : 'AI Trip Planner' }}</h3>
-                      <p class="city-ai-widget-text">{{ locale === 'zh' ? cityAiHintZh : cityAiHintEn }}</p>
-                    </div>
-                  </div>
+              <div class="city-ai-panel" @mouseenter="pauseAiHint = true" @mouseleave="pauseAiHint = false">
+                <div class="city-ai-inline-wrap">
                   <button
                     type="button"
-                    class="city-ai-widget-toggle"
-                    :class="{ 'city-ai-widget-toggle--pulse': aiPulse }"
+                    class="ai-float-btn"
+                    :class="{ 'ai-float-btn--open': showAiHint, 'ai-float-btn--pulse': aiPulse }"
                     @click="onAiFloatClick"
+                    aria-label="AI travel assistant"
                   >
-                    ✨
+                    <span class="ai-float-icon">✨</span>
                   </button>
-                </div>
-                <Transition name="city-ai-hint">
-                  <p v-if="showAiHint" class="city-ai-widget-note">{{ locale === 'zh' ? '我可以根据当前城市和分类，给你生成更聪明的玩法建议。' : 'I can turn this city and category into a smarter itinerary.' }}</p>
-                </Transition>
-                <div class="city-ai-quick-actions">
-                  <button type="button" class="city-ai-action" @click="goToSmartSearch('family')">{{ locale === 'zh' ? '亲子玩法' : 'Family trip' }}</button>
-                  <button type="button" class="city-ai-action" @click="goToSmartSearch('food')">{{ locale === 'zh' ? '美食路线' : 'Food route' }}</button>
-                </div>
-              </div>
-
-              <div class="sidebar-widget deals-widget city-deals-widget">
-                <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
-                <div class="sidebar-deals-list city-sidebar-deals-list">
-                  <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
-                    <div class="deal-content-mini">
-                      <h4>{{ deal.title }}</h4>
-                      <p>{{ deal.description }}</p>
-                      <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+                  <Transition name="ai-hint">
+                    <div v-if="showAiHint" class="ai-float-hint city-ai-inline-hint">
+                      <p class="ai-float-hint-text">{{ locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!' }}</p>
+                      <span class="ai-float-hint-arrow"></span>
                     </div>
-                  </div>
+                  </Transition>
                 </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      <div v-else class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': deals.length }">
-        <div class="city-main-column">
-          <div class="destinations-section">
-            <div class="section-header">
-              <h2 class="section-title">
-                {{ locale === 'zh' ? '热门目的地' : 'Popular Destinations' }}
-              </h2>
-              <span class="dest-count">{{ filteredResults.length }} {{ locale === 'zh' ? '个选择' : 'options' }}</span>
-            </div>
-
-            <div class="dest-grid">
-              <router-link
-                v-for="(d, idx) in filteredResults"
-                :key="d.id"
-                :to="'/destination/' + d.id"
-                class="dest-card"
-              >
-                <div class="card-cover">
-                  <img :src="d.cover" :alt="d.name" @error="onImgError" loading="lazy" />
-                  <div class="card-badges">
-                    <span class="badge-tag" v-if="d.tags?.[0]">{{ d.tags[0] }}</span>
-                    <span class="badge-top" v-if="idx === 0">🔥 {{ locale === 'zh' ? '热门' : 'Top' }}</span>
-                  </div>
-                  <button
-                    type="button"
-                    class="fav-btn"
-                    :class="{ favorited: d.is_favorite && isLoggedIn }"
-                    @click.prevent.stop="toggleFav(d)"
-                  >
-                    {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
-                  </button>
-                  <div class="card-overlay">
-                    <span class="overlay-text">{{ locale === 'zh' ? '查看详情' : 'View Details' }} →</span>
-                  </div>
-                </div>
-                <div class="card-body">
-                  <div class="card-top">
-                    <div>
-                      <h3 class="dest-name">{{ d.name }}</h3>
-                      <p class="dest-city">📍 {{ d.city }}</p>
-                    </div>
-                    <div class="dest-rating">
-                      <span class="star-icon">★</span>
-                      <span class="rating-val">{{ d.rating }}</span>
-                      <span class="review-count">({{ formatCount(d.review_count) }})</span>
-                    </div>
-                  </div>
-                  <div class="dest-tags">
-                    <span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span>
-                  </div>
-                  <div class="dest-footer">
-                    <div class="dest-price">
-                      <span class="price-amount">¥{{ d.price }}</span>
-                      <span class="price-unit">/ {{ locale === 'zh' ? '人' : 'person' }}</span>
-                    </div>
-                    <div class="dest-bookings" v-if="d.booked_count">
-                      <span>🎫 {{ d.booked_count }} {{ locale === 'zh' ? '人预订' : 'booked' }}</span>
-                    </div>
-                  </div>
-                </div>
-              </router-link>
-            </div>
-          </div>
-
-          <div class="extra-section" v-if="filteredResults.length > 1">
-            <h2 class="section-title">{{ locale === 'zh' ? '精选体验' : 'Featured Experiences' }}</h2>
-            <div class="experience-grid">
-              <div v-for="d in filteredResults.slice(0, 3)" :key="'exp-' + d.id" class="exp-card">
-                <div class="exp-cover">
-                  <img :src="d.cover" :alt="d.name" @error="onImgError" />
-                </div>
-                <div class="exp-body">
-                  <h4>{{ d.name }}</h4>
-                  <p>{{ (d.description || '').substring(0, 80) }}...</p>
-                  <div class="exp-footer">
-                    <span class="exp-price">¥{{ d.price }}</span>
-                    <router-link :to="'/destination/' + d.id" class="exp-btn">
-                      {{ locale === 'zh' ? '立即体验' : 'Book Now' }}
-                    </router-link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <aside class="city-sidebar" v-if="deals.length">
-          <div class="city-sidebar-inner">
-            <div class="city-sidebar-stack">
-              <div
-                class="sidebar-widget city-ai-widget"
-                :class="{ 'city-ai-widget--highlight': showAiHint }"
-                @mouseenter="pauseAiHint = true"
-                @mouseleave="pauseAiHint = false"
-              >
-                <div class="city-ai-widget-head">
-                  <div class="city-ai-widget-title-wrap">
-                    <span class="city-ai-widget-badge">AI</span>
-                    <div>
-                      <h3 class="widget-title city-ai-widget-title">{{ locale === 'zh' ? 'AI 行程助手' : 'AI Trip Planner' }}</h3>
-                      <p class="city-ai-widget-text">{{ locale === 'zh' ? cityAiHintZh : cityAiHintEn }}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    class="city-ai-widget-toggle"
-                    :class="{ 'city-ai-widget-toggle--pulse': aiPulse }"
-                    @click="onAiFloatClick"
-                  >
-                    ✨
-                  </button>
-                </div>
-                <Transition name="city-ai-hint">
-                  <p v-if="showAiHint" class="city-ai-widget-note">{{ locale === 'zh' ? '我可以根据当前城市和分类，给你生成更聪明的玩法建议。' : 'I can turn this city and category into a smarter itinerary.' }}</p>
-                </Transition>
-                <div class="city-ai-quick-actions">
+                <div class="city-ai-quick-actions city-ai-inline-actions">
                   <button type="button" class="city-ai-action" @click="goToSmartSearch('family')">{{ locale === 'zh' ? '亲子玩法' : 'Family trip' }}</button>
                   <button type="button" class="city-ai-action" @click="goToSmartSearch('food')">{{ locale === 'zh' ? '美食路线' : 'Food route' }}</button>
                 </div>
@@ -473,9 +412,6 @@ const filteredResults = computed(() => {
     return false
   })
 })
-
-const cityAiHintZh = computed(() => `想玩转${cityTitle.value}？我可以帮你找路线`)
-const cityAiHintEn = computed(() => `Need a plan for ${cityTitle.value}? Ask me`)
 
 function formatCount(n) {
   if (!n) return '0'
@@ -801,25 +737,28 @@ onUnmounted(() => {
 }
 
 .city-sidebar-inner {
-  position: sticky;
+  position: fixed;
   top: 104px;
+  right: 24px;
   width: 320px;
-  margin-left: auto;
+  z-index: 320;
 }
 
 .city-sidebar-stack {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: calc(100vh - 128px);
 }
 
 .city-deals-widget {
-  max-height: calc(100vh - 136px);
+  margin-bottom: 0;
+  max-height: calc(100vh - 228px);
   overflow: hidden;
 }
 
 .city-sidebar-deals-list {
-  max-height: calc(100vh - 236px);
+  max-height: calc(100vh - 312px);
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -860,92 +799,33 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.city-ai-widget {
-  border: 1px solid rgba(102, 126, 234, 0.16);
-  background:
-    radial-gradient(circle at top right, rgba(118, 75, 162, 0.18), transparent 38%),
-    linear-gradient(180deg, rgba(102, 126, 234, 0.08), rgba(255,255,255,0.92));
-}
-
-.city-ai-widget--highlight {
-  box-shadow: 0 18px 40px rgba(102, 126, 234, 0.16);
-  border-color: rgba(102, 126, 234, 0.28);
-}
-
-.city-ai-widget-head {
+.city-ai-panel {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 2px;
 }
 
-.city-ai-widget-title-wrap {
+.city-ai-inline-wrap {
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.city-ai-widget-badge {
-  display: inline-flex;
+  flex-direction: row-reverse;
   align-items: center;
-  justify-content: center;
-  min-width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.82rem;
-  box-shadow: 0 10px 24px rgba(102, 126, 234, 0.28);
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
 }
 
-.city-ai-widget-title {
-  margin-bottom: 4px;
+.city-ai-inline-hint {
+  max-width: 190px;
 }
 
-.city-ai-widget-text {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: #4b5563;
-}
-
-.city-ai-widget-toggle {
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(102, 126, 234, 0.18);
-  background: rgba(255,255,255,0.9);
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 1.1rem;
-  flex-shrink: 0;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.city-ai-widget-toggle:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.14);
-}
-
-.city-ai-widget-toggle--pulse {
-  animation: city-ai-btn-pulse 0.6s ease-out;
-}
-
-@keyframes city-ai-btn-pulse {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.06); }
-  100% { transform: scale(1); }
-}
-
-.city-ai-widget-note {
-  margin: 14px 0 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.78);
-  color: #4338ca;
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1.45;
+.city-ai-inline-actions {
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .city-category-grid {
@@ -1216,17 +1096,6 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-:global(.city-ai-hint-enter-active),
-:global(.city-ai-hint-leave-active) {
-  transition: opacity 0.22s ease, transform 0.22s ease;
-}
-
-:global(.city-ai-hint-enter-from),
-:global(.city-ai-hint-leave-to) {
-  opacity: 0;
-  transform: translateX(8px);
-}
-
 .card-badges {
   position: absolute;
   top: 12px;
@@ -1488,26 +1357,25 @@ onUnmounted(() => {
   .city-body-layout--with-sidebar { grid-template-columns: 1fr; }
   .city-sidebar-inner {
     position: static;
+    right: auto;
+    top: auto;
     width: 100%;
   }
+  .city-sidebar-stack { max-height: none; }
   .city-deals-widget,
   .city-sidebar-deals-list {
     max-height: none;
     overflow: visible;
   }
+  .city-ai-panel { align-items: flex-start; }
+  .city-ai-inline-wrap {
+    justify-content: flex-start;
+    flex-direction: row;
+  }
+  .city-ai-inline-actions { justify-content: flex-start; }
   .dest-grid { grid-template-columns: 1fr; }
   .city-header { flex-direction: column; align-items: flex-start; }
   .city-category-grid { flex-wrap: nowrap; }
   .city-category-grid--expanded { flex-wrap: wrap; }
-}
-
-@media (min-width: 1360px) {
-  .city-sidebar {
-    overflow: visible;
-  }
-
-  .city-sidebar-inner {
-    transform: translateX(max(0px, calc((100vw - 1200px) / 2 - 24px)));
-  }
 }
 </style>

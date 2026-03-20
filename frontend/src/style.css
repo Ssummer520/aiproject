@@ -67,7 +67,17 @@ body {
   transform: translateY(-100%);
 }
 
+/* 非首页: header 默认显示 */
 .site-header.header--visible {
+  transform: translateY(0) !important;
+}
+
+/* 首页滚动交互 */
+.travel-home .site-header.header--hidden {
+  transform: translateY(-100%);
+}
+
+.travel-home .site-header.header--visible {
   transform: translateY(0);
 }
 

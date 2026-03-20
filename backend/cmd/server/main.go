@@ -58,8 +58,9 @@ func main() {
 	mux.Handle("/api/v1/bookings/", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleBookingActions)))
 	mux.Handle("/api/v1/notifications", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleNotifications)))
 
-	log.Println("Server listening on http://localhost:8082")
-	if err := http.ListenAndServe(":8082", cors(mux)); err != nil {
+	const addr = ":8888"
+	log.Println("Server listening on http://localhost:8888")
+	if err := http.ListenAndServe(addr, cors(mux)); err != nil {
 		log.Fatal("Server failed:", err)
 	}
 }

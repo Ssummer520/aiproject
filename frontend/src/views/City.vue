@@ -78,7 +78,7 @@
         <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
       </div>
 
-      <div v-else class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': deals.length }">
+      <div v-else class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': showSidebar }">
         <div class="city-main-column">
           <div v-if="!filteredResults.length" class="empty-state city-empty-state">
             <div class="empty-icon">🔍</div>
@@ -176,10 +176,10 @@
           </template>
         </div>
 
-        <aside class="city-sidebar" v-if="deals.length">
+        <aside class="city-sidebar" v-if="showSidebar">
           <div class="city-sidebar-inner">
             <div class="city-sidebar-stack">
-              <div class="sidebar-widget deals-widget city-deals-widget">
+              <div class="sidebar-widget deals-widget city-deals-widget" v-if="deals.length">
                 <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
                 <div class="sidebar-deals-list city-sidebar-deals-list">
                   <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
@@ -189,6 +189,60 @@
                       <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div class="sidebar-widget city-rank-widget" v-if="cityTrendingThisWeek.length">
+                <h3 class="widget-title">{{ locale === 'zh' ? '本周最爱 · 收藏榜' : 'Trending this week · Most liked' }}</h3>
+                <div class="city-rank-list">
+                  <router-link
+                    v-for="(d, idx) in cityTrendingThisWeek"
+                    :key="'trend-' + d.id"
+                    :to="'/destination/' + d.id"
+                    class="city-rank-row"
+                  >
+                    <span class="city-rank-index">{{ idx + 1 }}</span>
+                    <img :src="d.cover" :alt="d.name" class="city-rank-thumb" @error="onImgError" />
+                    <div class="city-rank-info">
+                      <span class="city-rank-name">{{ d.name }}</span>
+                      <span class="city-rank-city">{{ d.city }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="city-rank-like-btn"
+                      :class="{ favorited: d.is_favorite && isLoggedIn }"
+                      @click.prevent.stop="toggleFav(d)"
+                    >
+                      {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
+                    </button>
+                  </router-link>
+                </div>
+              </div>
+
+              <div class="sidebar-widget city-rank-widget" v-if="cityMostViewedNearby.length">
+                <h3 class="widget-title">{{ locale === 'zh' ? '周边人气 · 点击榜' : 'Most viewed nearby' }}</h3>
+                <div class="city-rank-list">
+                  <router-link
+                    v-for="(d, idx) in cityMostViewedNearby"
+                    :key="'view-' + d.id"
+                    :to="'/destination/' + d.id"
+                    class="city-rank-row"
+                  >
+                    <span class="city-rank-index">{{ idx + 1 }}</span>
+                    <img :src="d.cover" :alt="d.name" class="city-rank-thumb" @error="onImgError" />
+                    <div class="city-rank-info">
+                      <span class="city-rank-name">{{ d.name }}</span>
+                      <span class="city-rank-city">{{ d.city }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="city-rank-like-btn"
+                      :class="{ favorited: d.is_favorite && isLoggedIn }"
+                      @click.prevent.stop="toggleFav(d)"
+                    >
+                      {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
+                    </button>
+                  </router-link>
                 </div>
               </div>
             </div>
@@ -229,6 +283,8 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e2
 const loading = ref(true)
 const results = ref([])
 const deals = ref([])
+const trendingThisWeek = ref([])
+const mostViewedNearby = ref([])
 const activeCategory = ref('all')
 const expandedParentCategory = ref('all')
 const showAllCategories = ref(false)
@@ -324,6 +380,27 @@ const cityCategories = computed(() => ([
 const visibleParentCategories = computed(() => cityCategories.value.slice(0, 6))
 const hiddenParentCategories = computed(() => cityCategories.value.slice(6))
 const activeChildCategories = computed(() => cityCategories.value.find(cat => cat.id === expandedParentCategory.value)?.children || [])
+const cityNameCandidates = computed(() => {
+  const slug = String(route.params.city || '').toLowerCase()
+  const info = cityMap[slug] || {}
+  return [slug, info.name, info.nameZh]
+    .filter(Boolean)
+    .map(v => String(v).toLowerCase())
+})
+
+function pickCityFirst(list) {
+  const candidates = cityNameCandidates.value
+  const byCity = (list || []).filter((item) => {
+    const city = String(item?.city || '').toLowerCase()
+    return city && candidates.some(name => city.includes(name) || name.includes(city))
+  })
+  return byCity.length ? byCity.slice(0, 3) : (list || []).slice(0, 3)
+}
+
+const cityTrendingThisWeek = computed(() => pickCityFirst(trendingThisWeek.value))
+const cityMostViewedNearby = computed(() => pickCityFirst(mostViewedNearby.value))
+const showSidebar = computed(() => deals.value.length || cityTrendingThisWeek.value.length || cityMostViewedNearby.value.length)
+
 const activeCategoryLabel = computed(() => {
   for (const cat of cityCategories.value) {
     if (cat.id === activeCategory.value) return cat.label
@@ -432,6 +509,8 @@ async function fetchCityExtras() {
     if (!res.ok) return
     const data = await res.json()
     deals.value = data.deals || []
+    trendingThisWeek.value = data.trending_this_week || []
+    mostViewedNearby.value = data.most_viewed_nearby || []
   } catch (e) {
     console.error(e)
   }
@@ -681,18 +760,27 @@ onMounted(() => {
   flex-direction: column;
   gap: 16px;
   max-height: calc(100vh - 128px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.city-sidebar-stack::-webkit-scrollbar {
+  width: 6px;
+}
+
+.city-sidebar-stack::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
 }
 
 .city-deals-widget {
   margin-bottom: 0;
-  max-height: calc(100vh - 228px);
-  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #fff9fa 100%);
 }
 
 .city-sidebar-deals-list {
-  max-height: calc(100vh - 312px);
-  overflow-y: auto;
-  padding-right: 4px;
+  max-height: none;
+  overflow: visible;
 }
 
 .city-sidebar-deals-list::-webkit-scrollbar {
@@ -706,6 +794,104 @@ onMounted(() => {
 
 .city-sidebar-deal-card {
   min-height: 132px;
+}
+
+.city-rank-widget {
+  margin-bottom: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  border: 1px solid rgba(2, 132, 199, 0.12);
+}
+
+.city-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.city-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  padding: 6px;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.city-rank-row:hover {
+  background: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.24);
+  transform: translateY(-1px);
+}
+
+.city-rank-index {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 56, 92, 0.1);
+  color: #FF385C;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.city-rank-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #f3f4f6;
+}
+
+.city-rank-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.city-rank-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-rank-city {
+  font-size: 0.76rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-rank-like-btn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.city-rank-like-btn.favorited {
+  color: #FF385C;
+}
+
+.city-rank-like-btn:hover {
+  color: #FF385C;
 }
 
 .city-header {

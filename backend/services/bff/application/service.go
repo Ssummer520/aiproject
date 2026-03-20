@@ -86,6 +86,15 @@ func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
 			case "Weekend Getaway":
 				deals[i].Title = "周末出逃"
 				deals[i].Description = "本地体验低至 5 折"
+			case "Family Fun Pass":
+				deals[i].Title = "亲子畅玩套票"
+				deals[i].Description = "2 大 1 小组合立减 20%"
+			case "Museum Night Special":
+				deals[i].Title = "博物馆夜场特惠"
+				deals[i].Description = "夜场联票 99 元起"
+			case "Foodie Trail Package":
+				deals[i].Title = "城市觅食路线包"
+				deals[i].Description = "美食 + 地陪组合 129 元起"
 			}
 		}
 	}
@@ -114,16 +123,7 @@ func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
 
 	trendingIDs := s.statsStore.TopByFavorites(10)
 	trendingThisWeek := make([]models.Destination, 0)
-	if len(trendingIDs) == 0 {
-		// Return default trending destinations when no user data
-		trendingThisWeek = []models.Destination{
-			s.getDestByID(1), // West Lake
-			s.getDestByID(3), // Great Wall
-			s.getDestByID(2), // The Bund
-			s.getDestByID(5), // Terracotta Army
-			s.getDestByID(4), // Yellow Mountain
-		}
-	} else {
+	if len(trendingIDs) > 0 {
 		for _, id := range trendingIDs {
 			d, ok := s.destCache.Get(id)
 			if ok {
@@ -133,19 +133,17 @@ func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
 			}
 		}
 	}
+	trendingThisWeek = s.fillWithDefaults(
+		trendingThisWeek,
+		[]int{1, 3, 2, 16, 11, 10, 14, 5, 4},
+		lang,
+		userID,
+		8,
+	)
 
 	mostViewedIDs := s.statsStore.TopByViews(10)
 	mostViewedNearby := make([]models.Destination, 0)
-	if len(mostViewedIDs) == 0 {
-		// Return default most viewed when no user data
-		mostViewedNearby = []models.Destination{
-			s.getDestByID(1),
-			s.getDestByID(2),
-			s.getDestByID(3),
-			s.getDestByID(4),
-			s.getDestByID(5),
-		}
-	} else {
+	if len(mostViewedIDs) > 0 {
 		for _, id := range mostViewedIDs {
 			d, ok := s.destCache.Get(id)
 			if ok {
@@ -155,6 +153,13 @@ func (s *BFFService) GetHomePageData(lang, userID string) HomePageData {
 			}
 		}
 	}
+	mostViewedNearby = s.fillWithDefaults(
+		mostViewedNearby,
+		[]int{1, 2, 3, 6, 14, 9, 11, 13},
+		lang,
+		userID,
+		8,
+	)
 
 	return HomePageData{
 		Recommendations:  dests,
@@ -182,6 +187,32 @@ func applyZhDestination(d *models.Destination, lang string) {
 		d.Name = "黄山"
 	case "Terracotta Army":
 		d.Name = "兵马俑"
+	case "Lingyin Temple":
+		d.Name = "灵隐寺"
+	case "Shanghai Disney Resort":
+		d.Name = "上海迪士尼度假区"
+	case "Wuzhen Water Town":
+		d.Name = "乌镇水乡"
+	case "Summer Palace":
+		d.Name = "颐和园"
+	case "Forbidden City":
+		d.Name = "故宫"
+	case "Chengdu Panda Base":
+		d.Name = "成都大熊猫繁育研究基地"
+	case "Jinli Ancient Street":
+		d.Name = "锦里古街"
+	case "Xi'an City Wall":
+		d.Name = "西安城墙"
+	case "Oriental Pearl Tower":
+		d.Name = "东方明珠"
+	case "Longjing Tea Plantation":
+		d.Name = "龙井茶园"
+	case "Universal Beijing Resort":
+		d.Name = "北京环球度假区"
+	case "Zhujiajiao Water Town":
+		d.Name = "朱家角古镇"
+	case "Mount Qingcheng":
+		d.Name = "青城山"
 	}
 	for j := range d.Tags {
 		switch d.Tags[j] {
@@ -193,6 +224,20 @@ func applyZhDestination(d *models.Destination, lang string) {
 			d.Tags[j] = "城市"
 		case "History":
 			d.Tags[j] = "历史"
+		case "Night View":
+			d.Tags[j] = "夜景"
+		case "Hiking":
+			d.Tags[j] = "徒步"
+		case "Archaeology":
+			d.Tags[j] = "考古"
+		case "Theme Park":
+			d.Tags[j] = "主题乐园"
+		case "Family":
+			d.Tags[j] = "亲子"
+		case "Museum":
+			d.Tags[j] = "博物馆"
+		case "Food":
+			d.Tags[j] = "美食"
 		}
 	}
 }
@@ -416,4 +461,44 @@ func (s *BFFService) getDestByID(id int) models.Destination {
 		}
 	}
 	return d
+}
+
+func (s *BFFService) fillWithDefaults(
+	list []models.Destination,
+	defaultIDs []int,
+	lang, userID string,
+	target int,
+) []models.Destination {
+	out := make([]models.Destination, 0, len(list)+len(defaultIDs))
+	seen := make(map[int]bool, len(list)+len(defaultIDs))
+
+	for _, d := range list {
+		if d.ID == 0 || seen[d.ID] {
+			continue
+		}
+		seen[d.ID] = true
+		out = append(out, d)
+	}
+
+	for _, id := range defaultIDs {
+		if target > 0 && len(out) >= target {
+			break
+		}
+		if seen[id] {
+			continue
+		}
+		d := s.getDestByID(id)
+		if d.ID == 0 {
+			continue
+		}
+		d.IsFavorite = s.interactionApp.IsFavorite(userID, d.ID)
+		applyZhDestination(&d, lang)
+		seen[d.ID] = true
+		out = append(out, d)
+	}
+
+	if target > 0 && len(out) > target {
+		return out[:target]
+	}
+	return out
 }

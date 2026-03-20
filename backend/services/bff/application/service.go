@@ -338,7 +338,11 @@ func (s *BFFService) GetDestinationDetail(lang, userID string, id int) models.De
 
 	d.IsFavorite = s.interactionApp.IsFavorite(userID, d.ID)
 	applyZhDestination(&d, lang)
-	s.statsStore.IncrementView(id)
+	if userID != "" {
+		s.AddToHistory(userID, id)
+	} else {
+		s.statsStore.IncrementView(id)
+	}
 
 	return d
 }
@@ -364,6 +368,22 @@ func (s *BFFService) CreateBooking(userID string, destID int, checkIn, checkOut 
 	})
 
 	return booking
+}
+
+func (s *BFFService) CancelBooking(userID string, bookingID int) (models.Booking, bool) {
+	booking, ok := s.bookingStore.CancelBooking(userID, bookingID)
+	if !ok {
+		return models.Booking{}, false
+	}
+
+	s.notificationStore.AddNotification(userID, models.Notification{
+		Type:    "booking_cancelled",
+		Title:   "Booking Cancelled",
+		Message: "Your booking for " + booking.Name + " has been cancelled.",
+		Link:    "/trips",
+	})
+
+	return booking, true
 }
 
 func (s *BFFService) GetNotifications(userID string) []models.Notification {

@@ -219,6 +219,7 @@ const filters = ref({
 })
 
 const API = '/api/v1'
+let isSyncingFromRoute = false
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'
 
@@ -278,6 +279,38 @@ async function doSearch() {
   } finally {
     loading.value = false
   }
+}
+
+function syncRouteQuery() {
+  if (isSyncingFromRoute) return
+
+  const nextQuery = {}
+  if (keyword.value) nextQuery.q = keyword.value
+  if (filters.value.city) nextQuery.city = filters.value.city
+  if (filters.value.category) nextQuery.category = filters.value.category
+  if (filters.value.minPrice) nextQuery.min_price = String(filters.value.minPrice)
+  if (filters.value.maxPrice) nextQuery.max_price = String(filters.value.maxPrice)
+  if (filters.value.rating) nextQuery.rating = String(filters.value.rating)
+  if (filters.value.sortBy && filters.value.sortBy !== 'recommended') nextQuery.sort = filters.value.sortBy
+
+  const currentQuery = route.query || {}
+  if (JSON.stringify(nextQuery) === JSON.stringify(currentQuery)) {
+    return
+  }
+
+  router.replace({ query: nextQuery })
+}
+
+function hydrateFromRoute(query) {
+  isSyncingFromRoute = true
+  keyword.value = query.q || ''
+  filters.value.city = query.city || ''
+  filters.value.category = query.category || ''
+  filters.value.minPrice = query.min_price ? Number(query.min_price) : null
+  filters.value.maxPrice = query.max_price ? Number(query.max_price) : null
+  filters.value.rating = query.rating || ''
+  filters.value.sortBy = query.sort || 'recommended'
+  isSyncingFromRoute = false
 }
 
 async function toggleFav(d) {
@@ -350,16 +383,16 @@ function logout() {
 }
 
 onMounted(() => {
-  if (route.query.q) {
-    keyword.value = route.query.q
-  }
+  hydrateFromRoute(route.query)
   doSearch()
 })
 
-watch(() => route.query.q, (newQ) => {
-  keyword.value = newQ || ''
+watch(() => route.query, (newQuery) => {
+  hydrateFromRoute(newQuery)
   doSearch()
 })
+
+watch([keyword, filters], syncRouteQuery, { deep: true })
 </script>
 
 <style scoped>
@@ -701,7 +734,8 @@ watch(() => route.query.q, (newQ) => {
   border: none;
   border-radius: 8px;
   font-weight: 600;
-  cursor: margin-top: 8px;
+  cursor: pointer;
+  margin-top: 8px;
 }
 
 .auth-link {

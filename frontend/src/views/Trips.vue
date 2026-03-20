@@ -59,8 +59,22 @@
               <p class="trip-guests">{{ trip.guests }} {{ locale === 'zh' ? '位客人' : 'guests' }}</p>
               <p class="trip-price">¥{{ trip.total_price }}</p>
             </div>
-            <div class="trip-status" :class="trip.status">
-              {{ trip.status === 'confirmed' ? (locale === 'zh' ? '已确认' : 'Confirmed') : (locale === 'zh' ? '已完成' : 'Completed') }}
+            <div class="trip-side">
+              <div class="trip-status" :class="trip.status">
+                {{ formatTripStatus(trip.status) }}
+              </div>
+              <button
+                v-if="trip.status === 'confirmed' && activeTab === 'upcoming'"
+                type="button"
+                class="trip-action trip-action--danger"
+                :disabled="cancellingId === trip.id"
+                @click="cancelTrip(trip)"
+              >
+                {{ cancellingId === trip.id ? (locale === 'zh' ? '取消中...' : 'Cancelling...') : (locale === 'zh' ? '取消订单' : 'Cancel booking') }}
+              </button>
+              <router-link v-else class="trip-action" :to="'/destination/' + trip.destination_id">
+                {{ locale === 'zh' ? '再次预订' : 'Book again' }}
+              </router-link>
             </div>
           </div>
         </div>
@@ -97,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
@@ -114,6 +128,7 @@ const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const authError = ref('')
+const cancellingId = ref(null)
 
 const API = '/api/v1'
 
@@ -132,11 +147,21 @@ function toggleLang() {
 const displayTrips = computed(() => {
   const now = new Date().toISOString().split('T')[0]
   if (activeTab.value === 'upcoming') {
-    return trips.value.filter(t => t.check_in >= now)
+    return trips.value.filter(t => t.status === 'confirmed' && t.check_in >= now)
   } else {
-    return trips.value.filter(t => t.check_in < now)
+    return trips.value.filter(t => t.status !== 'confirmed' || t.check_in < now)
   }
 })
+
+function formatTripStatus(status) {
+  if (status === 'cancelled') {
+    return locale.value === 'zh' ? '已取消' : 'Cancelled'
+  }
+  if (status === 'confirmed') {
+    return locale.value === 'zh' ? '已确认' : 'Confirmed'
+  }
+  return locale.value === 'zh' ? '已完成' : 'Completed'
+}
 
 async function fetchTrips() {
   if (!isLoggedIn.value) {
@@ -202,7 +227,41 @@ async function doRegister() {
   }
 }
 
+async function cancelTrip(trip) {
+  if (!trip?.id) return
+  cancellingId.value = trip.id
+  try {
+    const res = await fetch(`${API}/bookings/${trip.id}/cancel`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+    if (!res.ok) {
+      return
+    }
+    const data = await res.json()
+    if (data.booking) {
+      const idx = trips.value.findIndex(item => item.id === trip.id)
+      if (idx >= 0) {
+        trips.value[idx] = data.booking
+      }
+      activeTab.value = 'past'
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    cancellingId.value = null
+  }
+}
+
 onMounted(fetchTrips)
+watch(isLoggedIn, (value) => {
+  if (value) {
+    fetchTrips()
+    return
+  }
+  trips.value = []
+  loading.value = false
+})
 </script>
 
 <style scoped>
@@ -312,12 +371,40 @@ onMounted(fetchTrips)
   margin-top: 8px;
 }
 
+.trip-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
 .trip-status {
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
   height: fit-content;
+}
+
+.trip-status.cancelled {
+  background: #fce8e6;
+  color: #b3261e;
+}
+
+.trip-action {
+  border: 1px solid var(--surface-border);
+  background: transparent;
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.trip-action--danger {
+  color: var(--danger);
+  border-color: rgba(179, 38, 30, 0.25);
 }
 
 .trip-status.confirmed {

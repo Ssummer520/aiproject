@@ -41,6 +41,7 @@ type Booking struct {
 	TotalPrice    float64 `json:"total_price"`
 	Status        string  `json:"status"`
 	CreatedAt     string  `json:"created_at"`
+	CancelledAt   string  `json:"cancelled_at,omitempty"`
 }
 
 type Notification struct {

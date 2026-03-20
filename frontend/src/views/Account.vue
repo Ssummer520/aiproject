@@ -78,7 +78,7 @@
             <p>{{ locale === 'zh' ? '暂无通知' : 'No notifications yet' }}</p>
           </div>
           <div v-else class="notifications-list">
-            <div v-for="n in notifications" :key="n.id" class="notification-item" :class="{ unread: !n.read }">
+            <div v-for="n in notifications" :key="n.id" class="notification-item" :class="{ unread: !n.read }" @click="markNotificationAsRead(n)">
               <div class="notification-icon">
                 {{ n.type === 'booking_confirmed' ? '✓' : '🔔' }}
               </div>
@@ -98,6 +98,26 @@
           </button>
         </div>
       </template>
+    </div>
+
+    <div v-if="showCurrencyModal" class="modal-overlay" @click.self="showCurrencyModal = false">
+      <div class="auth-modal-card">
+        <button class="modal-close" @click="showCurrencyModal = false">×</button>
+        <h2 class="auth-modal-title">{{ locale === 'zh' ? '选择货币' : 'Choose Currency' }}</h2>
+        <div class="currency-options">
+          <button
+            v-for="(symbol, code) in currencySymbols"
+            :key="code"
+            type="button"
+            class="currency-option"
+            :class="{ active: currency === code }"
+            @click="selectCurrency(code)"
+          >
+            <span>{{ code }}</span>
+            <span>{{ symbol }}</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="showAuthModal" class="modal-overlay auth-modal-overlay" @click.self="showAuthModal = null">
@@ -130,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
@@ -140,7 +160,7 @@ const router = useRouter()
 const { isLoggedIn, user, setAuth, clearAuth, authHeaders } = useAuth()
 
 import { useCurrency } from '../composables/useCurrency'
-const { currency, setCurrency, formatPrice, getSymbol: currencySymbol, currencySymbols } = useCurrency()
+const { currency, setCurrency, getSymbol: currencySymbol, currencySymbols } = useCurrency()
 
 const showAuthModal = ref(null)
 const showCurrencyModal = ref(false)
@@ -155,6 +175,7 @@ const emailNotifications = ref(true)
 const pushNotifications = ref(true)
 
 const API = '/api/v1'
+const PREFERENCES_KEY = 'travel_preferences'
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'
 
@@ -166,6 +187,31 @@ function onImgError(e) {
 
 function toggleLang() {
   locale.value = locale.value === 'en' ? 'zh' : 'en'
+}
+
+function loadPreferences() {
+  try {
+    const raw = localStorage.getItem(PREFERENCES_KEY)
+    if (!raw) return
+    const saved = JSON.parse(raw)
+    if (saved.locale === 'en' || saved.locale === 'zh') {
+      locale.value = saved.locale
+    }
+    if (saved.currency) {
+      setCurrency(saved.currency)
+    }
+    emailNotifications.value = saved.emailNotifications ?? true
+    pushNotifications.value = saved.pushNotifications ?? true
+  } catch (_) {}
+}
+
+function savePreferences() {
+  localStorage.setItem(PREFERENCES_KEY, JSON.stringify({
+    locale: locale.value,
+    currency: currency.value,
+    emailNotifications: emailNotifications.value,
+    pushNotifications: pushNotifications.value,
+  }))
 }
 
 async function doLogin() {
@@ -233,9 +279,31 @@ async function fetchNotifications() {
   }
 }
 
+async function markNotificationAsRead(notification) {
+  if (!notification || notification.read || !isLoggedIn.value) return
+  notification.read = true
+  try {
+    await fetch(API + '/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ notification_id: notification.id }),
+    })
+  } catch (e) {
+    console.error(e)
+    notification.read = false
+  }
+}
+
+function selectCurrency(code) {
+  setCurrency(code)
+  showCurrencyModal.value = false
+}
+
 function goHome() {
   router.push('/')
 }
+
+loadPreferences()
 
 watch(isLoggedIn, (newVal) => {
   if (newVal) {
@@ -244,6 +312,8 @@ watch(isLoggedIn, (newVal) => {
     notifications.value = []
   }
 }, { immediate: true })
+
+watch([locale, currency, emailNotifications, pushNotifications], savePreferences)
 </script>
 
 <style scoped>
@@ -455,5 +525,72 @@ watch(isLoggedIn, (newVal) => {
   color: var(--danger);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notification-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.notification-item.unread {
+  border-color: var(--primary);
+}
+
+.notification-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 56, 92, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notification-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-content p,
+.notification-time {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.currency-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.currency-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  background: var(--bg-soft);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.currency-option.active {
+  border-color: var(--primary);
+  background: rgba(255, 56, 92, 0.08);
 }
 </style>

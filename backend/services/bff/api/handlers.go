@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"travel-api/internal/contextkeys"
 	"travel-api/services/bff/application"
@@ -176,8 +177,25 @@ func (h *BFFHandler) HandleBookings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
+		if req.DestinationID <= 0 || req.Guests <= 0 || req.CheckIn == "" || req.CheckOut == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid_booking_request"})
+			return
+		}
+		checkIn, errIn := time.Parse("2006-01-02", req.CheckIn)
+		checkOut, errOut := time.Parse("2006-01-02", req.CheckOut)
+		if errIn != nil || errOut != nil || !checkOut.After(checkIn) {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid_booking_dates"})
+			return
+		}
 
 		booking := h.service.CreateBooking(userID, req.DestinationID, req.CheckIn, req.CheckOut, req.Guests)
+		if booking.ID == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "destination_not_found"})
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(booking)
@@ -185,6 +203,48 @@ func (h *BFFHandler) HandleBookings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+
+func (h *BFFHandler) HandleBookingActions(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromRequest(r)
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "login_required"})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/bookings/"), "/")
+	if len(parts) < 2 {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	bookingID, _ := strconv.Atoi(parts[0])
+	action := parts[1]
+	if bookingID <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid_booking_id"})
+		return
+	}
+
+	switch action {
+	case "cancel":
+		booking, ok := h.service.CancelBooking(userID, bookingID)
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "booking_not_found"})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "booking": booking})
+	default:
+		http.Error(w, "Action not found", http.StatusNotFound)
+	}
 }
 
 func (h *BFFHandler) HandleNotifications(w http.ResponseWriter, r *http.Request) {

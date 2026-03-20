@@ -278,7 +278,7 @@
               <div class="bk-pb-row bk-total"><span>{{ locale === 'zh' ? '总计' : 'Total' }}</span><span>¥{{ selectedPkgPrice * guests + Math.round(selectedPkgPrice * 0.1) }}</span></div>
             </div>
 
-            <button class="bk-btn" @click="doBooking">{{ locale === 'zh' ? '立即预订' : 'Reserve now' }}</button>
+            <button class="bk-btn" :disabled="bookingLoading" @click="doBooking">{{ bookingLoading ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '立即预订' : 'Reserve now') }}</button>
             <p class="bk-hint">{{ locale === 'zh' ? '暂时不会扣款' : "You won't be charged yet" }}</p>
 
             <div class="bk-perks">
@@ -347,7 +347,7 @@
         <div class="success-icon">✓</div>
         <h2>{{ locale === 'zh' ? '预订成功！' : 'Booking Confirmed!' }}</h2>
         <p>{{ locale === 'zh' ? '感谢您的预订！' : 'Your booking is confirmed.' }}</p>
-        <button class="success-btn" @click="showBookingSuccess = false; $router.push('/trips')">{{ locale === 'zh' ? '查看订单' : 'View My Trips' }}</button>
+        <button class="success-btn" @click="showBookingSuccess = false; router.push('/trips')">{{ locale === 'zh' ? '查看订单' : 'View My Trips' }}</button>
       </div>
     </div>
 
@@ -385,11 +385,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 const { locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const { isLoggedIn, user, setAuth, clearAuth, authHeaders } = useAuth()
 
 const API = '/api/v1'
@@ -408,6 +409,7 @@ const authError = ref('')
 const selectedDate = ref('')
 const guests = ref(2)
 const showBookingSuccess = ref(false)
+const bookingLoading = ref(false)
 
 const galleryOpen = ref(false)
 const galleryIdx = ref(0)
@@ -415,6 +417,13 @@ const galleryAll = computed(() => [destination.value?.cover, ...(destination.val
 function openGallery(idx) { galleryIdx.value = idx; galleryOpen.value = true }
 
 const today = new Date().toISOString().split('T')[0]
+const selectedCheckoutDate = computed(() => {
+  if (!selectedDate.value) return ''
+  const checkInDate = new Date(`${selectedDate.value}T00:00:00`)
+  if (Number.isNaN(checkInDate.getTime())) return ''
+  checkInDate.setDate(checkInDate.getDate() + 1)
+  return checkInDate.toISOString().split('T')[0]
+})
 const selectedPkgPrice = computed(() => destination.value?.packages?.[0]?.price || destination.value?.price || 0)
 
 const ratingBreakdown = computed(() => {
@@ -504,13 +513,26 @@ async function shareDestination() {
 async function doBooking() {
   if (!isLoggedIn.value) { showAuthModal.value = 'login'; return }
   if (!selectedDate.value) { alert(locale.value === 'zh' ? '请选择日期' : 'Please select a date'); return }
+  if (!destination.value?.id) return
+  bookingLoading.value = true
   try {
     const res = await fetch(`${API}/bookings`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ destination_id: destination.value.id, check_in: selectedDate.value, check_out: selectedDate.value, guests: guests.value })
+      body: JSON.stringify({
+        destination_id: destination.value.id,
+        check_in: selectedDate.value,
+        check_out: selectedCheckoutDate.value || selectedDate.value,
+        guests: guests.value
+      })
     })
-    if (res.ok) showBookingSuccess.value = true
+    if (res.ok) {
+      showBookingSuccess.value = true
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error || (locale.value === 'zh' ? '预订失败' : 'Booking failed'))
+    }
   } catch (e) { console.error(e); alert(locale.value === 'zh' ? '预订失败' : 'Booking failed') }
+  finally { bookingLoading.value = false }
 }
 
 async function doLogin() {
@@ -557,8 +579,16 @@ function handleMouseMove() {}
 
 watch(locale, () => { fetchDestination(); fetchHomePage() })
 watch(showAuthModal, () => { authError.value = '' })
+watch(showBookingSuccess, (value) => {
+  if (!value) return
+  fetchHomePage()
+})
 
-onMounted(() => { fetchDestination(); fetchHomePage() })
+onMounted(() => {
+  selectedDate.value = today
+  fetchDestination()
+  fetchHomePage()
+})
 </script>
 
 <style scoped>

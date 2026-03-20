@@ -16,28 +16,60 @@
 
       <div class="city-header">
         <router-link to="/" class="back-link">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
-        <div class="city-filters">
-          <button class="filter-btn active">{{ $t('common.all') }}</button>
-          <button class="filter-btn">{{ locale === 'zh' ? '景点' : 'Attractions' }}</button>
-          <button class="filter-btn">{{ locale === 'zh' ? '美食' : 'Food' }}</button>
-          <button class="filter-btn">{{ locale === 'zh' ? '购物' : 'Shopping' }}</button>
-        </div>
+        <p v-if="activeCategoryLabel" class="city-active-filter">{{ locale === 'zh' ? '当前筛选：' : 'Filter: ' }}{{ activeCategoryLabel }}</p>
       </div>
 
       <section class="city-section city-categories-section">
         <div class="section-header">
           <h2 class="section-title">{{ locale === 'zh' ? '按分类探索' : 'Explore by Category' }}</h2>
         </div>
-        <div class="city-category-grid">
-          <router-link
-            v-for="cat in cityCategories"
+        <div class="city-category-grid city-category-grid--primary">
+          <button
+            v-for="cat in visibleParentCategories"
             :key="cat.id"
-            :to="'/category/' + cat.id"
+            type="button"
             class="city-category-card"
+            :class="{ active: activeCategory === cat.id || expandedParentCategory === cat.id }"
+            @click="toggleParentCategory(cat)"
           >
             <span class="city-category-icon">{{ cat.icon }}</span>
             <span>{{ cat.label }}</span>
-          </router-link>
+          </button>
+          <button
+            v-if="hiddenParentCategories.length"
+            type="button"
+            class="city-category-more"
+            @click="showAllCategories = !showAllCategories"
+          >
+            {{ showAllCategories ? (locale === 'zh' ? '收起' : 'Show Less') : (locale === 'zh' ? '更多分类' : 'More Categories') }}
+          </button>
+        </div>
+
+        <div v-if="showAllCategories && hiddenParentCategories.length" class="city-category-grid city-category-grid--expanded">
+          <button
+            v-for="cat in hiddenParentCategories"
+            :key="cat.id"
+            type="button"
+            class="city-category-card"
+            :class="{ active: activeCategory === cat.id || expandedParentCategory === cat.id }"
+            @click="toggleParentCategory(cat)"
+          >
+            <span class="city-category-icon">{{ cat.icon }}</span>
+            <span>{{ cat.label }}</span>
+          </button>
+        </div>
+
+        <div v-if="activeChildCategories.length" class="city-subcategory-grid">
+          <button
+            v-for="child in activeChildCategories"
+            :key="child.id"
+            type="button"
+            class="city-subcategory-card"
+            :class="{ active: activeCategory === child.id }"
+            @click="activeCategory = child.id"
+          >
+            {{ child.label }}
+          </button>
         </div>
       </section>
 
@@ -48,116 +80,117 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-else-if="!results.length" class="empty-state">
+      <div v-else-if="!filteredResults.length" class="empty-state">
         <div class="empty-icon">🔍</div>
         <h3>{{ locale === 'zh' ? '暂无内容' : 'No destinations found' }}</h3>
-        <p>{{ locale === 'zh' ? '该城市暂无可用景点' : 'No destinations available for this city yet.' }}</p>
-        <router-link to="/" class="back-home-btn">{{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
+        <p>{{ activeCategoryLabel ? (locale === 'zh' ? `当前城市下暂无「${activeCategoryLabel}」相关结果` : `No ${activeCategoryLabel} results in this city yet.`) : (locale === 'zh' ? '该城市暂无可用景点' : 'No destinations available for this city yet.') }}</p>
+        <button v-if="activeCategory !== 'all'" type="button" class="back-home-btn" @click="activeCategory = 'all'">
+          {{ locale === 'zh' ? '查看全部' : 'Show all' }}
+        </button>
+        <router-link v-else to="/" class="back-home-btn">{{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
       </div>
 
-      <!-- 目的地网格 -->
-      <div v-else class="destinations-section">
-        <div class="section-header">
-          <h2 class="section-title">
-            {{ locale === 'zh' ? '热门目的地' : 'Popular Destinations' }}
-          </h2>
-          <span class="dest-count">{{ results.length }} {{ locale === 'zh' ? '个选择' : 'options' }}</span>
-        </div>
+      <div v-else class="city-body-layout">
+        <div class="city-main-column">
+          <div class="destinations-section">
+            <div class="section-header">
+              <h2 class="section-title">
+                {{ locale === 'zh' ? '热门目的地' : 'Popular Destinations' }}
+              </h2>
+              <span class="dest-count">{{ filteredResults.length }} {{ locale === 'zh' ? '个选择' : 'options' }}</span>
+            </div>
 
-        <div class="dest-grid">
-          <router-link
-            v-for="(d, idx) in results"
-            :key="d.id"
-            :to="'/destination/' + d.id"
-            class="dest-card"
-          >
-            <div class="card-cover">
-              <img :src="d.cover" :alt="d.name" @error="onImgError" loading="lazy" />
-              <div class="card-badges">
-                <span class="badge-tag" v-if="d.tags?.[0]">{{ d.tags[0] }}</span>
-                <span class="badge-top" v-if="idx === 0">🔥 {{ locale === 'zh' ? '热门' : 'Top' }}</span>
-              </div>
-              <button
-                type="button"
-                class="fav-btn"
-                :class="{ favorited: d.is_favorite && isLoggedIn }"
-                @click.prevent.stop="toggleFav(d)"
+            <div class="dest-grid">
+              <router-link
+                v-for="(d, idx) in filteredResults"
+                :key="d.id"
+                :to="'/destination/' + d.id"
+                class="dest-card"
               >
-                {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
-              </button>
-              <div class="card-overlay">
-                <span class="overlay-text">{{ locale === 'zh' ? '查看详情' : 'View Details' }} →</span>
-              </div>
+                <div class="card-cover">
+                  <img :src="d.cover" :alt="d.name" @error="onImgError" loading="lazy" />
+                  <div class="card-badges">
+                    <span class="badge-tag" v-if="d.tags?.[0]">{{ d.tags[0] }}</span>
+                    <span class="badge-top" v-if="idx === 0">🔥 {{ locale === 'zh' ? '热门' : 'Top' }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="fav-btn"
+                    :class="{ favorited: d.is_favorite && isLoggedIn }"
+                    @click.prevent.stop="toggleFav(d)"
+                  >
+                    {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
+                  </button>
+                  <div class="card-overlay">
+                    <span class="overlay-text">{{ locale === 'zh' ? '查看详情' : 'View Details' }} →</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="card-top">
+                    <div>
+                      <h3 class="dest-name">{{ d.name }}</h3>
+                      <p class="dest-city">📍 {{ d.city }}</p>
+                    </div>
+                    <div class="dest-rating">
+                      <span class="star-icon">★</span>
+                      <span class="rating-val">{{ d.rating }}</span>
+                      <span class="review-count">({{ formatCount(d.review_count) }})</span>
+                    </div>
+                  </div>
+                  <div class="dest-tags">
+                    <span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span>
+                  </div>
+                  <div class="dest-footer">
+                    <div class="dest-price">
+                      <span class="price-amount">¥{{ d.price }}</span>
+                      <span class="price-unit">/ {{ locale === 'zh' ? '人' : 'person' }}</span>
+                    </div>
+                    <div class="dest-bookings" v-if="d.booked_count">
+                      <span>🎫 {{ d.booked_count }} {{ locale === 'zh' ? '人预订' : 'booked' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </router-link>
             </div>
-            <div class="card-body">
-              <div class="card-top">
-                <div>
-                  <h3 class="dest-name">{{ d.name }}</h3>
-                  <p class="dest-city">📍 {{ d.city }}</p>
-                </div>
-                <div class="dest-rating">
-                  <span class="star-icon">★</span>
-                  <span class="rating-val">{{ d.rating }}</span>
-                  <span class="review-count">({{ formatCount(d.review_count) }})</span>
-                </div>
-              </div>
-              <div class="dest-tags">
-                <span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span>
-              </div>
-              <div class="dest-footer">
-                <div class="dest-price">
-                  <span class="price-amount">¥{{ d.price }}</span>
-                  <span class="price-unit">/ {{ locale === 'zh' ? '人' : 'person' }}</span>
-                </div>
-                <div class="dest-bookings" v-if="d.booked_count">
-                  <span>🎫 {{ d.booked_count }} {{ locale === 'zh' ? '人预订' : 'booked' }}</span>
-                </div>
-              </div>
-            </div>
-          </router-link>
-        </div>
-      </div>
+          </div>
 
-      <!-- 热门活动推荐 -->
-      <div class="extra-section" v-if="results.length > 1">
-        <h2 class="section-title">{{ locale === 'zh' ? '精选体验' : 'Featured Experiences' }}</h2>
-        <div class="experience-grid">
-          <div v-for="d in results.slice(0, 3)" :key="'exp-' + d.id" class="exp-card">
-            <div class="exp-cover">
-              <img :src="d.cover" :alt="d.name" @error="onImgError" />
-            </div>
-            <div class="exp-body">
-              <h4>{{ d.name }}</h4>
-              <p>{{ (d.description || '').substring(0, 80) }}...</p>
-              <div class="exp-footer">
-                <span class="exp-price">¥{{ d.price }}</span>
-                <router-link :to="'/destination/' + d.id" class="exp-btn">
-                  {{ locale === 'zh' ? '立即体验' : 'Book Now' }}
-                </router-link>
+          <div class="extra-section" v-if="filteredResults.length > 1">
+            <h2 class="section-title">{{ locale === 'zh' ? '精选体验' : 'Featured Experiences' }}</h2>
+            <div class="experience-grid">
+              <div v-for="d in filteredResults.slice(0, 3)" :key="'exp-' + d.id" class="exp-card">
+                <div class="exp-cover">
+                  <img :src="d.cover" :alt="d.name" @error="onImgError" />
+                </div>
+                <div class="exp-body">
+                  <h4>{{ d.name }}</h4>
+                  <p>{{ (d.description || '').substring(0, 80) }}...</p>
+                  <div class="exp-footer">
+                    <span class="exp-price">¥{{ d.price }}</span>
+                    <router-link :to="'/destination/' + d.id" class="exp-btn">
+                      {{ locale === 'zh' ? '立即体验' : 'Book Now' }}
+                    </router-link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <section class="city-section city-deals-section" v-if="deals.length">
-        <div class="section-header">
-          <h2 class="section-title">🔥 {{ locale === 'zh' ? '专属优惠' : 'Exclusive Deals' }}</h2>
-        </div>
-        <div class="city-deals-grid">
-          <article
-            v-for="deal in deals"
-            :key="deal.id"
-            class="city-deal-card"
-            :class="'city-deal-card--' + (deal.type || 'primary')"
-          >
-            <span class="city-deal-badge">{{ deal.badge || (locale === 'zh' ? '限时' : 'Limited') }}</span>
-            <h3>{{ deal.title }}</h3>
-            <p>{{ deal.description }}</p>
-            <router-link class="city-deal-btn" to="/search">{{ locale === 'zh' ? '去看看' : 'Explore' }}</router-link>
-          </article>
-        </div>
-      </section>
+        <aside class="city-sidebar" v-if="deals.length">
+          <div class="sidebar-widget deals-widget">
+            <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
+            <div class="sidebar-deals-list">
+              <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card" :class="'deal-' + deal.type">
+                <div class="deal-content-mini">
+                  <h4>{{ deal.title }}</h4>
+                  <p>{{ deal.description }}</p>
+                  <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
 
     </div>
 
@@ -208,6 +241,9 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e2
 const loading = ref(true)
 const results = ref([])
 const deals = ref([])
+const activeCategory = ref('all')
+const expandedParentCategory = ref('all')
+const showAllCategories = ref(false)
 const showAiHint = ref(false)
 const pauseAiHint = ref(false)
 const aiPulse = ref(false)
@@ -235,13 +271,144 @@ const cityImage = computed(() => {
 })
 
 const cityCategories = computed(() => ([
-  { id: 'theme-parks', icon: '🎢', label: locale.value === 'zh' ? '主题乐园' : 'Theme Parks' },
-  { id: 'museums', icon: '🏛️', label: locale.value === 'zh' ? '博物馆' : 'Museums' },
-  { id: 'food', icon: '🍜', label: locale.value === 'zh' ? '美食之旅' : 'Food Tours' },
-  { id: 'nature', icon: '🏔️', label: locale.value === 'zh' ? '自然风光' : 'Nature' },
-  { id: 'shows', icon: '🎭', label: locale.value === 'zh' ? '演出' : 'Shows' },
-  { id: 'spas', icon: '💆', label: locale.value === 'zh' ? '水疗' : 'Spas' },
+  {
+    id: 'all',
+    icon: '🔥',
+    label: locale.value === 'zh' ? '全部' : 'All',
+    children: []
+  },
+  {
+    id: 'theme-parks',
+    icon: '🎢',
+    label: locale.value === 'zh' ? '主题乐园' : 'Theme Parks',
+    children: [
+      { id: 'disney', label: locale.value === 'zh' ? '迪士尼度假区' : 'Disney Resort' },
+      { id: 'universal', label: locale.value === 'zh' ? '环球影城' : 'Universal Studios' },
+      { id: 'happy-valley', label: locale.value === 'zh' ? '欢乐谷' : 'Happy Valley' }
+    ]
+  },
+  {
+    id: 'museums',
+    icon: '🏛️',
+    label: locale.value === 'zh' ? '博物馆' : 'Museums',
+    children: [
+      { id: 'history', label: locale.value === 'zh' ? '历史博物馆' : 'History Museums' },
+      { id: 'art', label: locale.value === 'zh' ? '艺术馆' : 'Art Galleries' },
+      { id: 'science', label: locale.value === 'zh' ? '科技馆' : 'Science Centers' }
+    ]
+  },
+  {
+    id: 'camping',
+    icon: '🏕️',
+    label: locale.value === 'zh' ? '露营' : 'Camping',
+    children: [
+      { id: 'glamping', label: locale.value === 'zh' ? '轻奢露营' : 'Glamping' },
+      { id: 'rv', label: locale.value === 'zh' ? '房车营地' : 'RV Parks' }
+    ]
+  },
+  {
+    id: 'trains',
+    icon: '🚄',
+    label: locale.value === 'zh' ? '火车' : 'Trains',
+    children: [
+      { id: 'high-speed', label: locale.value === 'zh' ? '高铁' : 'High Speed Rail' },
+      { id: 'scenic', label: locale.value === 'zh' ? '观光路线' : 'Scenic Routes' }
+    ]
+  },
+  {
+    id: 'food',
+    icon: '🍜',
+    label: locale.value === 'zh' ? '美食之旅' : 'Food Tours',
+    children: [
+      { id: 'street', label: locale.value === 'zh' ? '街头小吃' : 'Street Food' },
+      { id: 'fine-dining', label: locale.value === 'zh' ? '精致餐饮' : 'Fine Dining' }
+    ]
+  },
+  {
+    id: 'spas',
+    icon: '💆',
+    label: locale.value === 'zh' ? '水疗' : 'Spas',
+    children: [
+      { id: 'massage', label: locale.value === 'zh' ? '按摩' : 'Massage' },
+      { id: 'onsen', label: locale.value === 'zh' ? '温泉' : 'Onsen / Hot Springs' }
+    ]
+  },
+  { id: 'nature', icon: '🏔️', label: locale.value === 'zh' ? '自然风光' : 'Nature', children: [] },
+  { id: 'shows', icon: '🎭', label: locale.value === 'zh' ? '演出' : 'Shows', children: [] },
 ]))
+
+const visibleParentCategories = computed(() => cityCategories.value.slice(0, 6))
+const hiddenParentCategories = computed(() => cityCategories.value.slice(6))
+const activeChildCategories = computed(() => cityCategories.value.find(cat => cat.id === expandedParentCategory.value)?.children || [])
+const activeCategoryLabel = computed(() => {
+  for (const cat of cityCategories.value) {
+    if (cat.id === activeCategory.value) return cat.label
+    const matchedChild = (cat.children || []).find(child => child.id === activeCategory.value)
+    if (matchedChild) return matchedChild.label
+  }
+  return ''
+})
+
+const categoryKeywords = {
+  all: [],
+  'theme-parks': ['theme park', 'amusement', 'resort', 'disney', 'universal', 'happy valley'],
+  disney: ['disney'],
+  universal: ['universal'],
+  'happy-valley': ['happy valley'],
+  museums: ['museum', 'gallery', 'culture', 'history', 'archaeology', 'art'],
+  history: ['history', 'archaeology', 'heritage'],
+  art: ['art', 'gallery'],
+  science: ['science', 'technology'],
+  camping: ['camp', 'outdoor', 'glamping', 'rv'],
+  glamping: ['glamping'],
+  rv: ['rv', 'camp'],
+  trains: ['train', 'rail', 'station', 'route'],
+  'high-speed': ['high speed', 'rail'],
+  scenic: ['scenic', 'route'],
+  food: ['food', 'dining', 'restaurant', 'tea', 'snack', 'street'],
+  street: ['street food', 'snack'],
+  'fine-dining': ['fine dining', 'restaurant'],
+  spas: ['spa', 'onsen', 'hot spring', 'massage', 'wellness'],
+  massage: ['massage', 'spa'],
+  onsen: ['onsen', 'hot spring'],
+  nature: ['nature', 'lake', 'mountain', 'hiking', 'park', 'outdoor'],
+  shows: ['show', 'performance', 'theater', 'stage'],
+}
+
+const filteredResults = computed(() => {
+  if (activeCategory.value === 'all') {
+    return results.value
+  }
+
+  const keywords = categoryKeywords[activeCategory.value] || []
+
+  return results.value.filter((d) => {
+    const haystack = [
+      d.name,
+      d.city,
+      d.description,
+      ...(d.tags || []),
+    ].join(' ').toLowerCase()
+
+    if (keywords.some(keyword => haystack.includes(keyword))) {
+      return true
+    }
+
+    if (activeCategory.value === 'nature') {
+      return (d.tags || []).some(tag => ['nature', 'hiking'].includes(String(tag).toLowerCase()))
+    }
+
+    if (['museums', 'history'].includes(activeCategory.value)) {
+      return (d.tags || []).some(tag => ['history', 'culture', 'archaeology'].includes(String(tag).toLowerCase()))
+    }
+
+    if (activeCategory.value === 'food') {
+      return haystack.includes('tea')
+    }
+
+    return false
+  })
+})
 
 const cityAiHintZh = computed(() => `想玩转${cityTitle.value}？我可以帮你找路线`)
 const cityAiHintEn = computed(() => `Need a plan for ${cityTitle.value}? Ask me`)
@@ -301,6 +468,15 @@ async function toggleFav(d) {
   } catch (e) { console.error(e) }
 }
 
+function toggleParentCategory(category) {
+  if (category.children?.length) {
+    expandedParentCategory.value = expandedParentCategory.value === category.id ? 'all' : category.id
+  } else {
+    expandedParentCategory.value = category.id
+  }
+  activeCategory.value = category.id
+}
+
 function startAiHintLoop() {
   function scheduleShow() {
     if (aiHintTimer) clearTimeout(aiHintTimer)
@@ -335,6 +511,8 @@ function goToSmartSearch(mode) {
 }
 
 watch(() => route.params.city, () => {
+  activeCategory.value = 'all'
+  expandedParentCategory.value = 'all'
   fetchCity()
   fetchCityExtras()
 })
@@ -521,6 +699,22 @@ onUnmounted(() => {
   margin-bottom: 40px;
 }
 
+.city-body-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px;
+  align-items: start;
+}
+
+.city-main-column {
+  min-width: 0;
+}
+
+.city-sidebar {
+  position: sticky;
+  top: 104px;
+}
+
 .city-header {
   display: flex;
   align-items: center;
@@ -537,29 +731,31 @@ onUnmounted(() => {
   font-size: 0.95rem;
 }
 
-.city-filters { display: flex; gap: 8px; flex-wrap: wrap; }
-
-.filter-btn {
-  padding: 8px 16px;
-  border: 1px solid #e0e0e0;
-  background: #fff;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.filter-btn:hover, .filter-btn.active {
-  border-color: #FF385C;
-  color: #FF385C;
-  background: rgba(255,56,92,0.04);
+.city-active-filter {
+  margin: 0;
+  color: #717171;
+  font-size: 0.92rem;
+  font-weight: 600;
 }
 
 .city-category-grid {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.city-category-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.city-category-grid--expanded {
+  flex-wrap: wrap;
+  overflow: visible;
+  margin-top: 10px;
 }
 
 .city-category-card {
@@ -575,16 +771,56 @@ onUnmounted(() => {
   font-weight: 600;
   transition: all 0.25s ease;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.city-category-card:hover {
+.city-category-card:hover,
+.city-category-card.active {
   transform: translateY(-2px);
   border-color: #FF385C;
+  color: #FF385C;
+  background: rgba(255,56,92,0.06);
   box-shadow: 0 14px 30px rgba(255,56,92,0.12);
 }
 
 .city-category-icon {
   font-size: 1.15rem;
+}
+
+.city-category-more {
+  border: 1px dashed rgba(255,56,92,0.28);
+  background: rgba(255,56,92,0.04);
+  color: #FF385C;
+  border-radius: 999px;
+  padding: 11px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.city-subcategory-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.city-subcategory-card {
+  border: 1px solid #ececec;
+  background: #fff;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #4b5563;
+}
+
+.city-subcategory-card.active,
+.city-subcategory-card:hover {
+  border-color: #FF385C;
+  color: #FF385C;
+  background: rgba(255,56,92,0.06);
 }
 
 /* ====== 加载/空状态 ====== */
@@ -684,7 +920,7 @@ onUnmounted(() => {
 
 .city-deals-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 18px;
 }
 
@@ -1116,7 +1352,11 @@ onUnmounted(() => {
   .hero-content { padding: 0 20px 32px; }
   .hero-content h1 { font-size: 2.2rem; }
   .city-content { padding: 20px 16px 40px; }
+  .city-body-layout { grid-template-columns: 1fr; }
+  .city-sidebar { position: static; }
   .dest-grid { grid-template-columns: 1fr; }
   .city-header { flex-direction: column; align-items: flex-start; }
+  .city-category-grid { flex-wrap: nowrap; }
+  .city-category-grid--expanded { flex-wrap: wrap; }
 }
 </style>

@@ -2000,6 +2000,29 @@ body {
   margin: 0 -4px;
 }
 
+.recommendations-block .card-carousel--manual {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.recommendations-block .card-carousel--manual::-webkit-scrollbar {
+  display: none;
+}
+
+.recommendations-block .card-carousel--manual .carousel-track {
+  width: max-content;
+  animation: none;
+}
+
+.recommendations-block .card-carousel--manual:hover .carousel-track {
+  animation: none;
+}
+
+.recommendations-block .card-carousel--manual .carousel-item {
+  scroll-snap-align: start;
+}
+
 .recommendations-block .dest-card {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);

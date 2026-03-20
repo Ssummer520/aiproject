@@ -24,6 +24,23 @@
         </div>
       </div>
 
+      <section class="city-section city-categories-section">
+        <div class="section-header">
+          <h2 class="section-title">{{ locale === 'zh' ? '按分类探索' : 'Explore by Category' }}</h2>
+        </div>
+        <div class="city-category-grid">
+          <router-link
+            v-for="cat in cityCategories"
+            :key="cat.id"
+            :to="'/category/' + cat.id"
+            class="city-category-card"
+          >
+            <span class="city-category-icon">{{ cat.icon }}</span>
+            <span>{{ cat.label }}</span>
+          </router-link>
+        </div>
+      </section>
+
       <!-- 加载中 -->
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
@@ -123,20 +140,66 @@
         </div>
       </div>
 
+      <section class="city-section city-deals-section" v-if="deals.length">
+        <div class="section-header">
+          <h2 class="section-title">🔥 {{ locale === 'zh' ? '专属优惠' : 'Exclusive Deals' }}</h2>
+        </div>
+        <div class="city-deals-grid">
+          <article
+            v-for="deal in deals"
+            :key="deal.id"
+            class="city-deal-card"
+            :class="'city-deal-card--' + (deal.type || 'primary')"
+          >
+            <span class="city-deal-badge">{{ deal.badge || (locale === 'zh' ? '限时' : 'Limited') }}</span>
+            <h3>{{ deal.title }}</h3>
+            <p>{{ deal.description }}</p>
+            <router-link class="city-deal-btn" to="/search">{{ locale === 'zh' ? '去看看' : 'Explore' }}</router-link>
+          </article>
+        </div>
+      </section>
+
+    </div>
+
+    <div
+      class="city-ai-float-wrap"
+      @mouseenter="pauseAiHint = true"
+      @mouseleave="pauseAiHint = false"
+    >
+      <button
+        type="button"
+        class="city-ai-float-btn"
+        :class="{ 'city-ai-float-btn--open': showAiHint, 'city-ai-float-btn--pulse': aiPulse }"
+        @click="onAiFloatClick"
+        aria-label="AI travel assistant"
+      >
+        <span class="city-ai-float-icon">✨</span>
+      </button>
+      <Transition name="city-ai-hint">
+        <div v-if="showAiHint" class="city-ai-float-hint">
+          <p class="city-ai-float-hint-text">{{ locale === 'zh' ? cityAiHintZh : cityAiHintEn }}</p>
+          <div class="city-ai-quick-actions">
+            <button type="button" class="city-ai-action" @click="goToSmartSearch('family')">{{ locale === 'zh' ? '亲子玩法' : 'Family trip' }}</button>
+            <button type="button" class="city-ai-action" @click="goToSmartSearch('food')">{{ locale === 'zh' ? '美食路线' : 'Food route' }}</button>
+          </div>
+          <span class="city-ai-float-hint-arrow"></span>
+        </div>
+      </Transition>
     </div>
 
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import SiteHeader from '../components/SiteHeader.vue'
 
 const { locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const { isLoggedIn, authHeaders } = useAuth()
 
 const API = '/api/v1'
@@ -144,6 +207,12 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e2
 
 const loading = ref(true)
 const results = ref([])
+const deals = ref([])
+const showAiHint = ref(false)
+const pauseAiHint = ref(false)
+const aiPulse = ref(false)
+let aiHintTimer = null
+let aiPulseTimer = null
 
 const cityMap = {
   'hangzhou': { name: 'Hangzhou', nameZh: '杭州', image: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200' },
@@ -164,6 +233,18 @@ const cityImage = computed(() => {
   const info = cityMap[city] || { image: FALLBACK_IMAGE }
   return info.image
 })
+
+const cityCategories = computed(() => ([
+  { id: 'theme-parks', icon: '🎢', label: locale.value === 'zh' ? '主题乐园' : 'Theme Parks' },
+  { id: 'museums', icon: '🏛️', label: locale.value === 'zh' ? '博物馆' : 'Museums' },
+  { id: 'food', icon: '🍜', label: locale.value === 'zh' ? '美食之旅' : 'Food Tours' },
+  { id: 'nature', icon: '🏔️', label: locale.value === 'zh' ? '自然风光' : 'Nature' },
+  { id: 'shows', icon: '🎭', label: locale.value === 'zh' ? '演出' : 'Shows' },
+  { id: 'spas', icon: '💆', label: locale.value === 'zh' ? '水疗' : 'Spas' },
+]))
+
+const cityAiHintZh = computed(() => `想玩转${cityTitle.value}？我可以帮你找路线`)
+const cityAiHintEn = computed(() => `Need a plan for ${cityTitle.value}? Ask me`)
 
 function formatCount(n) {
   if (!n) return '0'
@@ -195,6 +276,19 @@ async function fetchCity() {
   }
 }
 
+async function fetchCityExtras() {
+  try {
+    const res = await fetch(`${API}/home`, {
+      headers: { 'Accept-Language': locale.value, ...authHeaders() }
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    deals.value = data.deals || []
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 async function toggleFav(d) {
   if (!isLoggedIn.value) return
   try {
@@ -207,8 +301,58 @@ async function toggleFav(d) {
   } catch (e) { console.error(e) }
 }
 
-watch(() => route.params.city, () => { fetchCity() })
-onMounted(fetchCity)
+function startAiHintLoop() {
+  function scheduleShow() {
+    if (aiHintTimer) clearTimeout(aiHintTimer)
+    aiHintTimer = setTimeout(() => {
+      if (pauseAiHint.value) {
+        scheduleShow()
+        return
+      }
+      showAiHint.value = true
+      aiPulse.value = true
+      if (aiPulseTimer) clearTimeout(aiPulseTimer)
+      aiPulseTimer = setTimeout(() => { aiPulse.value = false }, 600)
+      aiHintTimer = setTimeout(() => {
+        showAiHint.value = false
+        aiHintTimer = setTimeout(scheduleShow, 8000)
+      }, 4200)
+    }, 1600)
+  }
+  scheduleShow()
+}
+
+function onAiFloatClick() {
+  showAiHint.value = !showAiHint.value
+}
+
+function goToSmartSearch(mode) {
+  const query = { q: cityTitle.value }
+  if (mode === 'food') {
+    query.category = 'food'
+  }
+  router.push({ path: '/search', query })
+}
+
+watch(() => route.params.city, () => {
+  fetchCity()
+  fetchCityExtras()
+})
+watch(locale, () => {
+  fetchCity()
+  fetchCityExtras()
+})
+
+onMounted(() => {
+  fetchCity()
+  fetchCityExtras()
+  startAiHintLoop()
+})
+
+onUnmounted(() => {
+  if (aiHintTimer) clearTimeout(aiHintTimer)
+  if (aiPulseTimer) clearTimeout(aiPulseTimer)
+})
 </script>
 
 <style scoped>
@@ -373,6 +517,10 @@ onMounted(fetchCity)
   padding: 32px 32px 60px;
 }
 
+.city-section {
+  margin-bottom: 40px;
+}
+
 .city-header {
   display: flex;
   align-items: center;
@@ -405,6 +553,38 @@ onMounted(fetchCity)
   border-color: #FF385C;
   color: #FF385C;
   background: rgba(255,56,92,0.04);
+}
+
+.city-category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.city-category-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #222;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.city-category-card:hover {
+  transform: translateY(-2px);
+  border-color: #FF385C;
+  box-shadow: 0 14px 30px rgba(255,56,92,0.12);
+}
+
+.city-category-icon {
+  font-size: 1.15rem;
 }
 
 /* ====== 加载/空状态 ====== */
@@ -500,6 +680,182 @@ onMounted(fetchCity)
 
 .dest-card:hover .card-cover img {
   transform: scale(1.06);
+}
+
+.city-deals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.city-deal-card {
+  position: relative;
+  padding: 22px;
+  border-radius: 20px;
+  color: #fff;
+  min-height: 180px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
+}
+
+.city-deal-card h3,
+.city-deal-card p {
+  margin: 0;
+}
+
+.city-deal-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+}
+
+.city-deal-card p {
+  opacity: 0.92;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.city-deal-card--primary {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+}
+
+.city-deal-card--secondary {
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+}
+
+.city-deal-card--accent {
+  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+}
+
+.city-deal-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(8px);
+}
+
+.city-deal-btn {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.95);
+  color: #222;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.city-ai-float-wrap {
+  position: fixed;
+  right: 24px;
+  bottom: 32px;
+  z-index: 900;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 12px;
+}
+
+.city-ai-float-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.city-ai-float-btn:hover,
+.city-ai-float-btn--open {
+  transform: scale(1.08);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+}
+
+.city-ai-float-btn--pulse {
+  animation: city-ai-float-pulse 0.6s ease-out;
+}
+
+@keyframes city-ai-float-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1.08); }
+}
+
+.city-ai-float-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.city-ai-float-hint {
+  position: relative;
+  background: #fff;
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  max-width: 240px;
+}
+
+.city-ai-float-hint-text {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #222;
+  line-height: 1.45;
+}
+
+.city-ai-float-hint-arrow {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.city-ai-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.city-ai-action {
+  border: 1px solid rgba(255,56,92,0.16);
+  background: rgba(255,56,92,0.06);
+  color: #FF385C;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+:global(.city-ai-hint-enter-active),
+:global(.city-ai-hint-leave-active) {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+:global(.city-ai-hint-enter-from),
+:global(.city-ai-hint-leave-to) {
+  opacity: 0;
+  transform: translateX(8px);
 }
 
 .card-badges {

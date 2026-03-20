@@ -144,12 +144,12 @@
               <div v-else-if="recError" class="error">{{ recError }}</div>
               <div
                 v-else
-                class="card-carousel card-carousel--horizontal"
+                class="card-carousel card-carousel--horizontal card-carousel--manual"
               >
                 <div class="carousel-track">
                   <router-link
-                    v-for="(d, idx) in displayRecommendations"
-                    :key="'rec-' + idx"
+                    v-for="(d, idx) in homeRecommendations"
+                    :key="'rec-' + d.id"
                     :to="'/destination/' + d.id"
                     class="dest-card carousel-item"
                   >
@@ -795,8 +795,8 @@ const filteredRecommendations = computed(() => {
   return (recommendations.value || []).filter((d) => d?.id && d?.cover)
 })
 
-const displayRecommendations = computed(() => {
-  return filteredRecommendations.value.length ? [...filteredRecommendations.value, ...filteredRecommendations.value] : []
+const homeRecommendations = computed(() => {
+  return filteredRecommendations.value.slice(0, 8)
 })
 const recLoading = ref(true)
 const recError = ref('')

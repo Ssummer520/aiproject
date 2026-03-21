@@ -8,7 +8,9 @@
     }
   },
   "user_1ac15539d97ce329": {
-    "history": null,
+    "history": [
+      1
+    ],
     "favorites": {
       "1": true,
       "2": true,

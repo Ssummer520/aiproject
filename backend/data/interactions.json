@@ -15,7 +15,8 @@
       "1": true,
       "2": true,
       "3": false,
-      "5": true
+      "5": true,
+      "9": false
     }
   },
   "user_9763656365fa8f4e": {
@@ -33,9 +34,15 @@
     }
   },
   "user_dd2af028b22afc46": {
-    "history": null,
+    "history": [
+      4,
+      3,
+      2,
+      13
+    ],
     "favorites": {
       "1": true,
+      "13": true,
       "2": true
     }
   }

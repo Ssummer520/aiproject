@@ -1917,11 +1917,15 @@ body {
 }
 
 .leaderboard-row .fav-btn--small {
+  position: static;
+  top: auto;
+  right: auto;
   flex-shrink: 0;
   width: 32px;
   height: 32px;
   padding: 0;
   font-size: 1rem;
+  margin-left: auto;
 }
 
 /* ========== 周边目的地 (Nearby) ========== */
@@ -2025,6 +2029,7 @@ body {
   padding: 24px;
   border: 1px solid var(--surface-border);
   box-shadow: var(--surface-shadow);
+  overflow: hidden;
 }
 
 .recommendations-block .section-header {
@@ -2036,10 +2041,23 @@ body {
   margin: 0 -4px;
 }
 
+.recommendations-block .card-carousel--auto {
+  overflow: hidden;
+}
+
+.recommendations-block .card-carousel--auto .carousel-track {
+  display: inline-flex;
+  min-width: max-content;
+}
+
 .recommendations-block .card-carousel--manual {
+  display: block;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
 }
 
 .recommendations-block .card-carousel--manual::-webkit-scrollbar {
@@ -2047,6 +2065,8 @@ body {
 }
 
 .recommendations-block .card-carousel--manual .carousel-track {
+  display: inline-flex;
+  min-width: max-content;
   width: max-content;
   animation: none;
 }
@@ -2060,8 +2080,10 @@ body {
 }
 
 .recommendations-block .dest-card {
+  position: relative;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+  overflow: hidden;
 }
 
 .recommendations-block .dest-card:hover {

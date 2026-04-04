@@ -144,35 +144,35 @@
               <div v-else-if="recError" class="error">{{ recError }}</div>
               <div
                 v-else
-                class="card-carousel card-carousel--horizontal card-carousel--manual"
+                class="card-carousel card-carousel--horizontal card-carousel--auto"
               >
                 <div class="carousel-track">
                   <router-link
-                    v-for="(d, idx) in homeRecommendations"
-                    :key="'rec-' + d.id"
-                    :to="'/destination/' + d.id"
+                    v-for="item in scrollingRecommendations"
+                    :key="item.key"
+                    :to="'/destination/' + item.destination.id"
                     class="dest-card carousel-item"
                   >
                     <div class="cover-wrap">
-                      <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onRecCoverError(d.id, $event)" />
-                      <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite && isLoggedIn }" @click.prevent.stop="toggleFav(d)">{{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}</button>
-                      <div class="card-badge" v-if="idx % 5 === 0">{{ $t('common.rareFind') }}</div>
+                      <img :src="item.destination.cover" :alt="item.destination.name" class="cover" loading="lazy" @error="onRecCoverError(item.destination.id, $event)" />
+                      <button type="button" class="fav-btn" :class="{ favorited: item.destination.is_favorite && isLoggedIn }" @click.prevent.stop="toggleFav(item.destination)">{{ (item.destination.is_favorite && isLoggedIn) ? '♥' : '♡' }}</button>
+                      <div class="card-badge" v-if="item.visualIndex % 5 === 0">{{ $t('common.rareFind') }}</div>
                     </div>
                     <div class="body">
                       <div class="card-header">
-                        <div class="name">{{ d.name }}</div>
-                        <div class="rating">★ {{ d.rating }}</div>
+                        <div class="name">{{ item.destination.name }}</div>
+                        <div class="rating">★ {{ item.destination.rating }}</div>
                       </div>
-                      <div class="meta">{{ d.city }}</div>
+                      <div class="meta">{{ item.destination.city }}</div>
                       <div class="tags">
-                        <span v-for="t in (d.tags || []).slice(0, 2)" :key="t" class="tag">{{ t }}</span>
+                        <span v-for="t in (item.destination.tags || []).slice(0, 2)" :key="t" class="tag">{{ t }}</span>
                       </div>
                       <div class="price">
-                        <span class="amount">¥{{ 168 + idx * 10 }}</span>
+                        <span class="amount">¥{{ 168 + item.visualIndex * 10 }}</span>
                         <span class="unit">{{ $t('common.night') }}</span>
                       </div>
                       <div class="trust-signal">
-                        <span class="reviews">{{ $t('common.reviews', { count: 100 + idx * 50 }) }}</span>
+                        <span class="reviews">{{ $t('common.reviews', { count: 100 + item.visualIndex * 50 }) }}</span>
                         <span class="booked">{{ $t('common.booked', { count: 14 }) }}</span>
                       </div>
                     </div>
@@ -787,6 +787,18 @@ const filteredRecommendations = computed(() => {
 const homeRecommendations = computed(() => {
   return filteredRecommendations.value.slice(0, 8)
 })
+
+const scrollingRecommendations = computed(() => {
+  const items = homeRecommendations.value
+  if (!items.length) return []
+
+  return [...items, ...items].map((destination, idx) => ({
+    destination,
+    visualIndex: idx % items.length,
+    key: `rec-${destination.id}-${Math.floor(idx / items.length)}`,
+  }))
+})
+
 const recLoading = ref(true)
 const recError = ref('')
 

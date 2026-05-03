@@ -1,12 +1,15 @@
 package infrastructure
 
 import (
+	"database/sql"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
+	"travel-api/internal/db"
 	"travel-api/services/auth/domain"
 )
 
@@ -19,135 +22,208 @@ const (
 )
 
 type FileUserRepo struct {
-	mu    sync.RWMutex
-	users []domain.User
-	path  string
+	mu sync.RWMutex
+	db *sql.DB
 }
 
 func NewFileUserRepo() *FileUserRepo {
-	r := &FileUserRepo{users: []domain.User{}, path: UsersFile}
-	r.load()
+	database, err := db.Open()
+	if err != nil {
+		panic(err)
+	}
+	r := &FileUserRepo{db: database}
+	r.migrateFromJSON()
 	return r
 }
 
-func (r *FileUserRepo) load() {
+func (r *FileUserRepo) migrateFromJSON() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	dir := filepath.Dir(r.path)
-	_ = os.MkdirAll(dir, 0755)
-	b, err := os.ReadFile(r.path)
+
+	var count int
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&count); err != nil || count > 0 {
+		return
+	}
+
+	b, err := os.ReadFile(UsersFile)
 	if err != nil {
 		return
 	}
-	_ = json.Unmarshal(b, &r.users)
-	if r.users == nil {
-		r.users = []domain.User{}
+	var users []domain.User
+	if err := json.Unmarshal(b, &users); err != nil {
+		return
 	}
-}
-
-func (r *FileUserRepo) save() {
-	b, _ := json.MarshalIndent(r.users, "", "  ")
-	_ = os.MkdirAll(filepath.Dir(r.path), 0755)
-	_ = os.WriteFile(r.path, b, 0644)
+	for _, u := range users {
+		_, _ = r.db.Exec(
+			`INSERT OR IGNORE INTO users(id, email, password_hash, created_at) VALUES(?, ?, ?, ?)`,
+			u.ID,
+			strings.ToLower(u.Email),
+			u.PasswordHash,
+			u.CreatedAt.Format(time.RFC3339Nano),
+		)
+	}
 }
 
 func (r *FileUserRepo) FindByEmail(email string) (*domain.User, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	for i := range r.users {
-		if r.users[i].Email == email {
-			u := r.users[i]
-			return &u, true
-		}
-	}
-	return nil, false
+	return scanUser(r.db.QueryRow(
+		`SELECT id, email, password_hash, created_at FROM users WHERE email = ?`,
+		strings.ToLower(email),
+	))
 }
 
 func (r *FileUserRepo) FindByID(id string) (*domain.User, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	for i := range r.users {
-		if r.users[i].ID == id {
-			u := r.users[i]
-			return &u, true
-		}
-	}
-	return nil, false
+	return scanUser(r.db.QueryRow(
+		`SELECT id, email, password_hash, created_at FROM users WHERE id = ?`,
+		id,
+	))
 }
 
 func (r *FileUserRepo) Create(u domain.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.users = append(r.users, u)
-	r.save()
-	return nil
+	_, err := r.db.Exec(
+		`INSERT INTO users(id, email, password_hash, created_at) VALUES(?, ?, ?, ?)`,
+		u.ID,
+		strings.ToLower(u.Email),
+		u.PasswordHash,
+		u.CreatedAt.Format(time.RFC3339Nano),
+	)
+	return err
 }
 
 func (r *FileUserRepo) Update(u *domain.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	for i := range r.users {
-		if r.users[i].ID == u.ID {
-			r.users[i] = *u
-			r.save()
-			return nil
-		}
+	result, err := r.db.Exec(
+		`UPDATE users SET email = ?, password_hash = ?, created_at = ? WHERE id = ?`,
+		strings.ToLower(u.Email),
+		u.PasswordHash,
+		u.CreatedAt.Format(time.RFC3339Nano),
+		u.ID,
+	)
+	if err != nil {
+		return err
 	}
-	return os.ErrNotExist
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return os.ErrNotExist
+	}
+	return nil
+}
+
+func scanUser(row *sql.Row) (*domain.User, bool) {
+	var u domain.User
+	var createdAt string
+	if err := row.Scan(&u.ID, &u.Email, &u.PasswordHash, &createdAt); err != nil {
+		return nil, false
+	}
+	if parsed, err := time.Parse(time.RFC3339Nano, createdAt); err == nil {
+		u.CreatedAt = parsed
+	} else if parsed, err := time.Parse(time.RFC3339, createdAt); err == nil {
+		u.CreatedAt = parsed
+	}
+	return &u, true
 }
 
 type FileTokenStore struct {
-	mu     sync.RWMutex
-	tokens map[string]domain.TokenInfo
-	path   string
-	ttl    time.Duration
+	mu        sync.RWMutex
+	db        *sql.DB
+	ttl       time.Duration
+	tokenType string
+	jsonPath  string
 }
 
 func NewFileTokenStore(path string, ttl time.Duration) *FileTokenStore {
-	s := &FileTokenStore{tokens: make(map[string]domain.TokenInfo), path: path, ttl: ttl}
-	s.load()
+	database, err := db.Open()
+	if err != nil {
+		panic(err)
+	}
+	s := &FileTokenStore{
+		db:        database,
+		ttl:       ttl,
+		tokenType: tokenTypeFromPath(path),
+		jsonPath:  path,
+	}
+	s.migrateFromJSON()
 	return s
 }
 
-func (s *FileTokenStore) load() {
+func tokenTypeFromPath(path string) string {
+	if filepath.Base(path) == filepath.Base(ResetTokensFile) {
+		return "reset"
+	}
+	return "auth"
+}
+
+func (s *FileTokenStore) migrateFromJSON() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_ = os.MkdirAll(filepath.Dir(s.path), 0755)
-	b, err := os.ReadFile(s.path)
+
+	b, err := os.ReadFile(s.jsonPath)
 	if err != nil {
 		return
 	}
-	_ = json.Unmarshal(b, &s.tokens)
-	if s.tokens == nil {
-		s.tokens = make(map[string]domain.TokenInfo)
+	var tokens map[string]domain.TokenInfo
+	if err := json.Unmarshal(b, &tokens); err != nil {
+		return
 	}
-}
-
-func (s *FileTokenStore) save() {
-	b, _ := json.MarshalIndent(s.tokens, "", "  ")
-	_ = os.WriteFile(s.path, b, 0644)
+	for token, info := range tokens {
+		if info.UserID == "" || time.Now().After(info.ExpiresAt) {
+			continue
+		}
+		_, _ = s.db.Exec(
+			`INSERT OR IGNORE INTO tokens(token, user_id, type, expires_at) VALUES(?, ?, ?, ?)`,
+			token,
+			info.UserID,
+			s.tokenType,
+			info.ExpiresAt.Format(time.RFC3339Nano),
+		)
+	}
 }
 
 func (s *FileTokenStore) Set(token, userID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.tokens[token] = domain.TokenInfo{UserID: userID, ExpiresAt: time.Now().Add(s.ttl)}
-	s.save()
+	_, _ = s.db.Exec(
+		`INSERT OR REPLACE INTO tokens(token, user_id, type, expires_at) VALUES(?, ?, ?, ?)`,
+		token,
+		userID,
+		s.tokenType,
+		time.Now().Add(s.ttl).Format(time.RFC3339Nano),
+	)
 }
 
 func (s *FileTokenStore) Get(token string) (userID string, ok bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	info, ok := s.tokens[token]
-	if !ok || time.Now().After(info.ExpiresAt) {
+	var expiresAt string
+	if err := s.db.QueryRow(
+		`SELECT user_id, expires_at FROM tokens WHERE token = ? AND type = ?`,
+		token,
+		s.tokenType,
+	).Scan(&userID, &expiresAt); err != nil {
 		return "", false
 	}
-	return info.UserID, true
+	parsed, err := time.Parse(time.RFC3339Nano, expiresAt)
+	if err != nil {
+		parsed, err = time.Parse(time.RFC3339, expiresAt)
+	}
+	if err != nil || time.Now().After(parsed) {
+		_, _ = s.db.Exec(`DELETE FROM tokens WHERE token = ? AND type = ?`, token, s.tokenType)
+		return "", false
+	}
+	return userID, true
 }
 
 func (s *FileTokenStore) Delete(token string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.tokens, token)
-	s.save()
+	_, _ = s.db.Exec(`DELETE FROM tokens WHERE token = ? AND type = ?`, token, s.tokenType)
 }

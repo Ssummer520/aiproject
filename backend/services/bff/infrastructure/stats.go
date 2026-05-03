@@ -1,13 +1,15 @@
 package infrastructure
 
 import (
+	"database/sql"
 	"encoding/json"
 	"os"
-	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
 	"travel-api/internal/common/models"
+	"travel-api/internal/db"
 )
 
 const (
@@ -17,70 +19,80 @@ const (
 )
 
 type StatsStore struct {
-	mu        sync.RWMutex
-	views     map[int]int
-	favorites map[int]int
+	mu sync.RWMutex
+	db *sql.DB
 }
 
 func NewStatsStore() *StatsStore {
-	store := &StatsStore{
-		views:     make(map[int]int),
-		favorites: make(map[int]int),
+	database, err := db.Open()
+	if err != nil {
+		panic(err)
 	}
-	store.load()
+	store := &StatsStore{db: database}
+	store.migrateFromJSON()
 	return store
 }
 
 func (s *StatsStore) IncrementView(id int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.views[id]++
-	s.saveLocked()
+	s.increment(id, "views", 1)
 }
 
 func (s *StatsStore) IncrementFavorite(id int, delta int) {
+	s.increment(id, "favorites", delta)
+}
+
+func (s *StatsStore) increment(id int, column string, delta int) {
+	if id <= 0 || (column != "views" && column != "favorites") {
+		return
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.favorites[id] += delta
-	if s.favorites[id] < 0 {
-		s.favorites[id] = 0
+	_, _ = s.db.Exec(`INSERT OR IGNORE INTO stats(destination_id, views, favorites) VALUES(?, 0, 0)`, id)
+	if delta >= 0 {
+		_, _ = s.db.Exec(`UPDATE stats SET `+column+` = `+column+` + ? WHERE destination_id = ?`, delta, id)
+		return
 	}
-	s.saveLocked()
+	_, _ = s.db.Exec(`UPDATE stats SET `+column+` = MAX(0, `+column+` + ?) WHERE destination_id = ?`, delta, id)
 }
 
 func (s *StatsStore) TopByViews(limit int) []int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	type pair struct {
-		id    int
-		count int
-	}
-
-	var sorted []pair
-	for id, count := range s.views {
-		sorted = append(sorted, pair{id, count})
-	}
-
-	// Simple bubble sort
-	for i := 0; i < len(sorted); i++ {
-		for j := i + 1; j < len(sorted); j++ {
-			if sorted[j].count > sorted[i].count {
-				sorted[i], sorted[j] = sorted[j], sorted[i]
-			}
-		}
-	}
-
-	result := make([]int, 0, limit)
-	for i := 0; i < len(sorted) && i < limit; i++ {
-		result = append(result, sorted[i].id)
-	}
-
-	return result
+	return s.topBy("views", limit)
 }
 
-func (s *StatsStore) load() {
-	_ = os.MkdirAll(filepath.Dir(statsFile), 0755)
+func (s *StatsStore) TopByFavorites(limit int) []int {
+	return s.topBy("favorites", limit)
+}
+
+func (s *StatsStore) topBy(column string, limit int) []int {
+	if limit <= 0 || (column != "views" && column != "favorites") {
+		return []int{}
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	rows, err := s.db.Query(`SELECT destination_id FROM stats WHERE `+column+` > 0 ORDER BY `+column+` DESC, destination_id ASC LIMIT ?`, limit)
+	if err != nil {
+		return []int{}
+	}
+	defer rows.Close()
+
+	ids := make([]int, 0, limit)
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+func (s *StatsStore) migrateFromJSON() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var count int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM stats`).Scan(&count); err != nil || count > 0 {
+		return
+	}
 	b, err := os.ReadFile(statsFile)
 	if err != nil {
 		return
@@ -92,68 +104,35 @@ func (s *StatsStore) load() {
 	if err := json.Unmarshal(b, &payload); err != nil {
 		return
 	}
-	if payload.Views != nil {
-		s.views = payload.Views
+	ids := make(map[int]bool)
+	for id := range payload.Views {
+		ids[id] = true
 	}
-	if payload.Favorites != nil {
-		s.favorites = payload.Favorites
+	for id := range payload.Favorites {
+		ids[id] = true
+	}
+	for id := range ids {
+		_, _ = s.db.Exec(
+			`INSERT OR REPLACE INTO stats(destination_id, views, favorites) VALUES(?, ?, ?)`,
+			id,
+			payload.Views[id],
+			payload.Favorites[id],
+		)
 	}
 }
 
-func (s *StatsStore) saveLocked() {
-	payload := struct {
-		Views     map[int]int `json:"views"`
-		Favorites map[int]int `json:"favorites"`
-	}{
-		Views:     s.views,
-		Favorites: s.favorites,
-	}
-	b, _ := json.MarshalIndent(payload, "", "  ")
-	_ = os.WriteFile(statsFile, b, 0644)
-}
-
-func (s *StatsStore) TopByFavorites(limit int) []int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	type pair struct {
-		id    int
-		count int
-	}
-
-	var sorted []pair
-	for id, count := range s.favorites {
-		sorted = append(sorted, pair{id, count})
-	}
-
-	// Simple bubble sort
-	for i := 0; i < len(sorted); i++ {
-		for j := i + 1; j < len(sorted); j++ {
-			if sorted[j].count > sorted[i].count {
-				sorted[i], sorted[j] = sorted[j], sorted[i]
-			}
-		}
-	}
-
-	result := make([]int, 0, limit)
-	for i := 0; i < len(sorted) && i < limit; i++ {
-		result = append(result, sorted[i].id)
-	}
-
-	return result
-}
-
-// BookingStore stores bookings
 type BookingStore struct {
-	mu       sync.RWMutex
-	bookings map[string][]models.Booking
+	mu sync.RWMutex
+	db *sql.DB
 }
 
 func NewBookingStore() *BookingStore {
-	store := &BookingStore{
-		bookings: make(map[string][]models.Booking),
+	database, err := db.Open()
+	if err != nil {
+		panic(err)
 	}
-	store.load()
+	store := &BookingStore{db: database}
+	store.migrateFromJSON()
 	return store
 }
 
@@ -161,8 +140,9 @@ func (s *BookingStore) CreateBooking(userID string, dest models.Destination, che
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	id := s.nextID(userID)
 	booking := models.Booking{
-		ID:            len(s.bookings[userID]) + 1,
+		ID:            id,
 		UserID:        userID,
 		DestinationID: dest.ID,
 		Name:          dest.Name,
@@ -176,8 +156,23 @@ func (s *BookingStore) CreateBooking(userID string, dest models.Destination, che
 		CreatedAt:     time.Now().Format("2006-01-02"),
 	}
 
-	s.bookings[userID] = append(s.bookings[userID], booking)
-	s.saveLocked()
+	_, _ = s.db.Exec(
+		`INSERT INTO bookings(id, user_id, destination_id, name, city, cover, check_in, check_out, guests, total_price, status, created_at, cancelled_at)
+		 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		booking.ID,
+		booking.UserID,
+		booking.DestinationID,
+		booking.Name,
+		booking.City,
+		booking.Cover,
+		booking.CheckIn,
+		booking.CheckOut,
+		booking.Guests,
+		booking.TotalPrice,
+		booking.Status,
+		booking.CreatedAt,
+		nullString(booking.CancelledAt),
+	)
 
 	return booking
 }
@@ -186,59 +181,140 @@ func (s *BookingStore) GetUserBookings(userID string) []models.Booking {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if bookings, ok := s.bookings[userID]; ok {
-		result := make([]models.Booking, len(bookings))
-		copy(result, bookings)
-		return result
+	rows, err := s.db.Query(
+		`SELECT id, user_id, destination_id, name, city, cover, check_in, check_out, guests, total_price, status, created_at, cancelled_at
+		 FROM bookings WHERE user_id = ? ORDER BY id DESC`,
+		userID,
+	)
+	if err != nil {
+		return []models.Booking{}
 	}
-	return []models.Booking{}
+	defer rows.Close()
+
+	bookings := make([]models.Booking, 0)
+	for rows.Next() {
+		booking, ok := scanBooking(rows)
+		if ok {
+			bookings = append(bookings, booking)
+		}
+	}
+	return bookings
 }
 
 func (s *BookingStore) CancelBooking(userID string, bookingID int) (models.Booking, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	userBookings, ok := s.bookings[userID]
+	booking, ok := s.getBookingLocked(userID, bookingID)
 	if !ok {
 		return models.Booking{}, false
 	}
-
-	for i := range userBookings {
-		if userBookings[i].ID != bookingID {
-			continue
-		}
-		if userBookings[i].Status == "cancelled" {
-			return userBookings[i], true
-		}
-		userBookings[i].Status = "cancelled"
-		userBookings[i].CancelledAt = time.Now().Format("2006-01-02 15:04:05")
-		s.bookings[userID] = userBookings
-		s.saveLocked()
-		return userBookings[i], true
+	if booking.Status == "cancelled" {
+		return booking, true
 	}
-
-	return models.Booking{}, false
+	booking.Status = "cancelled"
+	booking.CancelledAt = time.Now().Format("2006-01-02 15:04:05")
+	_, _ = s.db.Exec(
+		`UPDATE bookings SET status = ?, cancelled_at = ? WHERE user_id = ? AND id = ?`,
+		booking.Status,
+		booking.CancelledAt,
+		userID,
+		bookingID,
+	)
+	return booking, true
 }
 
-func (s *BookingStore) load() {
-	_ = os.MkdirAll(filepath.Dir(bookingsFile), 0755)
+func (s *BookingStore) nextID(userID string) int {
+	var id int
+	_ = s.db.QueryRow(`SELECT COALESCE(MAX(id), 0) + 1 FROM bookings WHERE user_id = ?`, userID).Scan(&id)
+	if id <= 0 {
+		return 1
+	}
+	return id
+}
+
+func (s *BookingStore) getBookingLocked(userID string, bookingID int) (models.Booking, bool) {
+	row := s.db.QueryRow(
+		`SELECT id, user_id, destination_id, name, city, cover, check_in, check_out, guests, total_price, status, created_at, cancelled_at
+		 FROM bookings WHERE user_id = ? AND id = ?`,
+		userID,
+		bookingID,
+	)
+	return scanBooking(row)
+}
+
+func (s *BookingStore) migrateFromJSON() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var count int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM bookings`).Scan(&count); err != nil || count > 0 {
+		return
+	}
 	b, err := os.ReadFile(bookingsFile)
 	if err != nil {
 		return
 	}
-	_ = json.Unmarshal(b, &s.bookings)
-	if s.bookings == nil {
-		s.bookings = make(map[string][]models.Booking)
+	var data map[string][]models.Booking
+	if err := json.Unmarshal(b, &data); err != nil {
+		return
+	}
+	for userID, bookings := range data {
+		sort.SliceStable(bookings, func(i, j int) bool { return bookings[i].ID < bookings[j].ID })
+		for _, booking := range bookings {
+			if booking.UserID == "" {
+				booking.UserID = userID
+			}
+			_, _ = s.db.Exec(
+				`INSERT OR REPLACE INTO bookings(id, user_id, destination_id, name, city, cover, check_in, check_out, guests, total_price, status, created_at, cancelled_at)
+				 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				booking.ID,
+				booking.UserID,
+				booking.DestinationID,
+				booking.Name,
+				booking.City,
+				booking.Cover,
+				booking.CheckIn,
+				booking.CheckOut,
+				booking.Guests,
+				booking.TotalPrice,
+				booking.Status,
+				booking.CreatedAt,
+				nullString(booking.CancelledAt),
+			)
+		}
 	}
 }
 
-func (s *BookingStore) saveLocked() {
-	b, _ := json.MarshalIndent(s.bookings, "", "  ")
-	_ = os.WriteFile(bookingsFile, b, 0644)
+func scanBooking(scanner interface {
+	Scan(dest ...interface{}) error
+}) (models.Booking, bool) {
+	var booking models.Booking
+	var cancelledAt sql.NullString
+	if err := scanner.Scan(
+		&booking.ID,
+		&booking.UserID,
+		&booking.DestinationID,
+		&booking.Name,
+		&booking.City,
+		&booking.Cover,
+		&booking.CheckIn,
+		&booking.CheckOut,
+		&booking.Guests,
+		&booking.TotalPrice,
+		&booking.Status,
+		&booking.CreatedAt,
+		&cancelledAt,
+	); err != nil {
+		return models.Booking{}, false
+	}
+	if cancelledAt.Valid {
+		booking.CancelledAt = cancelledAt.String
+	}
+	return booking, true
 }
 
 func calculateNights(checkIn, checkOut string) int {
-	// Simple calculation - in production would parse dates properly
 	inTime, err := time.Parse("2006-01-02", checkIn)
 	if err != nil {
 		return 1
@@ -254,77 +330,138 @@ func calculateNights(checkIn, checkOut string) int {
 	return nights
 }
 
-// NotificationStore stores user notifications
 type NotificationStore struct {
-	mu            sync.RWMutex
-	notifications map[string][]models.Notification
+	mu sync.RWMutex
+	db *sql.DB
 }
 
 func NewNotificationStore() *NotificationStore {
-	store := &NotificationStore{
-		notifications: make(map[string][]models.Notification),
+	database, err := db.Open()
+	if err != nil {
+		panic(err)
 	}
-	store.load()
+	store := &NotificationStore{db: database}
+	store.migrateFromJSON()
 	return store
 }
 
 func (s *NotificationStore) AddNotification(userID string, notification models.Notification) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	notification.ID = len(s.notifications[userID]) + 1
+	notification.ID = s.nextID(userID)
 	notification.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
-	s.notifications[userID] = append([]models.Notification{notification}, s.notifications[userID]...)
-	s.saveLocked()
+	_, _ = s.db.Exec(
+		`INSERT INTO notifications(id, user_id, type, title, message, link, read, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
+		notification.ID,
+		userID,
+		notification.Type,
+		notification.Title,
+		notification.Message,
+		notification.Link,
+		boolToInt(notification.Read),
+		notification.CreatedAt,
+	)
 }
 
 func (s *NotificationStore) GetNotifications(userID string) []models.Notification {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if notifications, ok := s.notifications[userID]; ok {
-		result := make([]models.Notification, len(notifications))
-		copy(result, notifications)
-		return result
+	rows, err := s.db.Query(
+		`SELECT id, type, title, message, link, read, created_at FROM notifications WHERE user_id = ? ORDER BY id DESC`,
+		userID,
+	)
+	if err != nil {
+		return []models.Notification{}
 	}
-	return []models.Notification{}
+	defer rows.Close()
+
+	notifications := make([]models.Notification, 0)
+	for rows.Next() {
+		var notification models.Notification
+		var read int
+		if err := rows.Scan(
+			&notification.ID,
+			&notification.Type,
+			&notification.Title,
+			&notification.Message,
+			&notification.Link,
+			&read,
+			&notification.CreatedAt,
+		); err == nil {
+			notification.Read = read == 1
+			notifications = append(notifications, notification)
+		}
+	}
+	return notifications
 }
 
 func (s *NotificationStore) MarkAsRead(userID string, notificationID int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for i := range s.notifications[userID] {
-		if s.notifications[userID][i].ID == notificationID {
-			s.notifications[userID][i].Read = true
-			s.saveLocked()
-			break
-		}
-	}
+	_, _ = s.db.Exec(`UPDATE notifications SET read = 1 WHERE user_id = ? AND id = ?`, userID, notificationID)
 }
 
 func (s *NotificationStore) GetUnreadCount(userID string) int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	count := 0
-	for _, n := range s.notifications[userID] {
-		if !n.Read {
-			count++
-		}
-	}
+	var count int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read = 0`, userID).Scan(&count)
 	return count
 }
 
-func (s *NotificationStore) load() {
-	_ = os.MkdirAll(filepath.Dir(notificationsFile), 0755)
+func (s *NotificationStore) nextID(userID string) int {
+	var id int
+	_ = s.db.QueryRow(`SELECT COALESCE(MAX(id), 0) + 1 FROM notifications WHERE user_id = ?`, userID).Scan(&id)
+	if id <= 0 {
+		return 1
+	}
+	return id
+}
+
+func (s *NotificationStore) migrateFromJSON() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var count int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM notifications`).Scan(&count); err != nil || count > 0 {
+		return
+	}
 	b, err := os.ReadFile(notificationsFile)
 	if err != nil {
 		return
 	}
-	_ = json.Unmarshal(b, &s.notifications)
-	if s.notifications == nil {
-		s.notifications = make(map[string][]models.Notification)
+	var data map[string][]models.Notification
+	if err := json.Unmarshal(b, &data); err != nil {
+		return
+	}
+	for userID, notifications := range data {
+		sort.SliceStable(notifications, func(i, j int) bool { return notifications[i].ID < notifications[j].ID })
+		for _, notification := range notifications {
+			_, _ = s.db.Exec(
+				`INSERT OR REPLACE INTO notifications(id, user_id, type, title, message, link, read, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
+				notification.ID,
+				userID,
+				notification.Type,
+				notification.Title,
+				notification.Message,
+				notification.Link,
+				boolToInt(notification.Read),
+				notification.CreatedAt,
+			)
+		}
 	}
 }
 
-func (s *NotificationStore) saveLocked() {
-	b, _ := json.MarshalIndent(s.notifications, "", "  ")
-	_ = os.WriteFile(notificationsFile, b, 0644)
+func boolToInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
+}
+
+func nullString(value string) sql.NullString {
+	if value == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: value, Valid: true}
 }

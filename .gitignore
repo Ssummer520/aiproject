@@ -1,0 +1,7 @@
+.DS_Store
+.gocache/
+.idea/
+backend/data/*.db
+backend/data/*.db-shm
+backend/data/*.db-wal
+frontend/dist/

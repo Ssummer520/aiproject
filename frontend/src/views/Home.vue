@@ -372,10 +372,62 @@
       container-class="ai-float-wrap"
       :hint-text="locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!'"
       :show-hint="showAiHint"
+      :open="aiAssistantOpen"
       :pulse="aiPulse"
-      @toggle="onAiFloatClick"
+      @toggle="toggleAiAssistant"
       @hover-change="pauseAiHint = $event"
-    />
+    >
+      <section class="ai-chat-panel" @click.stop>
+        <header class="ai-chat-header">
+          <div>
+            <span class="ai-chat-kicker">{{ locale === 'zh' ? '智能旅行助手' : 'AI Travel Assistant' }}</span>
+            <h3>{{ locale === 'zh' ? '帮你快速决定去哪玩' : 'Plan smarter, faster' }}</h3>
+          </div>
+          <button type="button" class="ai-chat-close" @click="closeAiAssistant">×</button>
+        </header>
+
+        <div class="ai-chat-messages">
+          <article
+            v-for="message in aiMessages"
+            :key="message.id"
+            class="ai-chat-message"
+            :class="'ai-chat-message--' + message.role"
+          >
+            <p>{{ message.text }}</p>
+            <div v-if="message.destinations?.length" class="ai-chat-destinations">
+              <router-link
+                v-for="destination in message.destinations"
+                :key="destination.id"
+                :to="'/destination/' + destination.id"
+                class="ai-chat-destination"
+                @click="closeAiAssistant"
+              >
+                <img :src="destination.cover || FALLBACK_IMAGE" :alt="destination.name" @error="onImgError" />
+                <span>
+                  <strong>{{ destination.name }}</strong>
+                  <small>{{ destination.city }} · {{ destination.rating }}★ · {{ formatPrice(destination.price || 0) }}</small>
+                </span>
+              </router-link>
+            </div>
+          </article>
+        </div>
+
+        <div class="ai-chat-prompts">
+          <button v-for="prompt in aiQuickPrompts" :key="prompt" type="button" @click="sendAiPrompt(prompt)">
+            {{ prompt }}
+          </button>
+        </div>
+
+        <form class="ai-chat-form" @submit.prevent="sendAiPrompt()">
+          <input
+            v-model="aiQuestion"
+            type="text"
+            :placeholder="locale === 'zh' ? '输入预算、城市或偏好...' : 'Ask by city, budget, or vibe...'"
+          />
+          <button type="submit">{{ locale === 'zh' ? '发送' : 'Send' }}</button>
+        </form>
+      </section>
+    </AiAssistantBubble>
 
     <!-- 信任信号页脚 -->
     <footer class="site-footer">
@@ -475,6 +527,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useCurrency } from '../composables/useCurrency'
+import { useTravelAssistant } from '../composables/useTravelAssistant'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 
 const { locale } = useI18n()
@@ -809,6 +862,49 @@ const nearbyError = ref('')
 const deals = ref([])
 const trendingThisWeek = ref([])
 const mostViewedNearby = ref([])
+const assistantDestinations = computed(() => uniqueDestinations([
+  ...recommendations.value,
+  ...nearby.value,
+  ...trendingThisWeek.value,
+  ...mostViewedNearby.value,
+  ...history.value,
+  ...wishlist.value,
+]))
+const aiQuestion = ref('')
+const aiAssistantOpen = ref(false)
+const {
+  messages: aiMessages,
+  quickPrompts: aiQuickPrompts,
+  ask: askTravelAssistant,
+  resetGreeting: resetTravelAssistantGreeting,
+} = useTravelAssistant({ locale, destinations: assistantDestinations })
+
+function uniqueDestinations(items) {
+  const seen = new Set()
+  return (items || []).filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+}
+
+function toggleAiAssistant() {
+  aiAssistantOpen.value = !aiAssistantOpen.value
+  showAiHint.value = false
+}
+
+function closeAiAssistant() {
+  aiAssistantOpen.value = false
+}
+
+function sendAiPrompt(prompt = '') {
+  const text = String(prompt || aiQuestion.value).trim()
+  if (!text) return
+  askTravelAssistant(text)
+  aiQuestion.value = ''
+  aiAssistantOpen.value = true
+  showAiHint.value = false
+}
 
 async function fetchHomePage() {
   recLoading.value = true
@@ -896,7 +992,7 @@ function startAiHintLoop() {
   function scheduleShow() {
     if (aiHintTimer) clearTimeout(aiHintTimer)
     aiHintTimer = setTimeout(() => {
-      if (pauseAiHint.value) { scheduleShow(); return }
+      if (pauseAiHint.value || aiAssistantOpen.value) { scheduleShow(); return }
       showAiHint.value = true
       aiPulse.value = true
       if (aiPulseTimer) clearTimeout(aiPulseTimer)
@@ -908,11 +1004,6 @@ function startAiHintLoop() {
     }, 1500)
   }
   scheduleShow()
-}
-
-function onAiFloatClick() {
-  showAiHint.value = !showAiHint.value
-  if (showAiHint.value) console.log('AI assistant coming soon')
 }
 let heroTimer = null
 let scrollListener = null
@@ -940,6 +1031,7 @@ async function handleRouteFocus(focus) {
 
 watch(locale, () => {
   fetchHomePage()
+  resetTravelAssistantGreeting()
 })
 watch(showAuthModal, () => {
   authError.value = ''

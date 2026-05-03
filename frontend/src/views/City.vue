@@ -256,11 +256,63 @@
       container-class="ai-float-wrap"
       :hint-text="locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!'"
       :show-hint="showAiHint"
+      :open="aiAssistantOpen"
       :open-class-enabled="false"
       :use-transition="false"
       :emit-hover="false"
-      @toggle="onAiFloatClick"
-    />
+      @toggle="toggleAiAssistant"
+    >
+      <section class="ai-chat-panel" @click.stop>
+        <header class="ai-chat-header">
+          <div>
+            <span class="ai-chat-kicker">{{ locale === 'zh' ? cityTitle + '旅行助手' : cityTitle + ' Travel Assistant' }}</span>
+            <h3>{{ locale === 'zh' ? '按你的偏好筛选景点' : 'Find the right city picks' }}</h3>
+          </div>
+          <button type="button" class="ai-chat-close" @click="closeAiAssistant">×</button>
+        </header>
+
+        <div class="ai-chat-messages">
+          <article
+            v-for="message in aiMessages"
+            :key="message.id"
+            class="ai-chat-message"
+            :class="'ai-chat-message--' + message.role"
+          >
+            <p>{{ message.text }}</p>
+            <div v-if="message.destinations?.length" class="ai-chat-destinations">
+              <router-link
+                v-for="destination in message.destinations"
+                :key="destination.id"
+                :to="'/destination/' + destination.id"
+                class="ai-chat-destination"
+                @click="closeAiAssistant"
+              >
+                <img :src="destination.cover || FALLBACK_IMAGE" :alt="destination.name" @error="onImgError" />
+                <span>
+                  <strong>{{ destination.name }}</strong>
+                  <small>{{ destination.city }} · {{ destination.rating }}★</small>
+                </span>
+              </router-link>
+            </div>
+          </article>
+        </div>
+
+        <div class="ai-chat-prompts">
+          <button v-for="prompt in aiQuickPrompts" :key="prompt" type="button" @click="sendAiPrompt(prompt)">
+            {{ prompt }}
+          </button>
+        </div>
+
+        <form class="ai-chat-form" @submit.prevent="sendAiPrompt()">
+          <input
+            v-model="aiQuestion"
+            type="text"
+            :placeholder="locale === 'zh' ? '输入亲子、自然、预算...' : 'Ask for family, nature, budget...'"
+          />
+          <button type="submit">{{ locale === 'zh' ? '发送' : 'Send' }}</button>
+        </form>
+      </section>
+    </AiAssistantBubble>
 
   </div>
 </template>
@@ -270,6 +322,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { useTravelAssistant } from '../composables/useTravelAssistant'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 import SiteHeader from '../components/SiteHeader.vue'
 
@@ -289,6 +342,8 @@ const activeCategory = ref('all')
 const expandedParentCategory = ref('all')
 const showAllCategories = ref(false)
 const showAiHint = ref(false)
+const aiAssistantOpen = ref(false)
+const aiQuestion = ref('')
 
 const cityMap = {
   'hangzhou': { name: 'Hangzhou', nameZh: '杭州', image: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200' },
@@ -400,6 +455,27 @@ function pickCityFirst(list) {
 const cityTrendingThisWeek = computed(() => pickCityFirst(trendingThisWeek.value))
 const cityMostViewedNearby = computed(() => pickCityFirst(mostViewedNearby.value))
 const showSidebar = computed(() => deals.value.length || cityTrendingThisWeek.value.length || cityMostViewedNearby.value.length)
+const assistantDestinations = computed(() => uniqueDestinations([
+  ...filteredResults.value,
+  ...results.value,
+  ...cityTrendingThisWeek.value,
+  ...cityMostViewedNearby.value,
+]))
+const {
+  messages: aiMessages,
+  quickPrompts: aiQuickPrompts,
+  ask: askTravelAssistant,
+  resetGreeting: resetTravelAssistantGreeting,
+} = useTravelAssistant({ locale, destinations: assistantDestinations })
+
+function uniqueDestinations(items) {
+  const seen = new Set()
+  return (items || []).filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+}
 
 const activeCategoryLabel = computed(() => {
   for (const cat of cityCategories.value) {
@@ -537,8 +613,22 @@ function toggleParentCategory(category) {
   activeCategory.value = category.id
 }
 
-function onAiFloatClick() {
-  showAiHint.value = !showAiHint.value
+function toggleAiAssistant() {
+  aiAssistantOpen.value = !aiAssistantOpen.value
+  showAiHint.value = false
+}
+
+function closeAiAssistant() {
+  aiAssistantOpen.value = false
+}
+
+function sendAiPrompt(prompt = '') {
+  const text = String(prompt || aiQuestion.value).trim()
+  if (!text) return
+  askTravelAssistant(text)
+  aiQuestion.value = ''
+  aiAssistantOpen.value = true
+  showAiHint.value = false
 }
 
 watch(() => route.params.city, () => {
@@ -550,6 +640,7 @@ watch(() => route.params.city, () => {
 watch(locale, () => {
   fetchCity()
   fetchCityExtras()
+  resetTravelAssistantGreeting()
 })
 
 onMounted(() => {

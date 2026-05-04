@@ -42,6 +42,13 @@
           <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
         </div>
 
+        <div v-else-if="tripsError" class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <h3>{{ locale === 'zh' ? '订单加载异常' : 'Trips unavailable' }}</h3>
+          <p>{{ tripsError }}</p>
+          <button class="auth-btn" @click="fetchTrips">{{ locale === 'zh' ? '重试' : 'Retry' }}</button>
+        </div>
+
         <div v-else-if="displayTrips.length === 0" class="empty-state">
           <div class="empty-icon">📋</div>
           <h3>{{ locale === 'zh' ? '暂无订单' : 'No trips yet' }}</h3>
@@ -116,7 +123,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { fetchOrders, cancelOrder } from '../composables/useProducts'
+import { fetchBookings, fetchOrders, cancelBooking, cancelOrder } from '../composables/useProducts'
 
 const { locale } = useI18n()
 const router = useRouter()
@@ -132,6 +139,7 @@ const authPassword = ref('')
 const authConfirmPassword = ref('')
 const authError = ref('')
 const cancellingId = ref(null)
+const tripsError = ref('')
 
 const API = '/api/v1'
 
@@ -203,15 +211,22 @@ async function fetchTrips() {
     return
   }
   loading.value = true
+  tripsError.value = ''
   try {
-    const [bookingsRes, orders] = await Promise.all([
-      fetch(`${API}/bookings`, { headers: authHeaders() }),
-      fetchOrders(authHeaders()).catch(() => []),
+    const [bookings, orders] = await Promise.all([
+      fetchBookings(authHeaders()),
+      fetchOrders(authHeaders()),
     ])
-    if (bookingsRes.ok) trips.value = await bookingsRes.json()
+    trips.value = bookings
     productOrders.value = orders
   } catch (e) {
     console.error(e)
+    if (e.status === 401) {
+      tripsError.value = locale.value === 'zh' ? '登录已过期，请重新登录。' : 'Your session expired. Please sign in again.'
+      showAuthModal.value = 'login'
+    } else {
+      tripsError.value = locale.value === 'zh' ? '订单加载失败，请稍后重试。' : 'Failed to load trips. Please try again.'
+    }
   } finally {
     loading.value = false
   }
@@ -274,14 +289,7 @@ async function cancelTrip(trip) {
       }
       return
     }
-    const res = await fetch(`${API}/bookings/${trip.id}/cancel`, {
-      method: 'POST',
-      headers: authHeaders(),
-    })
-    if (!res.ok) {
-      return
-    }
-    const data = await res.json()
+    const data = await cancelBooking(trip.id, authHeaders())
     if (data.booking) {
       const idx = trips.value.findIndex(item => item.id === trip.id)
       if (idx >= 0) {

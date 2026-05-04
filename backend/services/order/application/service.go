@@ -31,6 +31,9 @@ func (s *OrderService) List(userID string) ([]domain.Order, error) {
 }
 
 func (s *OrderService) Create(userID string, req domain.CreateOrderRequest) (domain.Order, error) {
+	if strings.TrimSpace(userID) == "" {
+		return domain.Order{}, ErrInvalidOrderRequest
+	}
 	if req.ProductID <= 0 || req.PackageID <= 0 || strings.TrimSpace(req.TravelDate) == "" {
 		return domain.Order{}, ErrInvalidOrderRequest
 	}

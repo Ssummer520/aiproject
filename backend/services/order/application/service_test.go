@@ -1,0 +1,130 @@
+package application
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"travel-api/services/order/domain"
+	productApp "travel-api/services/product/application"
+)
+
+func init() {
+	os.Setenv("TRAVEL_DB_PATH", filepath.Join(os.TempDir(), fmt.Sprintf("chinatravel-order-test-%d.db", os.Getpid())))
+}
+
+func newTestOrderService() *OrderService {
+	return NewOrderService(productApp.NewProductService())
+}
+
+func nextTravelDate() string {
+	return time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+}
+
+func TestOrderServiceCreatePersistsPricedProductOrder(t *testing.T) {
+	service := newTestOrderService()
+
+	order, err := service.Create("user-1", domain.CreateOrderRequest{
+		ProductID:    101,
+		PackageID:    1011,
+		TravelDate:   nextTravelDate(),
+		Adults:       2,
+		Children:     1,
+		ContactName:  "Alan",
+		ContactEmail: "alan@example.com",
+	})
+	if err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+	if order.ID == 0 || order.Status != "confirmed" || order.PaymentStatus != "paid_mock" {
+		t.Fatalf("unexpected order status: %#v", order)
+	}
+	if len(order.Items) != 1 {
+		t.Fatalf("expected one order item, got %d", len(order.Items))
+	}
+	if order.Items[0].ProductID != 101 || order.Items[0].PackageID != 1011 {
+		t.Fatalf("unexpected order item: %#v", order.Items[0])
+	}
+	if order.TotalAmount <= 0 || order.TotalAmount != order.Items[0].Subtotal {
+		t.Fatalf("unexpected totals: order=%v item=%v", order.TotalAmount, order.Items[0].Subtotal)
+	}
+
+	orders, err := service.List("user-1")
+	if err != nil {
+		t.Fatalf("list orders: %v", err)
+	}
+	if len(orders) != 1 || len(orders[0].Items) != 1 {
+		t.Fatalf("expected persisted order with item, got %#v", orders)
+	}
+}
+
+func TestOrderServiceCreateRejectsInvalidRequests(t *testing.T) {
+	service := newTestOrderService()
+
+	cases := []struct {
+		name string
+		req  domain.CreateOrderRequest
+		err  error
+	}{
+		{
+			name: "empty user still rejected by service boundary",
+			req:  domain.CreateOrderRequest{ProductID: 101, PackageID: 1011, TravelDate: nextTravelDate(), Adults: 1},
+			err:  ErrInvalidOrderRequest,
+		},
+		{
+			name: "zero travelers",
+			req:  domain.CreateOrderRequest{ProductID: 101, PackageID: 1011, TravelDate: nextTravelDate()},
+			err:  ErrInvalidOrderRequest,
+		},
+		{
+			name: "past date",
+			req:  domain.CreateOrderRequest{ProductID: 101, PackageID: 1011, TravelDate: time.Now().AddDate(0, 0, -1).Format("2006-01-02"), Adults: 1},
+			err:  ErrInvalidOrderRequest,
+		},
+		{
+			name: "package does not belong to product",
+			req:  domain.CreateOrderRequest{ProductID: 101, PackageID: 1021, TravelDate: nextTravelDate(), Adults: 1},
+			err:  ErrPackageNotFound,
+		},
+		{
+			name: "too many travelers",
+			req:  domain.CreateOrderRequest{ProductID: 101, PackageID: 1011, TravelDate: nextTravelDate(), Adults: 10},
+			err:  ErrInvalidOrderRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			userID := "user-invalid"
+			if tc.name == "empty user still rejected by service boundary" {
+				userID = ""
+			}
+			_, err := service.Create(userID, tc.req)
+			if err != tc.err {
+				t.Fatalf("expected %v, got %v", tc.err, err)
+			}
+		})
+	}
+}
+
+func TestOrderServiceCancelOnlyUserOrder(t *testing.T) {
+	service := newTestOrderService()
+	order, err := service.Create("user-cancel", domain.CreateOrderRequest{ProductID: 104, PackageID: 1041, TravelDate: nextTravelDate(), Adults: 1})
+	if err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+
+	if _, ok, err := service.Cancel("other-user", order.ID); err != nil || ok {
+		t.Fatalf("other user should not cancel order: ok=%v err=%v", ok, err)
+	}
+
+	cancelled, ok, err := service.Cancel("user-cancel", order.ID)
+	if err != nil || !ok {
+		t.Fatalf("cancel own order: ok=%v err=%v", ok, err)
+	}
+	if cancelled.Status != "cancelled" || cancelled.CancelledAt == "" {
+		t.Fatalf("expected cancelled order with timestamp, got %#v", cancelled)
+	}
+}

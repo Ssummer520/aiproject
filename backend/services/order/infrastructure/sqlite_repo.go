@@ -30,7 +30,6 @@ func (r *SQLiteOrderRepo) ListByUser(userID string) ([]domain.Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	orders := make([]domain.Order, 0)
 	for rows.Next() {
@@ -38,14 +37,23 @@ func (r *SQLiteOrderRepo) ListByUser(userID string) ([]domain.Order, error) {
 		if err != nil {
 			return nil, err
 		}
-		items, err := r.listItems(userID, order.ID)
+		orders = append(orders, order)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	for i := range orders {
+		items, err := r.listItems(userID, orders[i].ID)
 		if err != nil {
 			return nil, err
 		}
-		order.Items = items
-		orders = append(orders, order)
+		orders[i].Items = items
 	}
-	return orders, rows.Err()
+	return orders, nil
 }
 
 func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.OrderItem) (domain.Order, error) {

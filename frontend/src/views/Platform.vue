@@ -4,21 +4,21 @@
     <main class="platform-content">
       <section class="platform-hero">
         <div>
-          <span class="section-kicker">{{ locale === 'zh' ? '四期平台' : 'Phase 4 Platform' }}</span>
-          <h1>{{ locale === 'zh' ? '运营平台' : 'Operations Platform' }}</h1>
-          <p>{{ locale === 'zh' ? '商家、库存、售后、会员、CMS 与经营数据的可运营平台雏形。' : 'Merchant, inventory, after-sales, membership, CMS, and operating metrics in one console.' }}</p>
+          <span class="section-kicker">{{ $t('auto.auto_e3e4051b') }}</span>
+          <h1>{{ $t('auto.auto_42fe8e38') }}</h1>
+          <p>{{ $t('auto.auto_bb10472d') }}</p>
         </div>
-        <button class="hero-refresh" :disabled="loading" @click="loadPlatform">{{ loading ? (locale === 'zh' ? '刷新中...' : 'Refreshing...') : (locale === 'zh' ? '刷新数据' : 'Refresh') }}</button>
+        <button class="hero-refresh" :disabled="loading" @click="loadPlatform">{{ loading ? ($t('auto.auto_6702ac5b')) : ($t('auto.auto_0b47b03e')) }}</button>
       </section>
 
       <div v-if="!isLoggedIn" class="platform-card auth-card">
-        <h2>{{ locale === 'zh' ? '需要登录' : 'Sign in required' }}</h2>
-        <p>{{ locale === 'zh' ? '请先登录后查看运营平台。' : 'Please sign in before viewing the operations platform.' }}</p>
+        <h2>{{ $t('auto.auto_6d544d4b') }}</h2>
+        <p>{{ $t('auto.auto_bd7fbf0b') }}</p>
       </div>
 
       <div v-else-if="loading" class="platform-card loading-card">
         <div class="spinner"></div>
-        <p>{{ locale === 'zh' ? '加载运营数据中...' : 'Loading platform data...' }}</p>
+        <p>{{ $t('auto.auto_63e82539') }}</p>
       </div>
 
       <template v-else>
@@ -34,43 +34,43 @@
         <section class="platform-grid">
           <article class="platform-card">
             <div class="card-head">
-              <div><span class="section-kicker">{{ locale === 'zh' ? '商家' : 'Merchant' }}</span><h2>{{ locale === 'zh' ? '商家后台' : 'Merchant console' }}</h2></div>
+              <div><span class="section-kicker">{{ $t('auto.auto_390f4e66') }}</span><h2>{{ $t('auto.auto_802d1c96') }}</h2></div>
               <strong>{{ merchants.length }}</strong>
             </div>
             <div class="merchant-list">
               <div v-for="merchant in merchants" :key="merchant.id" class="merchant-row">
-                <div><strong>{{ merchant.name }}</strong><p>{{ merchant.city }} · {{ merchant.contact_email }}</p></div>
-                <span :class="['status-pill', merchant.status]">{{ merchant.status }}</span>
+                <div><strong>{{ localizeText(merchant.name) }}</strong><p>{{ localizeText(merchant.city) }} · {{ merchant.contact_email }}</p></div>
+                <span :class="['status-pill', merchant.status]">{{ localizeText(merchant.status) }}</span>
               </div>
             </div>
           </article>
 
           <article class="platform-card">
-            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '会员' : 'Membership' }}</span><h2>{{ locale === 'zh' ? '会员积分' : 'Membership' }}</h2></div><strong>{{ profile.membership_level || 'Silver' }}</strong></div>
+            <div class="card-head"><div><span class="section-kicker">{{ $t('auto.auto_33708813') }}</span><h2>{{ $t('auto.auto_9da07b41') }}</h2></div><strong>{{ profile.membership_level || 'Silver' }}</strong></div>
             <form class="profile-form" @submit.prevent="saveProfile">
-              <input v-model="profileForm.display_name" class="auth-input" :placeholder="locale === 'zh' ? '显示名' : 'Display name'" />
-              <input v-model="profileForm.nationality" class="auth-input" :placeholder="locale === 'zh' ? '国籍' : 'Nationality'" />
-              <input v-model.number="profileForm.points_balance" class="auth-input" type="number" min="0" :placeholder="locale === 'zh' ? '积分' : 'Points'" />
-              <select v-model="profileForm.membership_level" class="auth-input"><option value="Silver">{{ locale === 'zh' ? '白银' : 'Silver' }}</option><option value="Gold">{{ locale === 'zh' ? '黄金' : 'Gold' }}</option><option value="Platinum">{{ locale === 'zh' ? '铂金' : 'Platinum' }}</option></select>
-              <button class="primary-btn" type="submit" :disabled="profileSaving">{{ profileSaving ? (locale === 'zh' ? '保存中...' : 'Saving...') : (locale === 'zh' ? '保存会员资料' : 'Save profile') }}</button>
+              <input v-model="profileForm.display_name" class="auth-input" :placeholder="$t('auto.auto_30238c40')" />
+              <input v-model="profileForm.nationality" class="auth-input" :placeholder="$t('auto.auto_54d24562')" />
+              <input v-model.number="profileForm.points_balance" class="auth-input" type="number" min="0" :placeholder="$t('auto.auto_b84c5ad5')" />
+              <select v-model="profileForm.membership_level" class="auth-input"><option value="Silver">{{ $t('auto.auto_14688f75') }}</option><option value="Gold">{{ $t('auto.auto_624fe784') }}</option><option value="Platinum">{{ $t('auto.auto_77f0c815') }}</option></select>
+              <button class="primary-btn" type="submit" :disabled="profileSaving">{{ profileSaving ? ($t('auto.auto_a657192e')) : ($t('auto.auto_9aa450f5')) }}</button>
             </form>
             <p v-if="profileMessage" class="success-text">{{ profileMessage }}</p>
           </article>
         </section>
 
         <section class="platform-card">
-          <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '库存' : 'Inventory' }}</span><h2>{{ locale === 'zh' ? '日期价格库存' : 'Date price inventory' }}</h2></div><button class="secondary-btn" @click="quickRestock">{{ locale === 'zh' ? '一键补库存' : 'Quick restock' }}</button></div>
+          <div class="card-head"><div><span class="section-kicker">{{ $t('auto.auto_ecbbef6e') }}</span><h2>{{ $t('auto.auto_b97ffe53') }}</h2></div><button class="secondary-btn" @click="quickRestock">{{ $t('auto.auto_b2b5a5cb') }}</button></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>{{ locale === 'zh' ? '商品' : 'Product' }}</th><th>{{ locale === 'zh' ? '商家' : 'Merchant' }}</th><th>{{ locale === 'zh' ? '日期' : 'Date' }}</th><th>{{ locale === 'zh' ? '价格' : 'Price' }}</th><th>{{ locale === 'zh' ? '库存' : 'Stock' }}</th><th>{{ locale === 'zh' ? '状态' : 'Status' }}</th></tr></thead>
+              <thead><tr><th>{{ $t('auto.auto_42f68f7b') }}</th><th>{{ $t('auto.auto_390f4e66') }}</th><th>{{ $t('auto.auto_b3c79daf') }}</th><th>{{ $t('auto.auto_005f74d6') }}</th><th>{{ $t('auto.auto_a086049d') }}</th><th>{{ $t('auto.auto_5b5b62ae') }}</th></tr></thead>
               <tbody>
                 <tr v-for="item in inventory.slice(0, 10)" :key="`${item.package_id}-${item.date}`">
-                  <td><router-link :to="`/product/${item.product_id}`">{{ item.product_name }}</router-link><small>{{ item.package_name }}</small></td>
-                  <td>{{ item.merchant || '-' }}</td>
+                  <td><router-link :to="`/product/${item.product_id}`">{{ localizeText(item.product_name) }}</router-link><small>{{ localizeText(item.package_name) }}</small></td>
+                  <td>{{ localizeText(item.merchant) || '-' }}</td>
                   <td>{{ item.date }}</td>
                   <td>¥{{ item.price }}</td>
                   <td :class="{ danger: item.stock <= 5 }">{{ item.stock }}</td>
-                  <td><span :class="['status-pill', item.status]">{{ item.status }}</span></td>
+                  <td><span :class="['status-pill', item.status]">{{ localizeText(item.status) }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -79,25 +79,25 @@
 
         <section class="platform-grid">
           <article class="platform-card">
-            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '售后' : 'After-sales' }}</span><h2>{{ locale === 'zh' ? '订单售后' : 'After-sales' }}</h2></div><strong>{{ orders.length }}</strong></div>
+            <div class="card-head"><div><span class="section-kicker">{{ $t('auto.auto_bf29c99e') }}</span><h2>{{ $t('auto.auto_56f9a8dd') }}</h2></div><strong>{{ orders.length }}</strong></div>
             <div class="order-list">
               <div v-for="order in orders.slice(0, 6)" :key="`${order.user_id}-${order.id}`" class="order-row">
                 <div><strong>#{{ order.id }} · {{ order.product_name }}</strong><p>{{ order.user_id }} · {{ order.travel_date }} · ¥{{ order.total_amount }}</p></div>
-                <button class="secondary-btn" :disabled="refundLoading === order.id" @click="requestRefund(order)">{{ locale === 'zh' ? '申请退款' : 'Refund' }}</button>
+                <button class="secondary-btn" :disabled="refundLoading === order.id" @click="requestRefund(order)">{{ $t('auto.auto_db905a78') }}</button>
               </div>
             </div>
             <p v-if="refundMessage" class="success-text">{{ refundMessage }}</p>
           </article>
 
           <article class="platform-card">
-            <div class="card-head"><div><span class="section-kicker">CMS</span><h2>{{ locale === 'zh' ? '内容 CMS' : 'Content CMS' }}</h2></div><strong>{{ cms.length }}</strong></div>
+            <div class="card-head"><div><span class="section-kicker">{{ $t('auto.auto_770dae80') }}</span><h2>{{ $t('auto.auto_ffc3e119') }}</h2></div><strong>{{ cms.length }}</strong></div>
             <form class="cms-form" @submit.prevent="createArticle">
-              <input v-model="cmsForm.title" class="auth-input" :placeholder="locale === 'zh' ? '攻略标题' : 'Guide title'" />
-              <input v-model="cmsForm.slug" class="auth-input" :placeholder="locale === 'zh' ? '路径标识 slug' : 'slug'" />
-              <textarea v-model="cmsForm.summary" class="auth-input" :placeholder="locale === 'zh' ? '摘要' : 'Summary'"></textarea>
-              <button class="primary-btn" type="submit" :disabled="cmsSaving">{{ cmsSaving ? (locale === 'zh' ? '发布中...' : 'Publishing...') : (locale === 'zh' ? '发布攻略' : 'Publish guide') }}</button>
+              <input v-model="cmsForm.title" class="auth-input" :placeholder="$t('auto.auto_1b5de2e8')" />
+              <input v-model="cmsForm.slug" class="auth-input" :placeholder="$t('auto.auto_3f4191e9')" />
+              <textarea v-model="cmsForm.summary" class="auth-input" :placeholder="$t('auto.auto_958e102d')"></textarea>
+              <button class="primary-btn" type="submit" :disabled="cmsSaving">{{ cmsSaving ? ($t('auto.auto_3964055a')) : ($t('auto.auto_18b9f21b')) }}</button>
             </form>
-            <div class="cms-list"><div v-for="article in cms.slice(0, 4)" :key="article.id"><strong>{{ article.title }}</strong><p>{{ article.city }} · {{ article.category }} · {{ article.status }}</p></div></div>
+            <div class="cms-list"><div v-for="article in cms.slice(0, 4)" :key="article.id"><strong>{{ localizeText(article.title) }}</strong><p>{{ localizeText(article.city) }} · {{ localizeText(article.category) }} · {{ localizeText(article.status) }}</p></div></div>
           </article>
         </section>
       </template>
@@ -111,8 +111,10 @@ import { useI18n } from 'vue-i18n'
 import SiteHeader from '../components/SiteHeader.vue'
 import { useAuth } from '../composables/useAuth'
 import { createCMSArticle, createRefundRequest, fetchPlatformSnapshot, updateInventory, updateUserProfile } from '../composables/usePlatform'
+import { useLocalization } from '../composables/useLocalization'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const { isLoggedIn, authHeaders, user } = useAuth()
 const loading = ref(false)
 const error = ref('')
@@ -131,12 +133,12 @@ const profileForm = ref({ display_name: '', nationality: '', membership_level: '
 const cmsForm = ref({ title: '', slug: '', summary: '' })
 
 const metricCards = computed(() => [
-  { label: 'GMV', value: `¥${Math.round(metrics.value.gmv || 0)}`, hint: locale.value === 'zh' ? '模拟成交额' : 'Mock revenue' },
-  { label: locale.value === 'zh' ? '订单' : 'Orders', value: metrics.value.order_count || 0, hint: locale.value === 'zh' ? '已支付/完成' : 'Paid/completed' },
-  { label: locale.value === 'zh' ? '商品' : 'Products', value: metrics.value.product_count || 0, hint: locale.value === 'zh' ? '上架商品' : 'Active products' },
-  { label: locale.value === 'zh' ? '退款率' : 'Refund rate', value: `${Math.round((metrics.value.refund_rate || 0) * 100)}%`, hint: locale.value === 'zh' ? '售后健康度' : 'After-sales health' },
-  { label: locale.value === 'zh' ? 'AI行程' : 'AI plans', value: metrics.value.ai_itinerary_count || 0, hint: locale.value === 'zh' ? '生成行程数' : 'Generated itineraries' },
-  { label: locale.value === 'zh' ? 'CMS' : 'CMS', value: metrics.value.published_cms_count || 0, hint: locale.value === 'zh' ? '已发布内容' : 'Published guides' },
+  { label: 'GMV', value: `¥${Math.round(metrics.value.gmv || 0)}`, hint: t('auto.auto_6360080d') },
+  { label: t('auto.auto_38f653aa'), value: metrics.value.order_count || 0, hint: t('auto.auto_d2552ccf') },
+  { label: t('auto.auto_f4939e37'), value: metrics.value.product_count || 0, hint: t('auto.auto_50c986e8') },
+  { label: t('auto.auto_e57820bd'), value: `${Math.round((metrics.value.refund_rate || 0) * 100)}%`, hint: t('auto.auto_799e59dd') },
+  { label: t('auto.auto_639ecab9'), value: metrics.value.ai_itinerary_count || 0, hint: t('auto.auto_ef332eb2') },
+  { label: t('auto.auto_770dae80'), value: metrics.value.published_cms_count || 0, hint: t('auto.auto_91ae37ce') },
 ])
 
 function syncProfileForm() {
@@ -162,7 +164,7 @@ async function loadPlatform() {
     profile.value = data.profile || {}
     syncProfileForm()
   } catch (e) {
-    error.value = locale.value === 'zh' ? '运营数据加载失败，请稍后重试。' : 'Failed to load platform data.'
+    error.value = t('auto.auto_d6262041')
   } finally {
     loading.value = false
   }
@@ -181,7 +183,7 @@ async function saveProfile() {
   try {
     profile.value = await updateUserProfile({ ...profile.value, ...profileForm.value }, authHeaders())
     syncProfileForm()
-    profileMessage.value = locale.value === 'zh' ? '会员资料已保存。' : 'Profile saved.'
+    profileMessage.value = t('auto.auto_62dcab6c')
   } finally {
     profileSaving.value = false
   }
@@ -192,10 +194,10 @@ async function requestRefund(order) {
   refundMessage.value = ''
   try {
     const refund = await createRefundRequest({ user_id: order.user_id, order_id: order.id, reason: 'Platform demo after-sales request' }, authHeaders())
-    refundMessage.value = locale.value === 'zh' ? `退款申请 #${refund.id} 已创建。` : `Refund request #${refund.id} created.`
+    refundMessage.value = t('dynamic.refundCreated', { id: refund.id })
     await loadPlatform()
   } catch (e) {
-    refundMessage.value = locale.value === 'zh' ? '退款申请失败，可能该订单不存在。' : 'Refund request failed. The order may not exist.'
+    refundMessage.value = t('auto.auto_6d5322fa')
   } finally {
     refundLoading.value = null
   }

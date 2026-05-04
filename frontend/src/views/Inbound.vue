@@ -4,70 +4,70 @@
     <main class="inbound-content">
       <section class="inbound-hero">
         <div>
-          <span class="section-kicker">{{ locale === 'zh' ? '中国旅行工具包' : 'China Inbound Kit' }}</span>
-          <h1>{{ locale === 'zh' ? '中国入境游工具包' : 'China travel, made arrival-ready' }}</h1>
-          <p>{{ locale === 'zh' ? '把 eSIM、接送、高铁、城市通票、支付预约攻略和中文沟通一次准备好。' : 'Prepare eSIM, transfers, high-speed rail, city passes, payment/reservation guides, and Chinese communication in one place.' }}</p>
+          <span class="section-kicker">{{ $t('auto.auto_b26f1bc7') }}</span>
+          <h1>{{ $t('auto.auto_4c32348a') }}</h1>
+          <p>{{ $t('auto.auto_6b1275a0') }}</p>
         </div>
-        <router-link class="hero-cta" to="/search?category=City%20Pass">{{ locale === 'zh' ? '查看通票商品' : 'Explore passes' }}</router-link>
+        <router-link class="hero-cta" to="/search?category=City%20Pass">{{ $t('auto.auto_51ec2e24') }}</router-link>
       </section>
 
-      <div v-if="loading" class="inbound-card loading-card"><div class="spinner"></div><p>{{ locale === 'zh' ? '加载入境服务...' : 'Loading inbound services...' }}</p></div>
+      <div v-if="loading" class="inbound-card loading-card"><div class="spinner"></div><p>{{ $t('auto.auto_ea45c652') }}</p></div>
 
       <template v-else>
         <section class="toolkit-grid">
           <article v-for="item in toolkit" :key="item.id" class="inbound-card toolkit-card">
-            <span class="section-kicker">{{ item.category }}</span>
-            <h2>{{ locale === 'zh' ? item.title_zh : item.title }}</h2>
-            <p>{{ item.description }}</p>
-            <ul><li v-for="step in item.steps" :key="step">{{ step }}</li></ul>
-            <router-link v-if="item.product_id" class="secondary-btn" :to="`/product/${item.product_id}`">{{ item.cta }}</router-link>
+            <span class="section-kicker">{{ localizeText(item.category) }}</span>
+            <h2>{{ localizeToolkitTitle(item) }}</h2>
+            <p>{{ localizeText(item.description) }}</p>
+            <ul><li v-for="step in item.steps" :key="step">{{ localizeText(step) }}</li></ul>
+            <router-link v-if="item.product_id" class="secondary-btn" :to="`/product/${item.product_id}`">{{ localizeText(item.cta) }}</router-link>
           </article>
         </section>
 
         <section class="inbound-grid">
           <article class="inbound-card">
-            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '高铁' : 'Rail' }}</span><h2>{{ locale === 'zh' ? '高铁建议' : 'High-speed rail' }}</h2></div></div>
+            <div class="card-head"><div><span class="section-kicker">{{ $t('auto.auto_e969bf70') }}</span><h2>{{ $t('auto.auto_65c2a68d') }}</h2></div></div>
             <div class="route-list">
               <div v-for="route in rails" :key="route.id" class="route-row">
                 <strong>{{ route.from }} → {{ route.to }}</strong>
                 <p>{{ route.duration }} · {{ route.frequency }} · ¥{{ route.price_from }}</p>
                 <small>{{ route.tip }}</small>
-                <router-link v-if="route.product_id" :to="`/product/${route.product_id}`">{{ locale === 'zh' ? '查看服务' : 'View helper' }}</router-link>
+                <router-link v-if="route.product_id" :to="`/product/${route.product_id}`">{{ $t('auto.auto_2fbf334d') }}</router-link>
               </div>
             </div>
           </article>
 
           <article class="inbound-card">
-            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '接送' : 'Transfer' }}</span><h2>{{ locale === 'zh' ? '机场接送' : 'Airport transfers' }}</h2></div></div>
+            <div class="card-head"><div><span class="section-kicker">{{ $t('auto.auto_45fc46f3') }}</span><h2>{{ $t('auto.auto_af677b76') }}</h2></div></div>
             <div class="route-list">
               <div v-for="transfer in transfers" :key="transfer.id" class="route-row">
-                <strong>{{ transfer.city }} · {{ transfer.from }} → {{ transfer.to }}</strong>
-                <p>{{ transfer.vehicle }} · ¥{{ transfer.price_from }}</p>
-                <small>{{ transfer.driver_tip }}</small>
-                <router-link v-if="transfer.product_id" :to="`/product/${transfer.product_id}`">{{ locale === 'zh' ? '预订接送' : 'Book transfer' }}</router-link>
+                <strong>{{ localizeText(transfer.city) }} · {{ localizeText(transfer.from) }} → {{ localizeText(transfer.to) }}</strong>
+                <p>{{ localizeText(transfer.vehicle) }} · ¥{{ transfer.price_from }}</p>
+                <small>{{ localizeText(transfer.driver_tip) }}</small>
+                <router-link v-if="transfer.product_id" :to="`/product/${transfer.product_id}`">{{ $t('auto.auto_5d82a024') }}</router-link>
               </div>
             </div>
           </article>
         </section>
 
         <section class="inbound-card">
-          <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '城市通票' : 'City Pass' }}</span><h2>{{ locale === 'zh' ? '城市通票' : 'City passes' }}</h2></div></div>
+          <div class="card-head"><div><span class="section-kicker">{{ $t('auto.auto_689cb0c2') }}</span><h2>{{ $t('auto.auto_e38e8627') }}</h2></div></div>
           <div class="pass-grid">
             <article v-for="pass in passes" :key="pass.id" class="pass-card">
-              <strong>{{ pass.name }}</strong>
-              <p>{{ pass.city }} · {{ pass.duration }} · ¥{{ pass.price_from }}</p>
+              <strong>{{ localizeText(pass.name) }}</strong>
+              <p>{{ localizeText(pass.city) }} · {{ localizeText(pass.duration) }} · ¥{{ pass.price_from }}</p>
               <div class="pass-tags"><span v-for="included in pass.includes" :key="included">{{ included }}</span></div>
-              <router-link v-if="pass.product_id" class="primary-btn" :to="`/product/${pass.product_id}`">{{ locale === 'zh' ? '购买通票' : 'Book pass' }}</router-link>
+              <router-link v-if="pass.product_id" class="primary-btn" :to="`/product/${pass.product_id}`">{{ $t('auto.auto_0ee03063') }}</router-link>
             </article>
           </div>
         </section>
 
         <section class="inbound-grid">
           <article class="inbound-card concierge-card">
-            <div><span class="section-kicker">{{ locale === 'zh' ? 'AI 管家' : 'AI Concierge' }}</span><h2>{{ locale === 'zh' ? '跨语言旅行管家' : 'Cross-language concierge' }}</h2></div>
+            <div><span class="section-kicker">{{ $t('auto.auto_11a7af51') }}</span><h2>{{ $t('auto.auto_3025adc8') }}</h2></div>
             <form class="concierge-form" @submit.prevent="askConcierge">
-              <input v-model="conciergePrompt" class="auth-input" :placeholder="locale === 'zh' ? '帮我生成给司机的中文，并安排杭州2天低预算' : 'Generate Chinese for driver and plan Hangzhou 2 days low budget'" />
-              <button class="primary-btn" type="submit" :disabled="conciergeLoading">{{ conciergeLoading ? (locale === 'zh' ? '生成中...' : 'Generating...') : (locale === 'zh' ? '生成建议' : 'Generate') }}</button>
+              <input v-model="conciergePrompt" class="auth-input" :placeholder="$t('auto.auto_a8295a26')" />
+              <button class="primary-btn" type="submit" :disabled="conciergeLoading">{{ conciergeLoading ? ($t('auto.auto_728a38a4')) : ($t('auto.auto_77e88c82')) }}</button>
             </form>
             <div v-if="conciergeAnswer" class="answer-box">
               <strong>{{ conciergeAnswer.city }} · {{ conciergeAnswer.summary }}</strong>
@@ -80,15 +80,15 @@
           </article>
 
           <article class="inbound-card">
-            <div><span class="section-kicker">{{ locale === 'zh' ? '攻略' : 'Guides' }}</span><h2>{{ locale === 'zh' ? '海外游客城市攻略' : 'City practical guides' }}</h2></div>
+            <div><span class="section-kicker">{{ $t('auto.auto_30d357b8') }}</span><h2>{{ $t('auto.auto_bfddbdae') }}</h2></div>
             <select v-model="selectedCity" class="auth-input"><option v-for="guide in guides" :key="guide.city" :value="guide.city">{{ guide.city }}</option></select>
             <div v-if="selectedGuide" class="guide-detail">
-              <p><strong>{{ locale === 'zh' ? '最佳季节：' : 'Best season: ' }}</strong>{{ selectedGuide.best_season }}</p>
-              <p><strong>{{ locale === 'zh' ? '交通：' : 'Transport: ' }}</strong>{{ selectedGuide.transport }}</p>
-              <p><strong>{{ locale === 'zh' ? '支付：' : 'Payment: ' }}</strong>{{ selectedGuide.payment }}</p>
-              <p><strong>{{ locale === 'zh' ? '网络：' : 'Connectivity: ' }}</strong>{{ selectedGuide.connectivity }}</p>
-              <p><strong>{{ locale === 'zh' ? '预约：' : 'Reservation: ' }}</strong>{{ selectedGuide.reservation }}</p>
-              <div class="pass-tags"><span v-for="tip in selectedGuide.language_tips" :key="tip">{{ tip }}</span></div>
+              <p><strong>{{ $t('auto.auto_6a983c18') }}</strong>{{ localizeText(selectedGuide.best_season) }}</p>
+              <p><strong>{{ $t('auto.auto_fd11d0d1') }}</strong>{{ localizeText(selectedGuide.transport) }}</p>
+              <p><strong>{{ $t('auto.auto_fbee41bd') }}</strong>{{ localizeText(selectedGuide.payment) }}</p>
+              <p><strong>{{ $t('auto.auto_7edebc5d') }}</strong>{{ localizeText(selectedGuide.connectivity) }}</p>
+              <p><strong>{{ $t('auto.auto_6ff1f1d5') }}</strong>{{ localizeText(selectedGuide.reservation) }}</p>
+              <div class="pass-tags"><span v-for="tip in localizeList(selectedGuide.language_tips)" :key="tip">{{ tip }}</span></div>
             </div>
           </article>
         </section>
@@ -102,8 +102,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SiteHeader from '../components/SiteHeader.vue'
 import { askInboundConcierge, fetchInboundSnapshot } from '../composables/useInbound'
+import { useLocalization } from '../composables/useLocalization'
 
 const { locale } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const loading = ref(true)
 const toolkit = ref([])
 const rails = ref([])
@@ -115,6 +117,7 @@ const conciergePrompt = ref('Need eSIM, driver Chinese phrase and Hangzhou 2 day
 const conciergeLoading = ref(false)
 const conciergeAnswer = ref(null)
 const selectedGuide = computed(() => guides.value.find(item => item.city === selectedCity.value) || guides.value[0])
+function localizeToolkitTitle(item) { return ['zh'].includes(locale.value) && item.title_zh ? item.title_zh : item.title }
 
 async function loadInbound() {
   loading.value = true

@@ -21,9 +21,9 @@
 
     <div class="category-content">
       <div class="category-header">
-        <router-link to="/" class="back-link">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
+        <router-link to="/" class="back-link">← {{ $t('auto.auto_9f5b5e10') }}</router-link>
         <h1>{{ categoryTitle }}</h1>
-        <p>{{ locale === 'zh' ? '探索热门' + categoryTitle : 'Explore popular ' + categoryTitle }}</p>
+        <p>{{ $t('dynamic.explorePopular', { category: categoryTitle }) }}</p>
       </div>
 
       <div class="category-grid" v-if="!loading && results.length">
@@ -34,23 +34,23 @@
           class="dest-card"
         >
           <div class="cover-wrap">
-            <img :src="d.cover" :alt="d.name" @error="onImgError" />
+            <img :src="d.cover" :alt="localizeDestination(d)" @error="onImgError" />
             <button type="button" class="fav-btn" :class="{ favorited: d.is_favorite && isLoggedIn }" @click.prevent.stop="toggleFav(d)">
               {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
             </button>
           </div>
           <div class="body">
             <div class="card-header">
-              <div class="name">{{ d.name }}</div>
+              <div class="name">{{ localizeDestination(d) }}</div>
               <div class="rating">★ {{ d.rating }}</div>
             </div>
-            <div class="meta">{{ d.city }}</div>
+            <div class="meta">{{ localizeCity(d) }}</div>
             <div class="tags">
-              <span v-for="t in d.tags" :key="t" class="tag">{{ t }}</span>
+              <span v-for="t in localizeList(d.tags)" :key="t" class="tag">{{ t }}</span>
             </div>
             <div class="price">
               <span class="amount">¥{{ d.price }}</span>
-              <span class="unit">{{ locale === 'zh' ? '/ 晚' : '/ night' }}</span>
+              <span class="unit">{{ $t('auto.auto_06271d79') }}</span>
             </div>
           </div>
         </router-link>
@@ -58,11 +58,11 @@
 
       <div v-else-if="loading" class="loading-state">
         <div class="spinner"></div>
-        <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
+        <p>{{ $t('auto.auto_f399f5e1') }}</p>
       </div>
 
       <div v-else class="empty-state">
-        <p>{{ locale === 'zh' ? '暂无内容' : 'No content available' }}</p>
+        <p>{{ $t('auto.auto_87d1055a') }}</p>
       </div>
     </div>
   </div>
@@ -73,8 +73,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { useLocalization } from '../composables/useLocalization'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const route = useRoute()
 const { isLoggedIn, user, authHeaders } = useAuth()
 
@@ -82,23 +84,23 @@ const loading = ref(true)
 const results = ref([])
 
 const categoryMap = {
-  'all': { icon: '🔥', title: 'All Destinations', titleZh: '所有目的地' },
-  'theme-parks': { icon: '🎢', title: 'Theme Parks', titleZh: '主题乐园' },
-  'museums': { icon: '🏛️', title: 'Museums', titleZh: '博物馆' },
-  'camping': { icon: '🏕️', title: 'Camping', titleZh: '露营' },
-  'trains': { icon: '🚄', title: 'Trains', titleZh: '火车' },
-  'food': { icon: '🍜', title: 'Food Tours', titleZh: '美食之旅' },
-  'spas': { icon: '💆', title: 'Spas', titleZh: '水疗' },
-  'nature': { icon: '🏔️', title: 'Nature', titleZh: '自然风光' },
-  'shows': { icon: '🎭', title: 'Shows', titleZh: '演出' },
-  'disney': { icon: '🏰', title: 'Disney Resort', titleZh: '迪士尼度假区' },
-  'universal': { icon: '🎢', title: 'Universal Studios', titleZh: '环球影城' }
+  'all': { icon: '🔥', titleKey: 'auto.auto_a97839c5' },
+  'theme-parks': { icon: '🎢', titleKey: 'auto.auto_c644051b' },
+  'museums': { icon: '🏛️', titleKey: 'auto.auto_c95e9619' },
+  'camping': { icon: '🏕️', titleKey: 'auto.auto_0af4e014' },
+  'trains': { icon: '🚄', titleKey: 'auto.auto_6058d182' },
+  'food': { icon: '🍜', titleKey: 'auto.auto_a587f6d2' },
+  'spas': { icon: '💆', titleKey: 'auto.auto_dcc60d90' },
+  'nature': { icon: '🏔️', titleKey: 'auto.auto_8cbebb8a' },
+  'shows': { icon: '🎭', titleKey: 'auto.auto_aa5020cc' },
+  'disney': { icon: '🏰', titleKey: 'auto.auto_b70fea5f' },
+  'universal': { icon: '🎢', titleKey: 'auto.auto_97377c59' }
 }
 
 const categoryTitle = computed(() => {
   const cat = route.params.category
-  const info = categoryMap[cat] || { title: cat, titleZh: cat }
-  return locale.value === 'zh' ? info.titleZh : info.title
+  const info = categoryMap[cat]
+  return info?.titleKey ? t(info.titleKey) : localizeText(cat || '')
 })
 
 const API = '/api/v1'

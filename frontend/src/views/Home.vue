@@ -67,11 +67,7 @@
           </div>
           <div class="hero-popular-tags">
             <span>{{ $t('nav.popular') }}:</span>
-            <router-link to="/city/hangzhou">Hangzhou</router-link>
-            <router-link to="/city/shanghai">Shanghai</router-link>
-            <router-link to="/city/beijing">Beijing</router-link>
-            <router-link to="/city/xian">Xi'an</router-link>
-            <router-link to="/city/chengdu">Chengdu</router-link>
+            <router-link v-for="city in popularCities" :key="city.id" :to="'/city/' + city.id">{{ $t(city.nameKey) }}</router-link>
           </div>
         </div>
       </div>
@@ -92,14 +88,14 @@
               >
                 <div class="cat-main">
                   <span class="cat-icon">{{ cat.icon }}</span>
-                  <span>{{ cat.label }}</span>
+                  <span>{{ $t(cat.labelKey) }}</span>
                 </div>
                 <span v-if="cat.children && cat.children.length" class="cat-chevron" :class="{ rotated: expandedCats.has(cat.id) }">›</span>
               </router-link>
 
               <div v-if="expandedCats.has(cat.id) && cat.children && cat.children.length" class="cat-children">
                 <router-link v-for="child in cat.children" :key="child.id" :to="'/category/' + child.id" class="sidebar-cat-child">
-                  {{ child.label }}
+                  {{ $t(child.labelKey) }}
                 </router-link>
               </div>
             </div>
@@ -118,7 +114,7 @@
             <router-link v-for="d in nearby.slice(0, 5)" :key="d.id" :to="'/destination/' + d.id" class="nearby-item-unified">
               <div class="name">
                 <div class="icon-box">📍</div>
-                <span>{{ d.name }}</span>
+                <span>{{ localizeDestination(d) }}</span>
               </div>
               <span class="dist">{{ d.distance_km }}km</span>
             </router-link>
@@ -160,10 +156,10 @@
                     </div>
                     <div class="body">
                       <div class="card-header">
-                        <div class="name">{{ item.destination.name }}</div>
+                        <div class="name">{{ localizeDestination(item.destination) }}</div>
                         <div class="rating">★ {{ item.destination.rating }}</div>
                       </div>
-                      <div class="meta">{{ item.destination.city }}</div>
+                      <div class="meta">{{ localizeCity(item.destination) }}</div>
                       <div class="tags">
                         <span v-for="t in (item.destination.tags || []).slice(0, 2)" :key="t" class="tag">{{ t }}</span>
                       </div>
@@ -185,10 +181,10 @@
           <section class="section product-home-section">
             <div class="section-header">
               <div class="header-left">
-                <h2 class="section-title">{{ locale === 'zh' ? '热门门票与体验' : 'Top tickets & experiences' }}</h2>
-                <p class="section-subtitle section-subtitle--muted">{{ locale === 'zh' ? '选择套餐、日期和人数，像真正 OTA 一样预订' : 'Choose packages, dates, and guests like a real OTA' }}</p>
+                <h2 class="section-title">{{ $t('auto.auto_d6d57239') }}</h2>
+                <p class="section-subtitle section-subtitle--muted">{{ $t('auto.auto_e6f5b5b1') }}</p>
               </div>
-              <router-link :to="activeProductChannel.search" class="view-all-link">{{ locale === 'zh' ? '查看全部' : 'View all' }}</router-link>
+              <router-link :to="activeProductChannel.search" class="view-all-link">{{ $t('auto.auto_ea841d99') }}</router-link>
             </div>
             <div class="product-channel-tabs">
               <button
@@ -199,7 +195,7 @@
                 @click="activeProductChannelId = channel.id"
               >
                 <span>{{ channel.icon }}</span>
-                {{ locale === 'zh' ? channel.labelZh : channel.label }}
+                {{ $t(channel.labelKey) }}
               </button>
             </div>
             <div v-if="productsLoading" class="loading">{{ $t('ui.loading') }}</div>
@@ -207,7 +203,7 @@
               <ProductCard v-for="product in activeChannelProducts" :key="product.id" :product="product" />
             </div>
             <div v-else class="product-home-empty">
-              {{ locale === 'zh' ? '该频道商品即将上线。' : 'More products are coming soon for this channel.' }}
+              {{ $t('auto.auto_b4f57855') }}
             </div>
           </section>
 
@@ -223,12 +219,12 @@
               <div ref="nearbyActivitiesRef" class="card-carousel card-carousel--horizontal card-carousel--silky">
                 <router-link v-for="(d, idx) in nearby" :key="'nearby-' + idx" :to="'/destination/' + d.id" class="dest-card carousel-item">
                   <div class="cover-wrap">
-                    <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
+                    <img :src="d.cover" :alt="localizeDestination(d)" class="cover" loading="lazy" @error="onImgError" />
                     <div class="card-badge">{{ $t('homeContent.hotBadge') }}</div>
                   </div>
                   <div class="body">
-                    <div class="name">{{ d.name }}</div>
-                    <div class="meta">{{ d.city }} · {{ d.distance_km }}km</div>
+                    <div class="name">{{ localizeDestination(d) }}</div>
+                    <div class="meta">{{ localizeCity(d) }} · {{ d.distance_km }}km</div>
                   </div>
                 </router-link>
               </div>
@@ -237,28 +233,28 @@
 
           <!-- 排行榜：最近一周喜欢最多 / 周边点击榜 -->
           <section v-if="trendingThisWeek.length" class="section leaderboard-section">
-            <h2 class="section-title">{{ locale === 'zh' ? '本周最爱 · 收藏榜' : 'Trending this week · Most liked' }}</h2>
+            <h2 class="section-title">{{ $t('auto.auto_f23dc30e') }}</h2>
             <div class="leaderboard-list">
               <router-link v-for="(d, idx) in trendingThisWeek" :key="'trend-' + d.id" :to="'/destination/' + d.id" class="leaderboard-row">
                 <span class="leaderboard-rank" :class="{ 'leaderboard-rank--top': idx < 3 }">{{ idx + 1 }}</span>
-                <img :src="d.cover" :alt="d.name" class="leaderboard-thumb" @error="onImgError" />
+                <img :src="d.cover" :alt="localizeDestination(d)" class="leaderboard-thumb" @error="onImgError" />
                 <div class="leaderboard-info">
-                  <span class="leaderboard-name">{{ d.name }}</span>
-                  <span class="leaderboard-meta">{{ d.city }}</span>
+                  <span class="leaderboard-name">{{ localizeDestination(d) }}</span>
+                  <span class="leaderboard-meta">{{ localizeCity(d) }}</span>
                 </div>
                 <button type="button" class="fav-btn fav-btn--small" :class="{ favorited: d.is_favorite && isLoggedIn }" @click.prevent.stop="toggleFav(d)">{{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}</button>
               </router-link>
             </div>
           </section>
           <section v-if="mostViewedNearby.length" class="section leaderboard-section">
-            <h2 class="section-title">{{ locale === 'zh' ? '周边人气 · 点击榜' : 'Most viewed nearby' }}</h2>
+            <h2 class="section-title">{{ $t('auto.auto_bac57312') }}</h2>
             <div class="leaderboard-list">
               <router-link v-for="(d, idx) in mostViewedNearby" :key="'view-' + d.id" :to="'/destination/' + d.id" class="leaderboard-row">
                 <span class="leaderboard-rank" :class="{ 'leaderboard-rank--top': idx < 3 }">{{ idx + 1 }}</span>
-                <img :src="d.cover" :alt="d.name" class="leaderboard-thumb" @error="onImgError" />
+                <img :src="d.cover" :alt="localizeDestination(d)" class="leaderboard-thumb" @error="onImgError" />
                 <div class="leaderboard-info">
-                  <span class="leaderboard-name">{{ d.name }}</span>
-                  <span class="leaderboard-meta">{{ d.city }}</span>
+                  <span class="leaderboard-name">{{ localizeDestination(d) }}</span>
+                  <span class="leaderboard-meta">{{ localizeCity(d) }}</span>
                 </div>
                 <button type="button" class="fav-btn fav-btn--small" :class="{ favorited: d.is_favorite && isLoggedIn }" @click.prevent.stop="toggleFav(d)">{{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}</button>
               </router-link>
@@ -333,15 +329,15 @@
               </div>
               <div v-if="activeSidebarTab === 'history'" class="sidebar-dest-list">
                 <router-link v-for="d in history" :key="d.id" :to="'/destination/' + d.id" class="sidebar-dest-row">
-                  <img :src="d.cover" :alt="d.name" class="sidebar-dest-thumb" @error="onImgError" />
-                  <span class="sidebar-dest-name">{{ d.name }}</span>
+                  <img :src="d.cover" :alt="localizeDestination(d)" class="sidebar-dest-thumb" @error="onImgError" />
+                  <span class="sidebar-dest-name">{{ localizeDestination(d) }}</span>
                 </router-link>
                 <p v-if="history.length === 0" class="empty-hint-mini">{{ $t('common.noRecent') }}</p>
               </div>
               <div v-else class="sidebar-dest-list">
                 <router-link v-for="d in wishlist" :key="d.id" :to="'/destination/' + d.id" class="sidebar-dest-row">
-                  <img :src="d.cover" :alt="d.name" class="sidebar-dest-thumb" @error="onImgError" />
-                  <span class="sidebar-dest-name">{{ d.name }}</span>
+                  <img :src="d.cover" :alt="localizeDestination(d)" class="sidebar-dest-thumb" @error="onImgError" />
+                  <span class="sidebar-dest-name">{{ localizeDestination(d) }}</span>
                 </router-link>
                 <p v-if="wishlist.length === 0" class="empty-hint-mini">{{ $t('ui.noWishlist') }}</p>
               </div>
@@ -353,8 +349,8 @@
             <div class="sidebar-deals-list">
               <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card" :class="'deal-' + deal.type">
                 <div class="deal-content-mini">
-                  <h4>{{ deal.title }}</h4>
-                  <p>{{ deal.description }}</p>
+                  <h4>{{ localizeText(deal.title) }}</h4>
+                  <p>{{ localizeText(deal.description) }}</p>
                   <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
                 </div>
               </div>
@@ -399,7 +395,7 @@
     <!-- 右侧浮动 AI 小助手 -->
     <AiAssistantBubble
       container-class="ai-float-wrap"
-      :hint-text="locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!'"
+      :hint-text="t('auto.auto_b64c841b')"
       :show-hint="showAiHint"
       :open="aiAssistantOpen"
       :pulse="aiPulse"
@@ -409,8 +405,8 @@
       <section class="ai-chat-panel" @click.stop>
         <header class="ai-chat-header">
           <div>
-            <span class="ai-chat-kicker">{{ locale === 'zh' ? '智能旅行助手' : 'AI Travel Assistant' }}</span>
-            <h3>{{ locale === 'zh' ? '帮你快速决定去哪玩' : 'Plan smarter, faster' }}</h3>
+            <span class="ai-chat-kicker">{{ t('auto.auto_49a73ec6') }}</span>
+            <h3>{{ t('auto.auto_011b534d') }}</h3>
           </div>
           <button type="button" class="ai-chat-close" @click="closeAiAssistant">×</button>
         </header>
@@ -451,9 +447,9 @@
           <input
             v-model="aiQuestion"
             type="text"
-            :placeholder="locale === 'zh' ? '输入预算、城市或偏好...' : 'Ask by city, budget, or vibe...'"
+            :placeholder="t('auto.auto_d4f59bd8')"
           />
-          <button type="submit">{{ locale === 'zh' ? '发送' : 'Send' }}</button>
+          <button type="submit">{{ t('auto.auto_b87eb8d9') }}</button>
         </form>
       </section>
     </AiAssistantBubble>
@@ -524,24 +520,24 @@
     <div v-if="showMapModal" class="modal-overlay" @click.self="showMapModal = false">
       <div class="map-modal">
         <button class="modal-close" @click="showMapModal = false">×</button>
-        <h2>{{ locale === 'zh' ? '目的地地图' : 'Destination Map' }}</h2>
+        <h2>{{ t('auto.auto_f30cad85') }}</h2>
         <div class="map-container">
           <div class="map-placeholder">
             <div class="map-markers">
               <div v-for="d in recommendations.slice(0, 5)" :key="d.id" class="map-marker" :style="{ top: (30 + d.id * 10) + '%', left: (20 + d.id * 15) + '%' }">
                 <span class="marker-icon">📍</span>
-                <span class="marker-label">{{ d.name }}</span>
+                <span class="marker-label">{{ localizeDestination(d) }}</span>
               </div>
             </div>
-            <p class="map-hint">{{ locale === 'zh' ? '点击标记查看目的地详情' : 'Click markers to view destination details' }}</p>
+            <p class="map-hint">{{ t('auto.auto_b7acfe0e') }}</p>
           </div>
         </div>
         <div class="map-destinations">
-          <h3>{{ locale === 'zh' ? '热门目的地' : 'Popular Destinations' }}</h3>
+          <h3>{{ t('auto.auto_a97839c5') }}</h3>
           <div class="map-dest-grid">
             <router-link v-for="d in recommendations.slice(0, 5)" :key="d.id" :to="'/destination/' + d.id" class="map-dest-card" @click="showMapModal = false">
-              <img :src="d.cover" :alt="d.name" />
-              <span>{{ d.name }}</span>
+              <img :src="d.cover" :alt="localizeDestination(d)" />
+              <span>{{ localizeDestination(d) }}</span>
             </router-link>
           </div>
         </div>
@@ -560,8 +556,10 @@ import { useTravelAssistant } from '../composables/useTravelAssistant'
 import { fetchProducts } from '../composables/useProducts'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 import ProductCard from '../components/ProductCard.vue'
+import { useLocalization } from '../composables/useLocalization'
 
 const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const router = useRouter()
 const route = useRoute()
 const { token, user, isLoggedIn, setAuth, clearAuth, authHeaders } = useAuth()
@@ -585,14 +583,14 @@ async function doLogin() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'invalid_credentials' ? 'Invalid email or password.' : (data.error || 'Login failed')
+      authError.value = data.error === 'invalid_credentials' ? t('auth.invalidCredentials') : (data.error || t('auth.loginFailed'))
       return
     }
     setAuth(data.token, data.user)
     showAuthModal.value = null
     fetchHomePage()
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -616,7 +614,7 @@ async function doRegister() {
     authSuccess.value = t('auth.accountCreated')
     showAuthModal.value = 'login'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -634,11 +632,11 @@ async function doForgotPassword() {
       authError.value = data.error === 'user_not_found' ? t('auth.noAccount') : (data.error || t('auth.requestFailed'))
       return
     }
-    authSuccess.value = 'Check your email for reset link. (Demo: use reset_token from response if needed.)'
+    authSuccess.value = t('auth.checkEmailReset')
     if (data.reset_token) authResetToken.value = data.reset_token
     showAuthModal.value = 'reset'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -656,13 +654,13 @@ async function doResetPassword() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'invalid_or_expired_token' ? 'Invalid or expired reset token.' : (data.error || 'Reset failed')
+      authError.value = data.error === 'invalid_or_expired_token' ? t('auth.invalidResetToken') : (data.error || t('auth.resetFailed'))
       return
     }
     authSuccess.value = t('auth.passwordReset')
     showAuthModal.value = 'login'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -709,6 +707,13 @@ function onImgError(e) {
 }
 
 const keyword = ref('')
+const popularCities = [
+  { id: 'hangzhou', nameKey: 'cityNames.hangzhou' },
+  { id: 'shanghai', nameKey: 'cityNames.shanghai' },
+  { id: 'beijing', nameKey: 'cityNames.beijing' },
+  { id: 'xian', nameKey: 'cityNames.xian' },
+  { id: 'chengdu', nameKey: 'cityNames.chengdu' },
+]
 
 const searchPlaceholderIndex = ref(0)
 const searchPlaceholders = {
@@ -750,53 +755,53 @@ const wishlist = ref([])
 const activeSidebarTab = ref('history')
 
 const categoryTree = ref([
-  { id: 'all', icon: '🔥', label: 'All', children: [] },
+  { id: 'all', icon: '🔥', labelKey: 'auto.auto_e24412d7', children: [] },
   {
-    id: 'theme-parks', icon: '🎢', label: 'Theme Parks',
+    id: 'theme-parks', icon: '🎢', labelKey: 'auto.auto_c644051b',
     children: [
-      { id: 'disney', label: 'Disney Resort' },
-      { id: 'universal', label: 'Universal Studios' },
-      { id: 'happy-valley', label: 'Happy Valley' }
+      { id: 'disney', labelKey: 'auto.auto_b70fea5f' },
+      { id: 'universal', labelKey: 'auto.auto_97377c59' },
+      { id: 'happy-valley', labelKey: 'auto.auto_92cb5a65' }
     ]
   },
   {
-    id: 'museums', icon: '🏛️', label: 'Museums',
+    id: 'museums', icon: '🏛️', labelKey: 'auto.auto_c95e9619',
     children: [
-      { id: 'history', label: 'History Museums' },
-      { id: 'art', label: 'Art Galleries' },
-      { id: 'science', label: 'Science Centers' }
+      { id: 'history', labelKey: 'auto.auto_a70064bf' },
+      { id: 'art', labelKey: 'auto.auto_b149f4d1' },
+      { id: 'science', labelKey: 'auto.auto_b1a99c0d' }
     ]
   },
   {
-    id: 'camping', icon: '🏕️', label: 'Camping',
+    id: 'camping', icon: '🏕️', labelKey: 'auto.auto_0af4e014',
     children: [
-      { id: 'glamping', label: 'Glamping' },
-      { id: 'rv', label: 'RV Parks' }
+      { id: 'glamping', labelKey: 'auto.auto_1e2153e2' },
+      { id: 'rv', labelKey: 'auto.auto_d41f4fba' }
     ]
   },
   {
-    id: 'trains', icon: '🚄', label: 'Trains',
+    id: 'trains', icon: '🚄', labelKey: 'auto.auto_6058d182',
     children: [
-      { id: 'high-speed', label: 'High Speed Rail' },
-      { id: 'scenic', label: 'Scenic Routes' }
+      { id: 'high-speed', labelKey: 'auto.auto_4b87c9c1' },
+      { id: 'scenic', labelKey: 'auto.auto_fdec6201' }
     ]
   },
   {
-    id: 'food', icon: '🍜', label: 'Food Tours',
+    id: 'food', icon: '🍜', labelKey: 'auto.auto_a587f6d2',
     children: [
-      { id: 'street', label: 'Street Food' },
-      { id: 'fine-dining', label: 'Fine Dining' }
+      { id: 'street', labelKey: 'auto.auto_05606ebc' },
+      { id: 'fine-dining', labelKey: 'auto.auto_e2a1e281' }
     ]
   },
   {
-    id: 'spas', icon: '💆', label: 'Spas',
+    id: 'spas', icon: '💆', labelKey: 'auto.auto_dcc60d90',
     children: [
-      { id: 'massage', label: 'Massage' },
-      { id: 'onsen', label: 'Onsen / Hot Springs' }
+      { id: 'massage', labelKey: 'auto.auto_771c6989' },
+      { id: 'onsen', labelKey: 'auto.auto_5b4ba8e9' }
     ]
   },
-  { id: 'nature', icon: '🏔️', label: 'Nature', children: [] },
-  { id: 'shows', icon: '🎭', label: 'Shows', children: [] },
+  { id: 'nature', icon: '🏔️', labelKey: 'auto.auto_8cbebb8a', children: [] },
+  { id: 'shows', icon: '🎭', labelKey: 'auto.auto_aa5020cc', children: [] },
 ])
 
 const expandedCats = ref(new Set(['all']))
@@ -897,12 +902,12 @@ const featuredProducts = ref([])
 const productsLoading = ref(true)
 const activeProductChannelId = ref('things')
 const productChannels = [
-  { id: 'stays', label: 'Stays', labelZh: '住宿', icon: '🏨', search: '/search?mode=products&type=stay' },
-  { id: 'things', label: 'Things to do', labelZh: '玩乐体验', icon: '✨', search: '/search?mode=products' },
-  { id: 'tickets', label: 'Tickets', labelZh: '景点门票', icon: '🎫', search: '/search?mode=products&type=ticket' },
-  { id: 'tours', label: 'Tours', labelZh: '一日游', icon: '🧭', search: '/search?mode=products&type=tour' },
-  { id: 'transport', label: 'Transport', labelZh: '交通接送', icon: '🚗', search: '/search?mode=products&type=transport' },
-  { id: 'deals', label: 'Deals', labelZh: '优惠', icon: '🔥', search: '/search?mode=products&free_cancel=true' },
+  { id: 'stays', labelKey: 'auto.auto_965c784c', icon: '🏨', search: '/search?mode=products&type=stay' },
+  { id: 'things', labelKey: 'auto.auto_9595b2ba', icon: '✨', search: '/search?mode=products' },
+  { id: 'tickets', labelKey: 'auto.auto_ece59dbb', icon: '🎫', search: '/search?mode=products&type=ticket' },
+  { id: 'tours', labelKey: 'auto.auto_dbdd76d8', icon: '🧭', search: '/search?mode=products&type=tour' },
+  { id: 'transport', labelKey: 'auto.auto_c0f33179', icon: '🚗', search: '/search?mode=products&type=transport' },
+  { id: 'deals', labelKey: 'auto.auto_99d1be73', icon: '🔥', search: '/search?mode=products&free_cancel=true' },
 ]
 const activeProductChannel = computed(() => productChannels.find(channel => channel.id === activeProductChannelId.value) || productChannels[1])
 const activeChannelProducts = computed(() => {

@@ -7,7 +7,7 @@
       <div class="city-overlay"></div>
       <div class="city-hero-content">
         <h1>{{ cityTitle }}</h1>
-        <p>{{ locale === 'zh' ? '探索' + cityTitle + '的热门景点' : 'Explore popular destinations in ' + cityTitle }}</p>
+        <p>{{ $t('dynamic.cityHeroSubtitle', { city: cityTitle }) }}</p>
       </div>
     </div>
 
@@ -15,20 +15,20 @@
     <div class="city-content">
 
       <div class="city-header">
-        <router-link to="/" class="back-link">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
+        <router-link to="/" class="back-link">← {{ $t('auto.auto_9f5b5e10') }}</router-link>
       </div>
 
 
       <section v-if="inboundGuide" class="city-section inbound-guide-section">
         <div class="section-header">
-          <h2 class="section-title">{{ locale === 'zh' ? '海外游客实用信息' : 'Practical info for overseas travellers' }}</h2>
-          <router-link to="/inbound" class="inbound-more-link">{{ locale === 'zh' ? '查看入境工具包' : 'Open inbound toolkit' }}</router-link>
+          <h2 class="section-title">{{ $t('auto.auto_4c5c39f2') }}</h2>
+          <router-link to="/inbound" class="inbound-more-link">{{ $t('auto.auto_b1852aeb') }}</router-link>
         </div>
         <div class="inbound-guide-grid">
-          <div class="inbound-guide-card"><strong>🌤️ {{ locale === 'zh' ? '季节天气' : 'Season & weather' }}</strong><p>{{ inboundGuide.best_season }} · {{ inboundGuide.weather }}</p></div>
-          <div class="inbound-guide-card"><strong>🚕 {{ locale === 'zh' ? '交通' : 'Transport' }}</strong><p>{{ inboundGuide.transport }}</p></div>
-          <div class="inbound-guide-card"><strong>💳 {{ locale === 'zh' ? '支付网络' : 'Payment & eSIM' }}</strong><p>{{ inboundGuide.payment }} · {{ inboundGuide.connectivity }}</p></div>
-          <div class="inbound-guide-card"><strong>🎫 {{ locale === 'zh' ? '预约规则' : 'Reservations' }}</strong><p>{{ inboundGuide.reservation }}</p></div>
+          <div class="inbound-guide-card"><strong>🌤️ {{ $t('auto.auto_cd4ab69f') }}</strong><p>{{ inboundGuide.best_season }} · {{ inboundGuide.weather }}</p></div>
+          <div class="inbound-guide-card"><strong>🚕 {{ $t('auto.auto_c0f33179') }}</strong><p>{{ inboundGuide.transport }}</p></div>
+          <div class="inbound-guide-card"><strong>💳 {{ $t('auto.auto_0d523059') }}</strong><p>{{ inboundGuide.payment }} · {{ inboundGuide.connectivity }}</p></div>
+          <div class="inbound-guide-card"><strong>🎫 {{ $t('auto.auto_62fc520c') }}</strong><p>{{ inboundGuide.reservation }}</p></div>
         </div>
         <div class="inbound-tip-row">
           <span v-for="tip in [...(inboundGuide.language_tips || []), ...(inboundGuide.safety_tips || [])].slice(0, 4)" :key="tip">{{ tip }}</span>
@@ -36,7 +36,7 @@
       </section>
       <section class="city-section city-categories-section">
         <div class="section-header">
-          <h2 class="section-title">{{ locale === 'zh' ? '按分类探索' : 'Explore by Category' }}</h2>
+          <h2 class="section-title">{{ $t('auto.auto_c6df2eda') }}</h2>
         </div>
         <div class="city-category-grid city-category-grid--primary">
           <button
@@ -56,7 +56,7 @@
             class="city-category-more"
             @click="showAllCategories = !showAllCategories"
           >
-            {{ showAllCategories ? (locale === 'zh' ? '收起' : 'Show Less') : (locale === 'zh' ? '更多分类' : 'More Categories') }}
+            {{ showAllCategories ? ($t('auto.auto_348aa0a0')) : ($t('auto.auto_fbab4bb7')) }}
           </button>
         </div>
 
@@ -91,28 +91,28 @@
       <!-- 加载中 -->
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
-        <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
+        <p>{{ $t('auto.auto_f399f5e1') }}</p>
       </div>
 
       <div v-else class="city-body-layout" :class="{ 'city-body-layout--with-sidebar': showSidebar }">
         <div class="city-main-column">
           <div v-if="!filteredResults.length" class="empty-state city-empty-state">
             <div class="empty-icon">🔍</div>
-            <h3>{{ locale === 'zh' ? '暂无内容' : 'No destinations found' }}</h3>
-            <p>{{ activeCategoryLabel ? (locale === 'zh' ? `当前城市下暂无「${activeCategoryLabel}」相关结果` : `No ${activeCategoryLabel} results in this city yet.`) : (locale === 'zh' ? '该城市暂无可用景点' : 'No destinations available for this city yet.') }}</p>
+            <h3>{{ $t('auto.auto_6a8a7417') }}</h3>
+            <p>{{ activeCategoryLabel ? $t('dynamic.noCategoryResults', { category: activeCategoryLabel }) : $t('auto.auto_e6228cda') }}</p>
             <button v-if="activeCategory !== 'all'" type="button" class="back-home-btn" @click="activeCategory = 'all'">
-              {{ locale === 'zh' ? '查看全部' : 'Show all' }}
+              {{ $t('auto.auto_3e9c6346') }}
             </button>
-            <router-link v-else to="/" class="back-home-btn">{{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
+            <router-link v-else to="/" class="back-home-btn">{{ $t('auto.auto_9f5b5e10') }}</router-link>
           </div>
 
           <template v-else>
             <div class="destinations-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  {{ locale === 'zh' ? '热门目的地' : 'Popular Destinations' }}
+                  {{ $t('auto.auto_a97839c5') }}
                 </h2>
-                <span class="dest-count">{{ filteredResults.length }} {{ locale === 'zh' ? '个选择' : 'options' }}</span>
+                <span class="dest-count">{{ filteredResults.length }} {{ $t('auto.auto_0f4ad3b9') }}</span>
               </div>
 
               <div class="dest-grid">
@@ -123,10 +123,10 @@
                   class="dest-card"
                 >
                   <div class="card-cover">
-                    <img :src="d.cover" :alt="d.name" @error="onImgError" loading="lazy" />
+                    <img :src="d.cover" :alt="localizeDestination(d)" @error="onImgError" loading="lazy" />
                     <div class="card-badges">
-                      <span class="badge-tag" v-if="d.tags?.[0]">{{ d.tags[0] }}</span>
-                      <span class="badge-top" v-if="idx === 0">🔥 {{ locale === 'zh' ? '热门' : 'Top' }}</span>
+                      <span class="badge-tag" v-if="d.tags?.[0]">{{ localizeText(d.tags[0]) }}</span>
+                      <span class="badge-top" v-if="idx === 0">🔥 {{ $t('auto.auto_89ae2074') }}</span>
                     </div>
                     <button
                       type="button"
@@ -137,14 +137,14 @@
                       {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
                     </button>
                     <div class="card-overlay">
-                      <span class="overlay-text">{{ locale === 'zh' ? '查看详情' : 'View Details' }} →</span>
+                      <span class="overlay-text">{{ $t('auto.auto_df1e6192') }} →</span>
                     </div>
                   </div>
                   <div class="card-body">
                     <div class="card-top">
                       <div>
-                        <h3 class="dest-name">{{ d.name }}</h3>
-                        <p class="dest-city">📍 {{ d.city }}</p>
+                        <h3 class="dest-name">{{ localizeDestination(d) }}</h3>
+                        <p class="dest-city">📍 {{ localizeCity(d) }}</p>
                       </div>
                       <div class="dest-rating">
                         <span class="star-icon">★</span>
@@ -153,15 +153,15 @@
                       </div>
                     </div>
                     <div class="dest-tags">
-                      <span v-for="t in (d.tags || []).slice(0, 3)" :key="t" class="tag">{{ t }}</span>
+                      <span v-for="t in localizeList((d.tags || []).slice(0, 3))" :key="t" class="tag">{{ t }}</span>
                     </div>
                     <div class="dest-footer">
                       <div class="dest-price">
                         <span class="price-amount">¥{{ d.price }}</span>
-                        <span class="price-unit">/ {{ locale === 'zh' ? '人' : 'person' }}</span>
+                        <span class="price-unit">/ {{ $t('auto.auto_913eb002') }}</span>
                       </div>
                       <div class="dest-bookings" v-if="d.booked_count">
-                        <span>🎫 {{ d.booked_count }} {{ locale === 'zh' ? '人预订' : 'booked' }}</span>
+                        <span>🎫 {{ d.booked_count }} {{ $t('auto.auto_70b20fcd') }}</span>
                       </div>
                     </div>
                   </div>
@@ -170,19 +170,19 @@
             </div>
 
             <div class="extra-section" v-if="filteredResults.length > 1">
-              <h2 class="section-title">{{ locale === 'zh' ? '精选体验' : 'Featured Experiences' }}</h2>
+              <h2 class="section-title">{{ $t('auto.auto_a580bbb2') }}</h2>
               <div class="experience-grid">
                 <div v-for="d in filteredResults.slice(0, 3)" :key="'exp-' + d.id" class="exp-card">
                   <div class="exp-cover">
-                    <img :src="d.cover" :alt="d.name" @error="onImgError" />
+                    <img :src="d.cover" :alt="localizeDestination(d)" @error="onImgError" />
                   </div>
                   <div class="exp-body">
-                    <h4>{{ d.name }}</h4>
+                    <h4>{{ localizeDestination(d) }}</h4>
                     <p>{{ (d.description || '').substring(0, 80) }}...</p>
                     <div class="exp-footer">
                       <span class="exp-price">¥{{ d.price }}</span>
                       <router-link :to="'/destination/' + d.id" class="exp-btn">
-                        {{ locale === 'zh' ? '立即体验' : 'Book Now' }}
+                        {{ $t('auto.auto_9849eae7') }}
                       </router-link>
                     </div>
                   </div>
@@ -200,8 +200,8 @@
                 <div class="sidebar-deals-list city-sidebar-deals-list">
                   <div v-for="deal in deals" :key="deal.id" class="sidebar-deal-card city-sidebar-deal-card" :class="'deal-' + deal.type">
                     <div class="deal-content-mini">
-                      <h4>{{ deal.title }}</h4>
-                      <p>{{ deal.description }}</p>
+                      <h4>{{ localizeText(deal.title) }}</h4>
+                      <p>{{ localizeText(deal.description) }}</p>
                       <button class="deal-btn-mini">{{ $t('deals.explore') }}</button>
                     </div>
                   </div>
@@ -209,7 +209,7 @@
               </div>
 
               <div class="sidebar-widget city-rank-widget" v-if="cityTrendingThisWeek.length">
-                <h3 class="widget-title">{{ locale === 'zh' ? '本周最爱 · 收藏榜' : 'Trending this week · Most liked' }}</h3>
+                <h3 class="widget-title">{{ t('auto.auto_f23dc30e') }}</h3>
                 <div class="city-rank-list">
                   <router-link
                     v-for="(d, idx) in cityTrendingThisWeek"
@@ -218,10 +218,10 @@
                     class="city-rank-row"
                   >
                     <span class="city-rank-index">{{ idx + 1 }}</span>
-                    <img :src="d.cover" :alt="d.name" class="city-rank-thumb" @error="onImgError" />
+                    <img :src="d.cover" :alt="localizeDestination(d)" class="city-rank-thumb" @error="onImgError" />
                     <div class="city-rank-info">
-                      <span class="city-rank-name">{{ d.name }}</span>
-                      <span class="city-rank-city">{{ d.city }}</span>
+                      <span class="city-rank-name">{{ localizeDestination(d) }}</span>
+                      <span class="city-rank-city">{{ localizeCity(d) }}</span>
                     </div>
                     <button
                       type="button"
@@ -236,7 +236,7 @@
               </div>
 
               <div class="sidebar-widget city-rank-widget" v-if="cityMostViewedNearby.length">
-                <h3 class="widget-title">{{ locale === 'zh' ? '周边人气 · 点击榜' : 'Most viewed nearby' }}</h3>
+                <h3 class="widget-title">{{ t('auto.auto_bac57312') }}</h3>
                 <div class="city-rank-list">
                   <router-link
                     v-for="(d, idx) in cityMostViewedNearby"
@@ -245,10 +245,10 @@
                     class="city-rank-row"
                   >
                     <span class="city-rank-index">{{ idx + 1 }}</span>
-                    <img :src="d.cover" :alt="d.name" class="city-rank-thumb" @error="onImgError" />
+                    <img :src="d.cover" :alt="localizeDestination(d)" class="city-rank-thumb" @error="onImgError" />
                     <div class="city-rank-info">
-                      <span class="city-rank-name">{{ d.name }}</span>
-                      <span class="city-rank-city">{{ d.city }}</span>
+                      <span class="city-rank-name">{{ localizeDestination(d) }}</span>
+                      <span class="city-rank-city">{{ localizeCity(d) }}</span>
                     </div>
                     <button
                       type="button"
@@ -270,7 +270,7 @@
 
     <AiAssistantBubble
       container-class="ai-float-wrap"
-      :hint-text="locale === 'zh' ? '不知道去哪玩？问我呀' : 'Where to go? Ask me!'"
+      :hint-text="t('auto.auto_b64c841b')"
       :show-hint="showAiHint"
       :open="aiAssistantOpen"
       :open-class-enabled="false"
@@ -281,8 +281,8 @@
       <section class="ai-chat-panel" @click.stop>
         <header class="ai-chat-header">
           <div>
-            <span class="ai-chat-kicker">{{ locale === 'zh' ? cityTitle + '旅行助手' : cityTitle + ' Travel Assistant' }}</span>
-            <h3>{{ locale === 'zh' ? '按你的偏好筛选景点' : 'Find the right city picks' }}</h3>
+            <span class="ai-chat-kicker">{{ $t('dynamic.cityAssistant', { city: cityTitle }) }}</span>
+            <h3>{{ t('auto.auto_3ae06703') }}</h3>
           </div>
           <button type="button" class="ai-chat-close" @click="closeAiAssistant">×</button>
         </header>
@@ -323,9 +323,9 @@
           <input
             v-model="aiQuestion"
             type="text"
-            :placeholder="locale === 'zh' ? '输入亲子、自然、预算...' : 'Ask for family, nature, budget...'"
+            :placeholder="t('auto.auto_a99cd4a8')"
           />
-          <button type="submit">{{ locale === 'zh' ? '发送' : 'Send' }}</button>
+          <button type="submit">{{ t('auto.auto_b87eb8d9') }}</button>
         </form>
       </section>
     </AiAssistantBubble>
@@ -342,8 +342,10 @@ import { useTravelAssistant } from '../composables/useTravelAssistant'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 import SiteHeader from '../components/SiteHeader.vue'
 import { fetchCityInboundGuide } from '../composables/useInbound'
+import { useLocalization } from '../composables/useLocalization'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const route = useRoute()
 const { isLoggedIn, authHeaders } = useAuth()
 
@@ -364,17 +366,17 @@ const aiQuestion = ref('')
 const inboundGuide = ref(null)
 
 const cityMap = {
-  'hangzhou': { name: 'Hangzhou', nameZh: '杭州', image: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200' },
-  'shanghai': { name: 'Shanghai', nameZh: '上海', image: 'https://images.unsplash.com/photo-1548115184-bc65ee498ad0?w=1200' },
-  'beijing': { name: 'Beijing', nameZh: '北京', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=1200' },
-  'xian': { name: "Xi'an", nameZh: '西安', image: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=1200' },
-  'chengdu': { name: 'Chengdu', nameZh: '成都', image: 'https://images.unsplash.com/photo-1553856622-d1b352e1f6dc?w=1200' }
+  'hangzhou': { name: 'Hangzhou', nameZh: '杭州', nameKey: 'cityNames.hangzhou', image: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200' },
+  'shanghai': { name: 'Shanghai', nameZh: '上海', nameKey: 'cityNames.shanghai', image: 'https://images.unsplash.com/photo-1548115184-bc65ee498ad0?w=1200' },
+  'beijing': { name: 'Beijing', nameZh: '北京', nameKey: 'cityNames.beijing', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=1200' },
+  'xian': { name: "Xi'an", nameZh: '西安', nameKey: 'cityNames.xian', image: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=1200' },
+  'chengdu': { name: 'Chengdu', nameZh: '成都', nameKey: 'cityNames.chengdu', image: 'https://images.unsplash.com/photo-1553856622-d1b352e1f6dc?w=1200' }
 }
 
 const cityTitle = computed(() => {
   const city = route.params.city?.toLowerCase()
   const info = cityMap[city] || { name: city || '', nameZh: city || '' }
-  return locale.value === 'zh' ? info.nameZh : info.name
+  return t(info.nameKey || 'auto.auto_8d93caff')
 })
 
 const cityImage = computed(() => {
@@ -387,67 +389,67 @@ const cityCategories = computed(() => ([
   {
     id: 'all',
     icon: '🔥',
-    label: locale.value === 'zh' ? '全部' : 'All',
+    label: t('auto.auto_1c0db27c'),
     children: []
   },
   {
     id: 'theme-parks',
     icon: '🎢',
-    label: locale.value === 'zh' ? '主题乐园' : 'Theme Parks',
+    label: t('auto.auto_c644051b'),
     children: [
-      { id: 'disney', label: locale.value === 'zh' ? '迪士尼度假区' : 'Disney Resort' },
-      { id: 'universal', label: locale.value === 'zh' ? '环球影城' : 'Universal Studios' },
-      { id: 'happy-valley', label: locale.value === 'zh' ? '欢乐谷' : 'Happy Valley' }
+      { id: 'disney', label: t('auto.auto_b70fea5f') },
+      { id: 'universal', label: t('auto.auto_97377c59') },
+      { id: 'happy-valley', label: t('auto.auto_92cb5a65') }
     ]
   },
   {
     id: 'museums',
     icon: '🏛️',
-    label: locale.value === 'zh' ? '博物馆' : 'Museums',
+    label: t('auto.auto_c95e9619'),
     children: [
-      { id: 'history', label: locale.value === 'zh' ? '历史博物馆' : 'History Museums' },
-      { id: 'art', label: locale.value === 'zh' ? '艺术馆' : 'Art Galleries' },
-      { id: 'science', label: locale.value === 'zh' ? '科技馆' : 'Science Centers' }
+      { id: 'history', label: t('auto.auto_a70064bf') },
+      { id: 'art', label: t('auto.auto_b149f4d1') },
+      { id: 'science', label: t('auto.auto_b1a99c0d') }
     ]
   },
   {
     id: 'camping',
     icon: '🏕️',
-    label: locale.value === 'zh' ? '露营' : 'Camping',
+    label: t('auto.auto_0af4e014'),
     children: [
-      { id: 'glamping', label: locale.value === 'zh' ? '轻奢露营' : 'Glamping' },
-      { id: 'rv', label: locale.value === 'zh' ? '房车营地' : 'RV Parks' }
+      { id: 'glamping', label: t('auto.auto_1e2153e2') },
+      { id: 'rv', label: t('auto.auto_d41f4fba') }
     ]
   },
   {
     id: 'trains',
     icon: '🚄',
-    label: locale.value === 'zh' ? '火车' : 'Trains',
+    label: t('auto.auto_6058d182'),
     children: [
-      { id: 'high-speed', label: locale.value === 'zh' ? '高铁' : 'High Speed Rail' },
-      { id: 'scenic', label: locale.value === 'zh' ? '观光路线' : 'Scenic Routes' }
+      { id: 'high-speed', label: t('auto.auto_4b87c9c1') },
+      { id: 'scenic', label: t('auto.auto_fdec6201') }
     ]
   },
   {
     id: 'food',
     icon: '🍜',
-    label: locale.value === 'zh' ? '美食之旅' : 'Food Tours',
+    label: t('auto.auto_a587f6d2'),
     children: [
-      { id: 'street', label: locale.value === 'zh' ? '街头小吃' : 'Street Food' },
-      { id: 'fine-dining', label: locale.value === 'zh' ? '精致餐饮' : 'Fine Dining' }
+      { id: 'street', label: t('auto.auto_05606ebc') },
+      { id: 'fine-dining', label: t('auto.auto_e2a1e281') }
     ]
   },
   {
     id: 'spas',
     icon: '💆',
-    label: locale.value === 'zh' ? '水疗' : 'Spas',
+    label: t('auto.auto_dcc60d90'),
     children: [
-      { id: 'massage', label: locale.value === 'zh' ? '按摩' : 'Massage' },
-      { id: 'onsen', label: locale.value === 'zh' ? '温泉' : 'Onsen / Hot Springs' }
+      { id: 'massage', label: t('auto.auto_771c6989') },
+      { id: 'onsen', label: t('auto.auto_5b4ba8e9') }
     ]
   },
-  { id: 'nature', icon: '🏔️', label: locale.value === 'zh' ? '自然风光' : 'Nature', children: [] },
-  { id: 'shows', icon: '🎭', label: locale.value === 'zh' ? '演出' : 'Shows', children: [] },
+  { id: 'nature', icon: '🏔️', label: t('auto.auto_8cbebb8a'), children: [] },
+  { id: 'shows', icon: '🎭', label: t('auto.auto_aa5020cc'), children: [] },
 ]))
 
 const visibleParentCategories = computed(() => cityCategories.value.slice(0, 6))

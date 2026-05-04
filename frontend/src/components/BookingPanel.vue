@@ -2,7 +2,7 @@
   <aside :class="panelClass">
     <template v-if="showPackages">
       <div class="product-panel compact-panel">
-        <h2>{{ locale === 'zh' ? '选择套餐' : 'Choose a package' }}</h2>
+        <h2>{{ $t('auto.auto_bd5c18f7') }}</h2>
         <div class="package-list">
           <button
             v-for="pkg in product.packages || []"
@@ -29,16 +29,16 @@
     <div :class="cardClass">
       <div v-if="mode === 'product'" class="booking-price-head">
         <span>{{ selectedAvailability ? formatPrice(selectedAvailability.price) : formatPrice(selectedPackage?.price || product.base_price) }}</span>
-        <small>{{ locale === 'zh' ? '/ 人起' : '/ person' }}</small>
+        <small>{{ t('auto.auto_ca662b03') }}</small>
       </div>
       <div v-else class="bk-price-row">
         <span class="bk-amount">{{ formatPrice(selectedAvailability ? selectedAvailability.price : selectedPackage?.price || product.base_price) }}</span>
-        <span class="bk-unit">/ {{ locale === 'zh' ? '人起' : 'person' }}</span>
+        <span class="bk-unit">/ {{ t('auto.auto_35cb79d4') }}</span>
         <span class="bk-rating">★ {{ product.rating }}</span>
       </div>
 
       <label :class="mode === 'product' ? 'booking-field' : 'bk-group'">
-        <span>{{ locale === 'zh' ? '出行日期' : 'Travel date' }}</span>
+        <span>{{ t('auto.auto_3214b04f') }}</span>
         <input :value="selectedDate" type="date" :min="today" @input="emit('update:selectedDate', $event.target.value)" />
       </label>
 
@@ -49,10 +49,10 @@
       <div :class="mode === 'product' ? 'guest-box' : 'bk-form'">
         <div :class="mode === 'product' ? 'guest-row' : 'bk-group bk-group-full'">
           <div v-if="mode === 'product'">
-            <strong>{{ locale === 'zh' ? '成人' : 'Adults' }}</strong>
-            <small>{{ locale === 'zh' ? '12岁及以上' : 'Age 12+' }}</small>
+            <strong>{{ t('auto.auto_41bd21e7') }}</strong>
+            <small>{{ t('auto.auto_27437020') }}</small>
           </div>
-          <label v-else>{{ locale === 'zh' ? '人数' : 'TRAVELLERS' }}</label>
+          <label v-else>{{ t('auto.auto_8c3c3a6e') }}</label>
           <div :class="mode === 'product' ? 'qty-row compact' : 'qty-row'">
             <button type="button" :disabled="adults <= 1 || bookingLoading" @click="emit('update:adults', Math.max(1, adults - 1))">−</button>
             <span>{{ adults }}</span>
@@ -61,8 +61,8 @@
         </div>
         <div v-if="mode === 'product'" class="guest-row">
           <div>
-            <strong>{{ locale === 'zh' ? '儿童' : 'Children' }}</strong>
-            <small>{{ locale === 'zh' ? '约7折计价' : '70% price' }}</small>
+            <strong>{{ t('auto.auto_9251b038') }}</strong>
+            <small>{{ t('auto.auto_a0e9b400') }}</small>
           </div>
           <div class="qty-row compact">
             <button type="button" :disabled="children <= 0 || bookingLoading" @click="emit('update:children', Math.max(0, children - 1))">−</button>
@@ -73,12 +73,12 @@
       </div>
 
       <div :class="mode === 'product' ? 'price-breakdown' : 'bk-price-detail'">
-        <div :class="mode === 'product' ? '' : 'bk-pb-row'"><span>{{ locale === 'zh' ? '成人' : 'Adults' }} × {{ adults }}</span><span>{{ formatPrice(unitPrice * adults) }}</span></div>
-        <div v-if="children" :class="mode === 'product' ? '' : 'bk-pb-row'"><span>{{ locale === 'zh' ? '儿童' : 'Children' }} × {{ children }}</span><span>{{ formatPrice(unitPrice * 0.7 * children) }}</span></div>
-        <div v-if="mode === 'destination'" class="bk-pb-row"><span>{{ locale === 'zh' ? '服务费' : 'Service fee' }}</span><span>{{ formatPrice(0) }}</span></div>
-        <div v-if="discountAmount > 0" :class="mode === 'product' ? 'discount-row' : 'bk-pb-row discount-row'"><span>{{ locale === 'zh' ? '优惠抵扣' : 'Coupon discount' }}</span><span>-{{ formatPrice(discountAmount) }}</span></div>
+        <div :class="mode === 'product' ? '' : 'bk-pb-row'"><span>{{ t('auto.auto_41bd21e7') }} × {{ adults }}</span><span>{{ formatPrice(unitPrice * adults) }}</span></div>
+        <div v-if="children" :class="mode === 'product' ? '' : 'bk-pb-row'"><span>{{ t('auto.auto_9251b038') }} × {{ children }}</span><span>{{ formatPrice(unitPrice * 0.7 * children) }}</span></div>
+        <div v-if="mode === 'destination'" class="bk-pb-row"><span>{{ t('auto.auto_161b8394') }}</span><span>{{ formatPrice(0) }}</span></div>
+        <div v-if="discountAmount > 0" :class="mode === 'product' ? 'discount-row' : 'bk-pb-row discount-row'"><span>{{ t('auto.auto_dea6d69a') }}</span><span>-{{ formatPrice(discountAmount) }}</span></div>
         <hr :class="mode === 'product' ? '' : 'bk-div'" />
-        <div :class="mode === 'product' ? 'total' : 'bk-pb-row bk-total'"><span>{{ locale === 'zh' ? '总计' : 'Total' }}</span><span>{{ formatPrice(finalTotalPrice) }}</span></div>
+        <div :class="mode === 'product' ? 'total' : 'bk-pb-row bk-total'"><span>{{ t('auto.auto_1158568e') }}</span><span>{{ formatPrice(finalTotalPrice) }}</span></div>
       </div>
 
       <div :class="mode === 'product' ? 'coupon-box' : 'coupon-box coupon-box--compact'">
@@ -86,16 +86,16 @@
           <input
             :value="couponCode"
             type="text"
-            :placeholder="locale === 'zh' ? '输入优惠码，如 WELCOME80' : 'Coupon code, e.g. WELCOME80'"
+            :placeholder="t('auto.auto_477d82d6')"
             :disabled="couponLoading || bookingLoading"
             @input="emit('update:couponCode', $event.target.value)"
             @keyup.enter="emit('applyCoupon')"
           />
           <button type="button" :disabled="couponLoading || bookingLoading || !couponCode" @click="emit('applyCoupon')">
-            {{ couponLoading ? (locale === 'zh' ? '验证中' : 'Checking') : (locale === 'zh' ? '使用' : 'Apply') }}
+            {{ couponLoading ? (t('auto.auto_aca0501e')) : (t('auto.auto_c189a7eb')) }}
           </button>
         </div>
-        <p v-if="couponResult?.valid" class="coupon-success">✓ {{ couponResult.coupon?.name || (locale === 'zh' ? '优惠券已使用' : 'Coupon applied') }} · -{{ formatPrice(discountAmount) }}</p>
+        <p v-if="couponResult?.valid" class="coupon-success">✓ {{ couponResult.coupon?.name || (t('auto.auto_c0e66433')) }} · -{{ formatPrice(discountAmount) }}</p>
         <p v-else-if="couponError" class="coupon-error">{{ couponError }}</p>
       </div>
 
@@ -103,22 +103,22 @@
       <p v-if="cartMessage" class="cart-success">{{ cartMessage }}</p>
       <p v-if="itineraryMessage" class="cart-success">{{ itineraryMessage }}</p>
       <button type="button" class="itinerary-btn" :disabled="!canBook || itineraryLoading || bookingLoading || cartLoading" @click="emit('addToItinerary')">
-        {{ itineraryLoading ? (locale === 'zh' ? '加入中...' : 'Adding...') : (locale === 'zh' ? '加入行程' : 'Add to itinerary') }}
+        {{ itineraryLoading ? (t('auto.auto_68da3f17')) : (t('auto.auto_648a75de')) }}
       </button>
       <div :class="mode === 'product' ? 'booking-action-grid' : 'bk-action-grid'">
         <button type="button" class="cart-btn" :disabled="!canBook || cartLoading || bookingLoading || itineraryLoading" @click="emit('addToCart')">
-          {{ cartLoading ? (locale === 'zh' ? '加入中...' : 'Adding...') : (locale === 'zh' ? '加入购物车' : 'Add to cart') }}
+          {{ cartLoading ? (t('auto.auto_68da3f17')) : (t('auto.auto_f33121b6')) }}
         </button>
         <button :class="mode === 'product' ? 'reserve-btn' : 'bk-btn'" :disabled="!canBook || bookingLoading || cartLoading || itineraryLoading" @click="emit('reserve')">
-          {{ bookingLoading ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '立即预订' : 'Reserve now') }}
+          {{ bookingLoading ? (t('auto.auto_c5ab6344')) : (t('auto.auto_aa247a7b')) }}
         </button>
       </div>
-      <p :class="mode === 'product' ? 'reserve-hint' : 'bk-hint'">{{ locale === 'zh' ? '可直接预订，也可加入购物车后在我的旅行中打包下单。' : 'Reserve now or add to cart for bundle checkout in My Trips.' }}</p>
+      <p :class="mode === 'product' ? 'reserve-hint' : 'bk-hint'">{{ t('auto.auto_d9b99782') }}</p>
 
       <div v-if="mode === 'destination'" class="bk-perks">
-        <div class="perk">✓ {{ locale === 'zh' ? '即时确认' : 'Instant confirmation' }}</div>
-        <div class="perk">🔄 {{ locale === 'zh' ? '免费取消' : 'Free cancellation' }}</div>
-        <div class="perk">🎫 {{ locale === 'zh' ? '手机凭证' : 'Mobile voucher' }}</div>
+        <div class="perk">✓ {{ t('auto.auto_dcc07e89') }}</div>
+        <div class="perk">🔄 {{ t('auto.auto_cf6aec06') }}</div>
+        <div class="perk">🎫 {{ t('auto.auto_6f2611f5') }}</div>
       </div>
     </div>
   </aside>
@@ -159,7 +159,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'update:adults', 'update:children', 'update:couponCode', 'applyCoupon', 'addToCart', 'addToItinerary', 'reserve'])
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const { formatPrice } = useCurrency()
 
 const maxGuests = computed(() => Math.max(1, Number(props.selectedPackage?.max_quantity) || 9))

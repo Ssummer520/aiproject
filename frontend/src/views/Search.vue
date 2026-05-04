@@ -29,7 +29,7 @@
               v-model="keyword"
               type="text"
               class="search-input"
-              :placeholder="locale === 'zh' ? '搜索目的地、门票、体验、接送...' : 'Search destinations, tickets, experiences, transfers...'
+              :placeholder="$t('auto.auto_4ee97eca')
               "
               @keyup.enter="doSearch"
             />
@@ -41,12 +41,12 @@
       <div class="results-layout">
         <aside class="filters-sidebar">
           <div class="filter-card">
-            <h3>{{ locale === 'zh' ? 'OTA 筛选' : 'OTA Filters' }}</h3>
+            <h3>{{ $t('auto.auto_b116cf41') }}</h3>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '城市' : 'City' }}</label>
+              <label>{{ $t('auto.auto_e7322766') }}</label>
               <select v-model="filters.city">
-                <option value="">{{ locale === 'zh' ? '所有城市' : 'All Cities' }}</option>
+                <option value="">{{ $t('auto.auto_a745270e') }}</option>
                 <option value="Hangzhou">Hangzhou</option>
                 <option value="Shanghai">Shanghai</option>
                 <option value="Beijing">Beijing</option>
@@ -56,42 +56,42 @@
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '分类' : 'Category' }}</label>
+              <label>{{ $t('auto.auto_66f8909b') }}</label>
               <select v-model="filters.category">
-                <option value="">{{ locale === 'zh' ? '所有分类' : 'All Categories' }}</option>
-                <option value="Tickets">{{ locale === 'zh' ? '门票' : 'Tickets' }}</option>
-                <option value="Tours">{{ locale === 'zh' ? '一日游' : 'Tours' }}</option>
-                <option value="Experiences">{{ locale === 'zh' ? '当地体验' : 'Experiences' }}</option>
-                <option value="Transport">{{ locale === 'zh' ? '交通接送' : 'Transport' }}</option>
-                <option value="Nature">{{ locale === 'zh' ? '自然' : 'Nature' }}</option>
-                <option value="Culture">{{ locale === 'zh' ? '文化' : 'Culture' }}</option>
+                <option value="">{{ $t('auto.auto_e24412d7') }}</option>
+                <option value="Tickets">{{ $t('auto.auto_e9720ac4') }}</option>
+                <option value="Tours">{{ $t('auto.auto_dbdd76d8') }}</option>
+                <option value="Experiences">{{ $t('auto.auto_6436d81e') }}</option>
+                <option value="Transport">{{ $t('auto.auto_7181cbc9') }}</option>
+                <option value="Nature">{{ $t('auto.auto_c3ae1ead') }}</option>
+                <option value="Culture">{{ $t('auto.auto_58e3f3db') }}</option>
               </select>
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '商品类型' : 'Product Type' }}</label>
+              <label>{{ $t('auto.auto_aa7ad24f') }}</label>
               <select v-model="filters.type">
-                <option value="">{{ locale === 'zh' ? '全部' : 'All' }}</option>
-                <option value="ticket">{{ locale === 'zh' ? '景点门票' : 'Tickets' }}</option>
-                <option value="tour">{{ locale === 'zh' ? '一日游/半日游' : 'Tours' }}</option>
-                <option value="experience">{{ locale === 'zh' ? '当地体验' : 'Experiences' }}</option>
-                <option value="transport">{{ locale === 'zh' ? '交通接送' : 'Transport' }}</option>
+                <option value="">{{ $t('auto.auto_1c0db27c') }}</option>
+                <option value="ticket">{{ $t('auto.auto_ece59dbb') }}</option>
+                <option value="tour">{{ $t('auto.auto_0bdfe960') }}</option>
+                <option value="experience">{{ $t('auto.auto_6436d81e') }}</option>
+                <option value="transport">{{ $t('auto.auto_7181cbc9') }}</option>
               </select>
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '价格范围' : 'Price Range' }}</label>
+              <label>{{ $t('auto.auto_713ef8bd') }}</label>
               <div class="price-inputs">
-                <input v-model.number="filters.minPrice" type="number" :placeholder="locale === 'zh' ? '最低' : 'Min'" />
+                <input v-model.number="filters.minPrice" type="number" :placeholder="$t('auto.auto_cce379df')" />
                 <span>-</span>
-                <input v-model.number="filters.maxPrice" type="number" :placeholder="locale === 'zh' ? '最高' : 'Max'" />
+                <input v-model.number="filters.maxPrice" type="number" :placeholder="$t('auto.auto_ad006c41')" />
               </div>
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '评分' : 'Rating' }}</label>
+              <label>{{ $t('auto.auto_e06a68cd') }}</label>
               <select v-model="filters.rating">
-                <option value="">{{ locale === 'zh' ? '所有评分' : 'Any Rating' }}</option>
+                <option value="">{{ $t('auto.auto_83dedea4') }}</option>
                 <option value="4.8">4.8+</option>
                 <option value="4.5">4.5+</option>
                 <option value="4">4+</option>
@@ -99,23 +99,23 @@
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '出行日期' : 'Travel date' }}</label>
+              <label>{{ $t('auto.auto_3214b04f') }}</label>
               <input v-model="filters.date" type="date" />
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '人数' : 'Travellers' }}</label>
+              <label>{{ $t('auto.auto_fdf3d97d') }}</label>
               <div class="price-inputs">
-                <input v-model.number="filters.adults" type="number" min="0" :placeholder="locale === 'zh' ? '成人' : 'Adults'" />
+                <input v-model.number="filters.adults" type="number" min="0" :placeholder="$t('auto.auto_41bd21e7')" />
                 <span>+</span>
-                <input v-model.number="filters.children" type="number" min="0" :placeholder="locale === 'zh' ? '儿童' : 'Children'" />
+                <input v-model.number="filters.children" type="number" min="0" :placeholder="$t('auto.auto_9251b038')" />
               </div>
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '游玩时长' : 'Duration' }}</label>
+              <label>{{ $t('auto.auto_e4402897') }}</label>
               <select v-model="filters.duration">
-                <option value="">{{ locale === 'zh' ? '不限' : 'Any duration' }}</option>
+                <option value="">{{ $t('auto.auto_4e65766f') }}</option>
                 <option value="2">2 hours</option>
                 <option value="3">3 hours</option>
                 <option value="4">4 hours</option>
@@ -124,92 +124,92 @@
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '语言服务' : 'Language service' }}</label>
+              <label>{{ $t('auto.auto_66c0680c') }}</label>
               <select v-model="filters.language">
-                <option value="">{{ locale === 'zh' ? '不限' : 'Any language' }}</option>
-                <option value="English">{{ locale === 'zh' ? '英文服务' : 'English service' }}</option>
-                <option value="Chinese">{{ locale === 'zh' ? '中文服务' : 'Chinese service' }}</option>
-                <option value="bilingual">{{ locale === 'zh' ? '双语服务' : 'Bilingual' }}</option>
+                <option value="">{{ $t('auto.auto_b4e9080e') }}</option>
+                <option value="English">{{ $t('auto.auto_6fff2b25') }}</option>
+                <option value="Chinese">{{ $t('auto.auto_caa27479') }}</option>
+                <option value="bilingual">{{ $t('auto.auto_6d2e2d3d') }}</option>
               </select>
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '电子凭证' : 'Voucher' }}</label>
+              <label>{{ $t('auto.auto_98e03311') }}</label>
               <select v-model="filters.voucherType">
-                <option value="">{{ locale === 'zh' ? '不限' : 'Any voucher' }}</option>
-                <option value="mobile">{{ locale === 'zh' ? '手机凭证' : 'Mobile voucher' }}</option>
-                <option value="qr">{{ locale === 'zh' ? '二维码凭证' : 'QR voucher' }}</option>
+                <option value="">{{ $t('auto.auto_98f60220') }}</option>
+                <option value="mobile">{{ $t('auto.auto_6f2611f5') }}</option>
+                <option value="qr">{{ $t('auto.auto_aee84956') }}</option>
               </select>
             </div>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '排序方式' : 'Sort By' }}</label>
+              <label>{{ $t('auto.auto_40510e10') }}</label>
               <select v-model="filters.sortBy">
-                <option value="recommended">{{ locale === 'zh' ? '推荐' : 'Recommended' }}</option>
-                <option value="price_low">{{ locale === 'zh' ? '价格从低到高' : 'Price: Low to High' }}</option>
-                <option value="price_high">{{ locale === 'zh' ? '价格从高到低' : 'Price: High to Low' }}</option>
-                <option value="rating">{{ locale === 'zh' ? '评分最高' : 'Highest Rated' }}</option>
-                <option value="popular">{{ locale === 'zh' ? '销量最高' : 'Most Booked' }}</option>
-                <option value="discount">{{ locale === 'zh' ? '折扣最大' : 'Best discount' }}</option>
-                <option value="distance">{{ locale === 'zh' ? '距离最近' : 'Nearest' }}</option>
+                <option value="recommended">{{ $t('auto.auto_5a87fbdc') }}</option>
+                <option value="price_low">{{ $t('auto.auto_052ee78b') }}</option>
+                <option value="price_high">{{ $t('auto.auto_992bdb5e') }}</option>
+                <option value="rating">{{ $t('auto.auto_e220339e') }}</option>
+                <option value="popular">{{ $t('auto.auto_3a47e79a') }}</option>
+                <option value="discount">{{ $t('auto.auto_6558adca') }}</option>
+                <option value="distance">{{ $t('auto.auto_9904413a') }}</option>
               </select>
             </div>
 
             <label class="filter-check">
               <input v-model="filters.instantConfirm" type="checkbox" />
-              <span>{{ locale === 'zh' ? '即时确认' : 'Instant confirmation' }}</span>
+              <span>{{ $t('auto.auto_dcc07e89') }}</span>
             </label>
             <label class="filter-check">
               <input v-model="filters.freeCancel" type="checkbox" />
-              <span>{{ locale === 'zh' ? '免费取消' : 'Free cancellation' }}</span>
+              <span>{{ $t('auto.auto_cf6aec06') }}</span>
             </label>
             <label class="filter-check">
               <input v-model="filters.availableToday" type="checkbox" />
-              <span>{{ locale === 'zh' ? '今日可订' : 'Available today' }}</span>
+              <span>{{ $t('auto.auto_6daab1d6') }}</span>
             </label>
             <label class="filter-check">
               <input v-model="filters.availableTomorrow" type="checkbox" />
-              <span>{{ locale === 'zh' ? '明日可订' : 'Available tomorrow' }}</span>
+              <span>{{ $t('auto.auto_9456347f') }}</span>
             </label>
 
             <div class="filter-group">
-              <label>{{ locale === 'zh' ? '设施/特色' : 'Features' }}</label>
+              <label>{{ $t('auto.auto_4a9b6830') }}</label>
               <div class="feature-chip-list">
                 <label v-for="feature in featureOptions" :key="feature.value" class="feature-chip" :class="{ active: filters.features.includes(feature.value) }">
                   <input v-model="filters.features" type="checkbox" :value="feature.value" />
-                  <span>{{ locale === 'zh' ? feature.zh : feature.en }}</span>
+                  <span>{{ $t(feature.labelKey) }}</span>
                 </label>
               </div>
             </div>
 
-            <button class="apply-filter-btn" @click="doSearch">{{ locale === 'zh' ? '应用筛选' : 'Apply Filters' }}</button>
+            <button class="apply-filter-btn" @click="doSearch">{{ $t('auto.auto_ed418e17') }}</button>
           </div>
         </aside>
 
         <main class="results-main">
           <div class="results-header">
-            <h1 v-if="keyword">{{ locale === 'zh' ? `“${keyword}” 的可预订商品` : `Bookable products for "${keyword}"` }}</h1>
-            <h1 v-else>{{ locale === 'zh' ? '可预订商品' : 'Bookable products' }}</h1>
-            <p class="results-count">{{ productResults.length }} {{ locale === 'zh' ? '个商品' : 'products found' }} · {{ results.length }} {{ locale === 'zh' ? '个目的地灵感' : 'destination ideas' }}</p>
+            <h1 v-if="keyword">{{ $t('dynamic.bookableProductsFor', { keyword }) }}</h1>
+            <h1 v-else>{{ $t('auto.auto_61b9c57d') }}</h1>
+            <p class="results-count">{{ productResults.length }} {{ $t('auto.auto_77534aab') }} · {{ results.length }} {{ $t('auto.auto_75523430') }}</p>
           </div>
 
           <div v-if="loading" class="loading-state">
             <div class="spinner"></div>
-            <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
+            <p>{{ $t('auto.auto_f399f5e1') }}</p>
           </div>
 
           <div v-else-if="productResults.length === 0 && results.length === 0" class="empty-state">
             <div class="empty-icon">🔍</div>
-            <h3>{{ locale === 'zh' ? '未找到结果' : 'No results found' }}</h3>
-            <p>{{ locale === 'zh' ? '试试其他关键词或筛选条件' : 'Try different keywords or filters' }}</p>
+            <h3>{{ $t('auto.auto_faf395bb') }}</h3>
+            <p>{{ $t('auto.auto_beac9c3f') }}</p>
           </div>
 
           <template v-else>
             <section v-if="productResults.length" class="search-products-section search-products-section--primary">
               <div class="search-section-head">
                 <div>
-                  <h2>{{ locale === 'zh' ? '商品搜索结果' : 'Product results' }}</h2>
-                  <p>{{ locale === 'zh' ? '选择商品进入详情页，可继续选择套餐、日期和人数。' : 'Open a product to choose package, date, and travellers.' }}</p>
+                  <h2>{{ $t('auto.auto_60e09210') }}</h2>
+                  <p>{{ $t('auto.auto_afc5e530') }}</p>
                 </div>
               </div>
               <div class="search-products-grid">
@@ -218,7 +218,7 @@
             </section>
 
             <section v-if="results.length" class="search-destinations-section">
-              <h2>{{ locale === 'zh' ? '目的地灵感（辅助参考）' : 'Destination inspiration' }}</h2>
+              <h2>{{ $t('auto.auto_154b533d') }}</h2>
               <div class="results-grid">
                 <router-link
                   v-for="d in results"
@@ -227,7 +227,7 @@
                   class="result-card"
                 >
                   <div class="card-cover">
-                    <img :src="d.cover" :alt="d.name" @error="onImgError" />
+                    <img :src="d.cover" :alt="localizeDestination(d)" @error="onImgError" />
                     <button
                       type="button"
                       class="fav-btn"
@@ -239,16 +239,16 @@
                   </div>
                   <div class="card-body">
                     <div class="card-header">
-                      <h3 class="card-title">{{ d.name }}</h3>
+                      <h3 class="card-title">{{ localizeDestination(d) }}</h3>
                       <div class="card-rating">★ {{ d.rating }}</div>
                     </div>
-                    <p class="card-location">📍 {{ d.city }}</p>
+                    <p class="card-location">📍 {{ localizeCity(d) }}</p>
                     <div class="card-tags">
-                      <span v-for="t in d.tags" :key="t" class="tag">{{ t }}</span>
+                      <span v-for="t in localizeList(d.tags)" :key="t" class="tag">{{ t }}</span>
                     </div>
                     <div class="card-price">
                       <span class="price-amount">¥{{ d.price }}</span>
-                      <span class="price-unit">{{ locale === 'zh' ? '/ 晚' : '/ night' }}</span>
+                      <span class="price-unit">{{ $t('auto.auto_06271d79') }}</span>
                     </div>
                   </div>
                 </router-link>
@@ -295,8 +295,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { fetchProducts } from '../composables/useProducts'
 import ProductCard from '../components/ProductCard.vue'
+import { useLocalization } from '../composables/useLocalization'
 
 const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const route = useRoute()
 const router = useRouter()
 const { isLoggedIn, user, setAuth, clearAuth, authHeaders } = useAuth()
@@ -333,11 +335,11 @@ const filters = ref({
 })
 
 const featureOptions = [
-  { value: 'pickup', en: 'Pickup', zh: '接送' },
-  { value: 'Family', en: 'Family', zh: '亲子' },
-  { value: 'Accessible', en: 'Accessible', zh: '无障碍' },
-  { value: 'Vegetarian', en: 'Vegetarian', zh: '素食' },
-  { value: 'Night', en: 'Night open', zh: '夜间开放' },
+  { value: 'pickup', en: 'Pickup', zh: '接送', labelKey: 'auto.auto_b3c2da74' },
+  { value: 'Family', en: 'Family', zh: '亲子', labelKey: 'auto.auto_7b74545d' },
+  { value: 'Accessible', en: 'Accessible', zh: '无障碍', labelKey: 'auto.auto_0fc3853f' },
+  { value: 'Vegetarian', en: 'Vegetarian', zh: '素食', labelKey: 'auto.auto_9f0b3758' },
+  { value: 'Night', en: 'Night open', zh: '夜间开放', labelKey: 'auto.auto_4c362cb8' },
 ]
 
 const API = '/api/v1'
@@ -523,14 +525,14 @@ async function doLogin() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error || 'Login failed'
+      authError.value = data.error === 'invalid_credentials' ? t('auth.invalidCredentials') : (data.error || t('auth.loginFailed'))
       return
     }
     setAuth(data.token, data.user)
     showAuthModal.value = null
     doSearch()
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -553,7 +555,7 @@ async function doRegister() {
     }
     showAuthModal.value = 'login'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 

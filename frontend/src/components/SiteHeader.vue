@@ -180,7 +180,7 @@ async function doLogin() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'invalid_credentials' ? 'Invalid email or password.' : (data.error || 'Login failed')
+      authError.value = data.error === 'invalid_credentials' ? t('auth.invalidCredentials') : (data.error || t('auth.loginFailed'))
       return
     }
     setAuth(data.token, data.user)
@@ -189,7 +189,7 @@ async function doLogin() {
     authPassword.value = ''
     emit('loginSuccess')
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -213,7 +213,7 @@ async function doRegister() {
     authSuccess.value = t('auth.accountCreated')
     showAuthModal.value = 'login'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -231,11 +231,11 @@ async function doForgotPassword() {
       authError.value = data.error === 'user_not_found' ? t('auth.noAccount') : (data.error || t('auth.requestFailed'))
       return
     }
-    authSuccess.value = 'Check your email for reset link.'
+    authSuccess.value = t('auth.checkEmailReset')
     if (data.reset_token) authResetToken.value = data.reset_token
     showAuthModal.value = 'reset'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -253,13 +253,13 @@ async function doResetPassword() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'invalid_or_expired_token' ? 'Invalid or expired reset token.' : (data.error || 'Reset failed')
+      authError.value = data.error === 'invalid_or_expired_token' ? t('auth.invalidResetToken') : (data.error || t('auth.resetFailed'))
       return
     }
     authSuccess.value = t('auth.passwordReset')
     showAuthModal.value = 'login'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 

@@ -20,24 +20,24 @@
     </header>
 
     <div class="trips-content">
-      <h1>{{ locale === 'zh' ? '我的订单' : 'My Trips' }}</h1>
+      <h1>{{ $t('auto.auto_65b8f980') }}</h1>
 
       <div v-if="!isLoggedIn" class="auth-prompt">
-        <p>{{ locale === 'zh' ? '请先登录以查看您的订单' : 'Please sign in to view your trips' }}</p>
-        <button class="auth-btn" @click="showAuthModal = 'login'">{{ locale === 'zh' ? '登录' : 'Sign In' }}</button>
+        <p>{{ $t('auto.auto_5fc3edd0') }}</p>
+        <button class="auth-btn" @click="showAuthModal = 'login'">{{ $t('auto.auto_a4f0af04') }}</button>
       </div>
 
       <template v-else>
         <section class="trip-workbench">
           <div class="ai-planner-card">
             <div>
-              <span class="section-kicker">{{ locale === 'zh' ? 'AI 行程规划' : 'AI Trip Planner' }}</span>
-              <h2>{{ locale === 'zh' ? '生成可保存行程' : 'Generate a bookable itinerary' }}</h2>
-              <p>{{ locale === 'zh' ? '输入“杭州 2 天亲子低预算”，自动生成早中晚时间线并推荐可购买商品。' : 'Try “Hangzhou 2 days family low budget” to create a day-by-day plan with purchasable products.' }}</p>
+              <span class="section-kicker">{{ $t('auto.auto_e491747a') }}</span>
+              <h2>{{ $t('auto.auto_423ba5e8') }}</h2>
+              <p>{{ $t('auto.auto_72941e08') }}</p>
             </div>
             <form class="ai-planner-form" @submit.prevent="generatePlan">
-              <input v-model="aiPrompt" class="auth-input" :placeholder="locale === 'zh' ? '杭州 2 天亲子低预算' : 'Hangzhou 2 days family low budget'" />
-              <button class="auth-submit" type="submit" :disabled="aiLoading">{{ aiLoading ? (locale === 'zh' ? '生成中...' : 'Generating...') : (locale === 'zh' ? '生成并保存' : 'Generate & save') }}</button>
+              <input v-model="aiPrompt" class="auth-input" :placeholder="$t('auto.auto_07bfb23a')" />
+              <button class="auth-submit" type="submit" :disabled="aiLoading">{{ aiLoading ? ($t('auto.auto_728a38a4')) : ($t('auto.auto_382aacad')) }}</button>
             </form>
             <p v-if="plannerMessage" class="planner-message">{{ plannerMessage }}</p>
           </div>
@@ -46,25 +46,25 @@
             <section class="timeline-card">
               <div class="section-head">
                 <div>
-                  <span class="section-kicker">{{ locale === 'zh' ? '行程' : 'Itinerary' }}</span>
-                  <h2>{{ locale === 'zh' ? '行程时间线' : 'Trip timeline' }}</h2>
+                  <span class="section-kicker">{{ $t('auto.auto_8f011839') }}</span>
+                  <h2>{{ $t('auto.auto_aedf33aa') }}</h2>
                 </div>
                 <strong>{{ formatMoney('CNY', itineraryBudget) }}</strong>
               </div>
-              <div v-if="!itineraries.length" class="mini-empty">{{ locale === 'zh' ? '还没有草稿行程，先用 AI 生成一个。' : 'No draft itinerary yet. Generate one with AI first.' }}</div>
+              <div v-if="!itineraries.length" class="mini-empty">{{ $t('auto.auto_f63efe53') }}</div>
               <article v-for="plan in itineraries" :key="plan.id" class="itinerary-block">
                 <div class="itinerary-title-row">
                   <h3>{{ plan.title }}</h3>
-                  <span>{{ plan.city }} · {{ plan.guests }} {{ locale === 'zh' ? '人' : 'guests' }}</span>
+                  <span>{{ localizeText(plan.city) }} · {{ plan.guests }} {{ $t('auto.auto_8afb66c5') }}</span>
                 </div>
                 <div v-for="day in groupItineraryItems(plan)" :key="`${plan.id}-${day.day}`" class="day-block">
-                  <strong>{{ locale === 'zh' ? `第 ${day.day} 天` : `Day ${day.day}` }}</strong>
+                  <strong>{{ $t('dynamic.dayLabel', { day: day.day }) }}</strong>
                   <div v-for="item in day.items" :key="item.id" class="timeline-item">
                     <div class="timeline-time">{{ item.start_time || '09:00' }}</div>
                     <div class="timeline-body">
-                      <router-link v-if="item.product_id" :to="`/product/${item.product_id}`">{{ item.title }}</router-link>
-                      <strong v-else>{{ item.title }}</strong>
-                      <p>{{ item.note }}</p>
+                      <router-link v-if="item.product_id" :to="`/product/${item.product_id}`">{{ localizeText(item.title) }}</router-link>
+                      <strong v-else>{{ localizeText(item.title) }}</strong>
+                      <p>{{ localizeText(item.note) }}</p>
                       <small>{{ formatMoney('CNY', item.estimated_cost) }}</small>
                     </div>
                     <div class="timeline-actions">
@@ -79,24 +79,24 @@
             <section class="cart-card">
               <div class="section-head">
                 <div>
-                  <span class="section-kicker">{{ locale === 'zh' ? '购物车' : 'Cart' }}</span>
-                  <h2>{{ locale === 'zh' ? '打包购物车' : 'Bundle cart' }}</h2>
+                  <span class="section-kicker">{{ $t('auto.auto_52f5891f') }}</span>
+                  <h2>{{ $t('auto.auto_061cd725') }}</h2>
                 </div>
                 <strong>{{ formatMoney(cart.currency, cart.total_amount) }}</strong>
               </div>
-              <div v-if="!cart.items?.length" class="mini-empty">{{ locale === 'zh' ? '从商品详情页加入购物车后，可在这里多商品下单。' : 'Add products from detail pages, then checkout multiple items here.' }}</div>
+              <div v-if="!cart.items?.length" class="mini-empty">{{ $t('auto.auto_a30f7670') }}</div>
               <article v-for="item in cart.items" :key="item.id" class="cart-line">
                 <img :src="item.cover || FALLBACK_IMAGE" :alt="item.product_name" @error="onImgError" />
                 <div>
-                  <router-link :to="`/product/${item.product_id}`">{{ item.product_name }}</router-link>
-                  <p>{{ item.city }} · {{ item.package_name }} · {{ item.travel_date }}</p>
-                  <small>{{ item.adults }} {{ locale === 'zh' ? '成人' : 'adults' }}{{ item.children ? ` · ${item.children} ${locale === 'zh' ? '儿童' : 'children'}` : '' }}</small>
+                  <router-link :to="`/product/${item.product_id}`">{{ localizeText(item.product_name) }}</router-link>
+                  <p>{{ localizeText(item.city) }} · {{ localizeText(item.package_name) }} · {{ item.travel_date }}</p>
+                  <small>{{ item.adults }} {{ $t('auto.auto_93827aa4') }}{{ item.children ? ` · ${item.children} ${$t('auto.auto_01173363')}` : '' }}</small>
                 </div>
                 <strong>{{ formatMoney(cart.currency, item.subtotal) }}</strong>
               </article>
               <div v-if="cart.items?.length" class="cart-actions">
-                <button class="trip-action" type="button" :disabled="cartLoading" @click="clearCartItems">{{ locale === 'zh' ? '清空' : 'Clear' }}</button>
-                <button class="auth-submit" type="button" :disabled="cartLoading" @click="checkoutCartItems">{{ cartLoading ? (locale === 'zh' ? '下单中...' : 'Checking out...') : (locale === 'zh' ? '打包下单' : 'Checkout bundle') }}</button>
+                <button class="trip-action" type="button" :disabled="cartLoading" @click="clearCartItems">{{ $t('auto.auto_ff3844d9') }}</button>
+                <button class="auth-submit" type="button" :disabled="cartLoading" @click="checkoutCartItems">{{ cartLoading ? ($t('auto.auto_5f3326dc')) : ($t('auto.auto_e2b65088')) }}</button>
               </div>
               <p v-if="cartMessage" class="planner-message">{{ cartMessage }}</p>
             </section>
@@ -105,30 +105,30 @@
 
         <div class="trips-tabs">
           <button :class="{ active: activeTab === 'upcoming' }" @click="activeTab = 'upcoming'">
-            {{ locale === 'zh' ? '即将出行' : 'Upcoming' }}
+            {{ $t('auto.auto_f1cf4d3a') }}
           </button>
           <button :class="{ active: activeTab === 'past' }" @click="activeTab = 'past'">
-            {{ locale === 'zh' ? '历史订单' : 'Past' }}
+            {{ $t('auto.auto_b8df2a75') }}
           </button>
         </div>
 
         <div v-if="loading" class="loading-state">
           <div class="spinner"></div>
-          <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
+          <p>{{ $t('auto.auto_f399f5e1') }}</p>
         </div>
 
         <div v-else-if="tripsError" class="empty-state">
           <div class="empty-icon">⚠️</div>
-          <h3>{{ locale === 'zh' ? '订单加载异常' : 'Trips unavailable' }}</h3>
+          <h3>{{ $t('auto.auto_68a97e36') }}</h3>
           <p>{{ tripsError }}</p>
-          <button class="auth-btn" @click="fetchTrips">{{ locale === 'zh' ? '重试' : 'Retry' }}</button>
+          <button class="auth-btn" @click="fetchTrips">{{ $t('auto.auto_682d4a2d') }}</button>
         </div>
 
         <div v-else-if="displayTrips.length === 0" class="empty-state">
           <div class="empty-icon">📋</div>
-          <h3>{{ locale === 'zh' ? '暂无订单' : 'No trips yet' }}</h3>
-          <p>{{ locale === 'zh' ? '开始规划你的下一次旅行吧！' : 'Start planning your next adventure!' }}</p>
-          <router-link to="/" class="browse-btn">{{ locale === 'zh' ? '浏览目的地' : 'Browse Destinations' }}</router-link>
+          <h3>{{ $t('auto.auto_38f8588d') }}</h3>
+          <p>{{ $t('auto.auto_2791b620') }}</p>
+          <router-link to="/" class="browse-btn">{{ $t('auto.auto_82439b9b') }}</router-link>
         </div>
 
         <div v-else class="trips-list">
@@ -140,9 +140,9 @@
               <p class="trip-dates">{{ trip.display_dates }}</p>
               <p class="trip-guests">{{ trip.display_guests }}</p>
               <p v-if="trip.display_usage" class="trip-usage">🎫 {{ trip.display_usage }}</p>
-              <p v-if="trip.discount_amount" class="trip-discount">🎟️ {{ locale === 'zh' ? '优惠' : 'Discount' }} -{{ formatMoney(trip.currency, trip.discount_amount) }} · {{ trip.coupon_code }}</p>
+              <p v-if="trip.discount_amount" class="trip-discount">🎟️ {{ $t('auto.auto_304e4e10') }} -{{ formatMoney(trip.currency, trip.discount_amount) }} · {{ trip.coupon_code }}</p>
               <p class="trip-price">{{ trip.display_price }}</p>
-              <span v-if="trip.source === 'order'" class="trip-type-badge">{{ locale === 'zh' ? '商品订单' : 'Product order' }}</span>
+              <span v-if="trip.source === 'order'" class="trip-type-badge">{{ $t('auto.auto_b72c6484') }}</span>
             </div>
             <div class="trip-side">
               <div class="trip-status" :class="trip.status">
@@ -155,7 +155,7 @@
                 :disabled="cancellingId === trip.id"
                 @click="cancelTrip(trip)"
               >
-                {{ cancellingId === trip.id ? (locale === 'zh' ? '取消中...' : 'Cancelling...') : (locale === 'zh' ? '取消订单' : 'Cancel booking') }}
+                {{ cancellingId === trip.id ? ($t('auto.auto_7b5974a9')) : ($t('auto.auto_aff2048a')) }}
               </button>
               <button
                 v-if="trip.source === 'order' && trip.status === 'paid' && activeTab === 'upcoming'"
@@ -164,7 +164,7 @@
                 :disabled="actionLoadingId === trip.id"
                 @click="completeTrip(trip)"
               >
-                {{ actionLoadingId === trip.id ? (locale === 'zh' ? '处理中...' : 'Updating...') : (locale === 'zh' ? '模拟完成' : 'Mark completed') }}
+                {{ actionLoadingId === trip.id ? ($t('auto.auto_f84918a0')) : ($t('auto.auto_8ca4f84c')) }}
               </button>
               <button
                 v-if="trip.source === 'order' && trip.status === 'completed'"
@@ -172,7 +172,7 @@
                 class="trip-action"
                 @click="openReviewModal(trip)"
               >
-                {{ locale === 'zh' ? '写评价' : 'Write review' }}
+                {{ $t('auto.auto_39280323') }}
               </button>
               <button
                 v-if="trip.source === 'order' && ['paid', 'completed'].includes(trip.status)"
@@ -181,10 +181,10 @@
                 :disabled="actionLoadingId === trip.id"
                 @click="refundTrip(trip)"
               >
-                {{ locale === 'zh' ? '模拟退款' : 'Mock refund' }}
+                {{ $t('auto.auto_c4d03764') }}
               </button>
               <router-link class="trip-action" :to="trip.action_link">
-                {{ locale === 'zh' ? '再次预订' : 'Book again' }}
+                {{ $t('auto.auto_5f7f14ce') }}
               </router-link>
             </div>
           </div>
@@ -196,11 +196,11 @@
     <div v-if="reviewModalTrip" class="modal-overlay" @click.self="closeReviewModal">
       <div class="auth-modal-card review-modal-card">
         <button class="modal-close" @click="closeReviewModal">×</button>
-        <h2 class="auth-modal-title">{{ locale === 'zh' ? '撰写商品评价' : 'Write a product review' }}</h2>
+        <h2 class="auth-modal-title">{{ t('auto.auto_4458787c') }}</h2>
         <p class="review-target">{{ reviewModalTrip.display_name }} · {{ reviewModalTrip.display_dates }}</p>
         <form class="auth-form" @submit.prevent="submitReview">
           <label class="review-form-label">
-            {{ locale === 'zh' ? '总评分' : 'Rating' }}
+            {{ t('auto.auto_0e236f3e') }}
             <select v-model.number="reviewForm.rating" class="auth-input">
               <option v-for="score in [5, 4, 3, 2, 1]" :key="score" :value="score">{{ score }} ★</option>
             </select>
@@ -211,10 +211,10 @@
               <input v-model.number="reviewForm.scores[item.key]" class="auth-input" type="number" min="1" max="5" step="0.1" />
             </label>
           </div>
-          <textarea v-model="reviewForm.content" class="auth-input review-textarea" :placeholder="locale === 'zh' ? '分享你的真实体验、凭证使用、交通和服务感受。' : 'Share your real experience, voucher redemption, transport, and service notes.'" required></textarea>
+          <textarea v-model="reviewForm.content" class="auth-input review-textarea" :placeholder="t('auto.auto_f17bb804')" required></textarea>
           <p v-if="reviewError" class="auth-error">{{ reviewError }}</p>
           <button class="auth-submit" type="submit" :disabled="reviewSubmitting">
-            {{ reviewSubmitting ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '提交评价' : 'Submit review') }}
+            {{ reviewSubmitting ? (t('auto.auto_c5ab6344')) : (t('auto.auto_c2a5385a')) }}
           </button>
         </form>
       </div>
@@ -255,8 +255,10 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { fetchBookings, fetchOrders, cancelBooking, cancelOrder, completeOrder, refundOrder, createProductReview, fetchItineraries, generateItinerary, moveItineraryItem, fetchCart, clearCart, checkoutCart } from '../composables/useProducts'
+import { useLocalization } from '../composables/useLocalization'
 
 const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const router = useRouter()
 const { isLoggedIn, user, setAuth, authHeaders } = useAuth()
 
@@ -300,11 +302,11 @@ function formatMoney(currency = 'CNY', amount = 0) {
 const itineraryBudget = computed(() => itineraries.value.reduce((sum, plan) => sum + (plan.items || []).reduce((itemSum, item) => itemSum + Number(item.estimated_cost || 0), 0), 0))
 
 const reviewScoreFields = computed(() => [
-  { key: 'quality', label: locale.value === 'zh' ? '体验质量' : 'Quality' },
-  { key: 'service', label: locale.value === 'zh' ? '服务' : 'Service' },
-  { key: 'value', label: locale.value === 'zh' ? '性价比' : 'Value' },
-  { key: 'transport', label: locale.value === 'zh' ? '交通便利' : 'Transport' },
-  { key: 'family', label: locale.value === 'zh' ? '适合亲子' : 'Family' },
+  { key: 'quality', label: t('auto.auto_620331e6') },
+  { key: 'service', label: t('auto.auto_080f76a8') },
+  { key: 'value', label: t('auto.auto_a9e5e58e') },
+  { key: 'transport', label: t('auto.auto_e8ff3d40') },
+  { key: 'family', label: t('auto.auto_7b74545d') },
 ])
 
 function onImgError(e) {
@@ -334,7 +336,7 @@ const normalizedBookings = computed(() => trips.value.map((trip) => ({
   display_name: trip.name,
   display_subtitle: trip.city,
   display_dates: `${trip.check_in} - ${trip.check_out}`,
-  display_guests: `${trip.guests} ${locale.value === 'zh' ? '位客人' : 'guests'}`,
+  display_guests: `${trip.guests} ${t('auto.auto_743bc0e3')}`,
   display_price: `¥${trip.total_price}`,
   trip_date: trip.check_in,
   action_link: `/destination/${trip.destination_id}`,
@@ -350,8 +352,8 @@ const normalizedProductOrders = computed(() => productOrders.value.map((order) =
     display_name: item.product_name,
     display_subtitle: `${item.city} · ${item.package_name}`,
     display_dates: item.travel_date,
-    display_guests: `${item.adults || 0} ${locale.value === 'zh' ? '成人' : 'adults'}${item.children ? ` · ${item.children} ${locale.value === 'zh' ? '儿童' : 'children'}` : ''}`,
-    display_usage: item.usage || (locale.value === 'zh' ? '请在出行当天出示电子凭证。' : 'Show your mobile voucher on the travel date.'),
+    display_guests: `${item.adults || 0} ${t('auto.auto_93827aa4')}${item.children ? ` · ${item.children} ${t('auto.auto_01173363')}` : ''}`,
+    display_usage: item.usage || (t('auto.auto_00706a79')),
     display_price: formatMoney(order.currency, order.total_amount),
     trip_date: item.travel_date,
     action_link: `/product/${item.product_id}`,
@@ -361,16 +363,16 @@ const normalizedProductOrders = computed(() => productOrders.value.map((order) =
 
 function formatTripStatus(status) {
   const labels = {
-    pending: locale.value === 'zh' ? '待确认' : 'Pending',
-    confirmed: locale.value === 'zh' ? '已确认' : 'Confirmed',
-    paid: locale.value === 'zh' ? '已支付' : 'Paid',
-    cancelled: locale.value === 'zh' ? '已取消' : 'Cancelled',
-    completed: locale.value === 'zh' ? '已完成' : 'Completed',
-    refunding: locale.value === 'zh' ? '退款中' : 'Refunding',
-    refunded: locale.value === 'zh' ? '已退款' : 'Refunded',
-    paid_mock: locale.value === 'zh' ? '模拟支付' : 'Mock paid',
+    pending: t('auto.auto_39a190e7'),
+    confirmed: t('auto.auto_cfd9a5b9'),
+    paid: t('auto.auto_207ecafb'),
+    cancelled: t('auto.auto_90862ac4'),
+    completed: t('auto.auto_d7c13b61'),
+    refunding: t('auto.auto_5165f8c5'),
+    refunded: t('auto.auto_e967f988'),
+    paid_mock: t('auto.auto_f51de142'),
   }
-  return labels[status] || status || (locale.value === 'zh' ? '未知' : 'Unknown')
+  return labels[status] || status || (t('auto.auto_8d93caff'))
 }
 
 function canCancelTrip(trip) {
@@ -400,9 +402,9 @@ async function generatePlan() {
   try {
     const plan = await generateItinerary({ prompt, save: true }, authHeaders())
     itineraries.value = [plan, ...itineraries.value.filter(item => item.id !== plan.id)]
-    plannerMessage.value = locale.value === 'zh' ? '行程已生成并保存。' : 'Itinerary generated and saved.'
+    plannerMessage.value = t('auto.auto_76812e73')
   } catch (e) {
-    plannerMessage.value = locale.value === 'zh' ? '行程生成失败，请稍后重试。' : 'Failed to generate itinerary. Please try again.'
+    plannerMessage.value = t('auto.auto_b62e08f9')
   } finally {
     aiLoading.value = false
   }
@@ -424,9 +426,9 @@ async function clearCartItems() {
   try {
     await clearCart(authHeaders())
     cart.value = { items: [], total_amount: 0, currency: 'CNY' }
-    cartMessage.value = locale.value === 'zh' ? '购物车已清空。' : 'Cart cleared.'
+    cartMessage.value = t('auto.auto_e2c94902')
   } catch (e) {
-    cartMessage.value = locale.value === 'zh' ? '清空失败。' : 'Failed to clear cart.'
+    cartMessage.value = t('auto.auto_5588b779')
   } finally {
     cartLoading.value = false
   }
@@ -441,10 +443,10 @@ async function checkoutCartItems() {
       productOrders.value = [...data.orders, ...productOrders.value]
     }
     cart.value = { items: [], total_amount: 0, currency: 'CNY' }
-    cartMessage.value = locale.value === 'zh' ? '打包下单成功，电子凭证已进入订单。' : 'Bundle checkout succeeded. E-vouchers are in orders.'
+    cartMessage.value = t('auto.auto_8b066369')
     activeTab.value = 'upcoming'
   } catch (e) {
-    cartMessage.value = locale.value === 'zh' ? '打包下单失败，请检查库存。' : 'Bundle checkout failed. Please check availability.'
+    cartMessage.value = t('auto.auto_fe7d8bdf')
   } finally {
     cartLoading.value = false
   }
@@ -504,7 +506,7 @@ function closeReviewModal() {
 async function submitReview() {
   if (!reviewModalTrip.value?.product_id) return
   if (!reviewForm.value.content.trim()) {
-    reviewError.value = locale.value === 'zh' ? '请填写评价内容。' : 'Please enter review content.'
+    reviewError.value = t('auto.auto_d6ee09c1')
     return
   }
   reviewSubmitting.value = true
@@ -520,8 +522,8 @@ async function submitReview() {
     closeReviewModal()
   } catch (e) {
     reviewError.value = e.message === 'review_not_allowed'
-      ? (locale.value === 'zh' ? '只有完成对应订单后才能评价。' : 'Only verified completed orders can be reviewed.')
-      : (locale.value === 'zh' ? '评价提交失败，请稍后再试。' : 'Failed to submit review. Please try again.')
+      ? (t('auto.auto_842e499f'))
+      : (t('auto.auto_b4ed2880'))
   } finally {
     reviewSubmitting.value = false
   }
@@ -548,10 +550,10 @@ async function fetchTrips() {
   } catch (e) {
     console.error(e)
     if (e.status === 401) {
-      tripsError.value = locale.value === 'zh' ? '登录已过期，请重新登录。' : 'Your session expired. Please sign in again.'
+      tripsError.value = t('auto.auto_4b446fe7')
       showAuthModal.value = 'login'
     } else {
-      tripsError.value = locale.value === 'zh' ? '订单加载失败，请稍后重试。' : 'Failed to load trips. Please try again.'
+      tripsError.value = t('auto.auto_34fa4f73')
     }
   } finally {
     loading.value = false
@@ -568,14 +570,14 @@ async function doLogin() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error || 'Login failed'
+      authError.value = data.error === 'invalid_credentials' ? t('auth.invalidCredentials') : (data.error || t('auth.loginFailed'))
       return
     }
     setAuth(data.token, data.user)
     showAuthModal.value = null
     fetchTrips()
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -598,7 +600,7 @@ async function doRegister() {
     }
     showAuthModal.value = 'login'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 

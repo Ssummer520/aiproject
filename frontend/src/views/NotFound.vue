@@ -2,18 +2,18 @@
   <div class="not-found-page">
     <div class="not-found-content">
       <div class="error-code">404</div>
-      <h1>{{ locale === 'zh' ? '页面未找到' : 'Page Not Found' }}</h1>
-      <p>{{ locale === 'zh' ? '抱歉，您访问的页面不存在或已被移除。' : 'Sorry, the page you are looking for does not exist or has been moved.' }}</p>
+      <h1>{{ $t('auto.auto_6250ccb0') }}</h1>
+      <p>{{ $t('auto.auto_5c2a6acf') }}</p>
       <div class="suggestions">
-        <h3>{{ locale === 'zh' ? '您可以尝试：' : 'You might want to:' }}</h3>
+        <h3>{{ $t('auto.auto_221d0f62') }}</h3>
         <ul>
-          <li><router-link to="/">{{ locale === 'zh' ? '返回首页' : 'Go to Homepage' }}</router-link></li>
-          <li><router-link to="/search">{{ locale === 'zh' ? '搜索目的地' : 'Search Destinations' }}</router-link></li>
-          <li><router-link to="/category/nature">{{ locale === 'zh' ? '探索自然风光' : 'Explore Nature' }}</router-link></li>
+          <li><router-link to="/">{{ $t('auto.auto_bc1da3ba') }}</router-link></li>
+          <li><router-link to="/search">{{ $t('auto.auto_8ec8a53f') }}</router-link></li>
+          <li><router-link to="/category/nature">{{ $t('auto.auto_59bd9557') }}</router-link></li>
         </ul>
       </div>
       <router-link to="/" class="back-home-btn">
-        {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}
+        {{ $t('auto.auto_9f5b5e10') }}
       </router-link>
     </div>
     <div class="not-found-illustration">

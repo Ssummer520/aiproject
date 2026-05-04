@@ -3,98 +3,98 @@
     <SiteHeader />
 
     <main class="product-detail-wrap">
-      <div v-if="loading" class="product-loading">{{ locale === 'zh' ? '加载商品中...' : 'Loading product...' }}</div>
+      <div v-if="loading" class="product-loading">{{ $t('auto.auto_0158270c') }}</div>
 
       <div v-else-if="!product?.id" class="product-empty">
-        <h1>{{ locale === 'zh' ? '商品不存在' : 'Product not found' }}</h1>
-        <router-link to="/search" class="primary-link">{{ locale === 'zh' ? '返回搜索' : 'Back to search' }}</router-link>
+        <h1>{{ $t('auto.auto_dc3ee6eb') }}</h1>
+        <router-link to="/search" class="primary-link">{{ $t('auto.auto_1f50aa4d') }}</router-link>
       </div>
 
       <template v-else>
         <section class="product-hero-card">
           <div class="product-hero-copy">
-            <div class="product-kicker">{{ product.city }} · {{ product.category }} · {{ product.duration }}</div>
-            <h1>{{ product.name }}</h1>
-            <p>{{ product.description }}</p>
+            <div class="product-kicker">{{ localizeText(product.city) }} · {{ localizeText(product.category) }} · {{ localizeText(product.duration) }}</div>
+            <h1>{{ localizeField(product, 'name') }}</h1>
+            <p>{{ localizeField(product, 'description') }}</p>
             <div class="product-trust-row">
-              <span>★ {{ product.rating }} · {{ product.review_count }} {{ locale === 'zh' ? '条评价' : 'reviews' }}</span>
-              <span>{{ product.booked_count }}+ {{ locale === 'zh' ? '人已订' : 'booked' }}</span>
-              <span v-if="product.instant_confirm">⚡ {{ locale === 'zh' ? '即时确认' : 'Instant confirmation' }}</span>
-              <span v-if="product.free_cancel">🔄 {{ locale === 'zh' ? '免费取消' : 'Free cancellation' }}</span>
+              <span>★ {{ product.rating }} · {{ product.review_count }} {{ $t('auto.auto_4333fc75') }}</span>
+              <span>{{ product.booked_count }}+ {{ $t('auto.auto_f57e232b') }}</span>
+              <span v-if="product.instant_confirm">⚡ {{ $t('auto.auto_dcc07e89') }}</span>
+              <span v-if="product.free_cancel">🔄 {{ $t('auto.auto_cf6aec06') }}</span>
             </div>
           </div>
           <div class="product-hero-image">
-            <img :src="product.cover" :alt="product.name" @error="onImgError" />
+            <img :src="product.cover" :alt="localizeField(product, 'name')" @error="onImgError" />
           </div>
         </section>
 
         <div class="product-layout">
           <div class="product-main">
             <section class="product-panel">
-              <h2>{{ locale === 'zh' ? '费用包含' : 'What is included' }}</h2>
+              <h2>{{ $t('auto.auto_315b28fb') }}</h2>
               <div class="info-grid">
                 <div>
-                  <h3>{{ locale === 'zh' ? '包含' : 'Included' }}</h3>
+                  <h3>{{ $t('auto.auto_9f94a332') }}</h3>
                   <ul>
-                    <li v-for="item in product.included || []" :key="item">{{ item }}</li>
+                    <li v-for="item in localizeList(product.included || [])" :key="item">{{ item }}</li>
                   </ul>
                 </div>
                 <div>
-                  <h3>{{ locale === 'zh' ? '不包含' : 'Not included' }}</h3>
+                  <h3>{{ $t('auto.auto_78786ec5') }}</h3>
                   <ul>
-                    <li v-for="item in product.excluded || []" :key="item">{{ item }}</li>
+                    <li v-for="item in localizeList(product.excluded || [])" :key="item">{{ item }}</li>
                   </ul>
                 </div>
               </div>
             </section>
 
             <section class="product-panel">
-              <h2>{{ locale === 'zh' ? '使用方式与集合地点' : 'How to use & meeting point' }}</h2>
+              <h2>{{ $t('auto.auto_bb01adf6') }}</h2>
               <div class="usage-card">
-                <p><strong>{{ locale === 'zh' ? '集合地点：' : 'Meeting point: ' }}</strong>{{ product.meeting_point }}</p>
-                <p><strong>{{ locale === 'zh' ? '使用方式：' : 'How to use: ' }}</strong>{{ product.usage }}</p>
-                <p><strong>{{ locale === 'zh' ? '取消政策：' : 'Cancellation policy: ' }}</strong>{{ product.policy }}</p>
+                <p><strong>{{ $t('auto.auto_11a9371b') }}</strong>{{ localizeField(product, 'meeting_point') }}</p>
+                <p><strong>{{ $t('auto.auto_c1b18407') }}</strong>{{ localizeField(product, 'usage') }}</p>
+                <p><strong>{{ $t('auto.auto_02b89bc3') }}</strong>{{ localizeField(product, 'policy') }}</p>
               </div>
             </section>
 
             <section class="product-panel">
-              <h2>{{ locale === 'zh' ? '信任与行前信息' : 'Trust & preparation' }}</h2>
+              <h2>{{ $t('auto.auto_a234c6ee') }}</h2>
               <div class="product-trust-grid">
                 <div class="product-trust-card">
-                  <strong>✅ {{ locale === 'zh' ? '已验证评价' : 'Verified reviews' }}</strong>
-                  <p>{{ locale === 'zh' ? '评价仅开放给购买过对应商品的用户，帮助你判断真实体验。' : 'Reviews are available to users with matching product orders, keeping feedback trustworthy.' }}</p>
+                  <strong>✅ {{ $t('auto.auto_55d9aa96') }}</strong>
+                  <p>{{ $t('auto.auto_1ee6d484') }}</p>
                 </div>
                 <div class="product-trust-card">
-                  <strong>🏢 {{ locale === 'zh' ? '供应商信息' : 'Supplier information' }}</strong>
-                  <p>{{ supplierName }} · {{ locale === 'zh' ? '本地持证旅行服务商，订单由 ChinaTravel 演示平台保障。' : 'Local licensed travel supplier with ChinaTravel demo order support.' }}</p>
+                  <strong>🏢 {{ $t('auto.auto_469878d5') }}</strong>
+                  <p>{{ supplierName }} · {{ $t('auto.auto_d81fa622') }}</p>
                 </div>
                 <div class="product-trust-card">
-                  <strong>🗺️ {{ locale === 'zh' ? '地图位置' : 'Map location' }}</strong>
-                  <p>{{ product.meeting_point }} · {{ locale === 'zh' ? '建议出发前 15 分钟到达集合点。' : 'Arrive at the meeting point 15 minutes early.' }}</p>
+                  <strong>🗺️ {{ $t('auto.auto_87e1eb27') }}</strong>
+                  <p>{{ localizeField(product, 'meeting_point') }} · {{ $t('auto.auto_3f87e810') }}</p>
                 </div>
                 <div class="product-trust-card">
-                  <strong>🧳 {{ locale === 'zh' ? '行前须知' : 'Before you go' }}</strong>
-                  <p>{{ locale === 'zh' ? '请携带护照，提前保存电子凭证；若遇天气或交通变化，请关注订单通知。' : 'Bring your passport, save the mobile voucher, and watch order notices for weather or traffic changes.' }}</p>
+                  <strong>🧳 {{ $t('auto.auto_b87d89fc') }}</strong>
+                  <p>{{ $t('auto.auto_2f58b4af') }}</p>
                 </div>
               </div>
             </section>
 
             <section class="product-panel">
               <div class="review-filter-row">
-                <h2>{{ locale === 'zh' ? '真实评价' : 'Verified reviews' }}</h2>
+                <h2>{{ $t('auto.auto_f91998fb') }}</h2>
                 <select v-model="reviewLanguage">
-                  <option value="">{{ locale === 'zh' ? '全部语言' : 'All languages' }}</option>
-                  <option value="en">{{ locale === 'zh' ? '英文' : 'English' }}</option>
-                  <option value="zh">中文</option>
+                  <option value="">{{ $t('auto.auto_658b9ed0') }}</option>
+                  <option value="en">{{ $t('auto.auto_d2461f0b') }}</option>
+                  <option value="zh">{{ $t('auto.auto_27588cf2') }}</option>
                 </select>
               </div>
 
-              <div v-if="reviewsLoading" class="product-loading product-loading--inline">{{ locale === 'zh' ? '加载评价中...' : 'Loading reviews...' }}</div>
+              <div v-if="reviewsLoading" class="product-loading product-loading--inline">{{ $t('auto.auto_c92c570a') }}</div>
               <template v-else>
                 <div class="review-summary-card">
                   <div>
                     <div class="review-score-big">{{ reviewSummary.average_rating || product.rating }}</div>
-                    <div class="review-score-label">{{ reviewSummary.total || product.review_count }} {{ locale === 'zh' ? '条评价' : 'reviews' }}</div>
+                    <div class="review-score-label">{{ reviewSummary.total || product.review_count }} {{ $t('auto.auto_4333fc75') }}</div>
                   </div>
                   <div class="review-dimensions">
                     <div v-for="item in reviewDimensions" :key="item.key" class="review-dimension">
@@ -110,20 +110,20 @@
                     <div class="review-card-head">
                       <strong>★ {{ review.rating }} · {{ review.user_id }}</strong>
                       <div class="review-badges">
-                        <span v-if="review.verified">{{ locale === 'zh' ? '已验证订单' : 'Verified booking' }}</span>
+                        <span v-if="review.verified">{{ $t('auto.auto_6c81f9e9') }}</span>
                         <span>{{ review.language?.toUpperCase() }}</span>
                       </div>
                     </div>
-                    <p>{{ review.content }}</p>
-                    <p v-if="review.merchant_reply" class="review-merchant-reply">{{ locale === 'zh' ? '商家回复：' : 'Merchant reply: ' }}{{ review.merchant_reply }}</p>
+                    <p>{{ localizeText(review.content) }}</p>
+                    <p v-if="review.merchant_reply" class="review-merchant-reply">{{ $t('auto.auto_7b6e3325') }}{{ localizeText(review.merchant_reply) }}</p>
                   </article>
                 </div>
-                <p v-else class="reserve-hint">{{ locale === 'zh' ? '暂无该语言评价。' : 'No reviews in this language yet.' }}</p>
+                <p v-else class="reserve-hint">{{ $t('auto.auto_d71f0ad2') }}</p>
               </template>
             </section>
 
             <section class="product-panel">
-              <h2>{{ locale === 'zh' ? '常见问题' : 'FAQ' }}</h2>
+              <h2>{{ t('auto.auto_19d5209d') }}</h2>
               <div class="product-faq-grid">
                 <div v-for="faq in faqItems" :key="faq.q" class="product-faq-card">
                   <strong>{{ faq.q }}</strong>
@@ -133,7 +133,7 @@
             </section>
 
             <section v-if="recommendedProducts.length" class="product-panel">
-              <h2>{{ locale === 'zh' ? '推荐搭配' : 'Recommended add-ons' }}</h2>
+              <h2>{{ t('auto.auto_904b121f') }}</h2>
               <div class="product-recommend-grid">
                 <ProductCard v-for="item in recommendedProducts" :key="item.id" :product="item" />
               </div>
@@ -193,10 +193,12 @@ import SiteHeader from '../components/SiteHeader.vue'
 import { fetchProduct, fetchProductReviews, fetchProducts } from '../composables/useProducts'
 import { useAuth } from '../composables/useAuth'
 import { useBookingPanel } from '../composables/useBookingPanel'
+import { useLocalization } from '../composables/useLocalization'
 
 const route = useRoute()
 const router = useRouter()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const { isLoggedIn, user, authHeaders } = useAuth()
 
 const product = ref(null)
@@ -240,6 +242,7 @@ const {
 } = useBookingPanel({
   product,
   locale,
+  t,
   user,
   isLoggedIn,
   authHeaders,
@@ -248,24 +251,24 @@ const {
 
 const supplierName = computed(() => `${product.value?.city || 'China'} Experience Partner`)
 const reviewDimensions = computed(() => [
-  { key: 'quality', label: locale.value === 'zh' ? '体验质量' : 'Quality', value: reviewSummary.value.quality || 0 },
-  { key: 'service', label: locale.value === 'zh' ? '服务' : 'Service', value: reviewSummary.value.service || 0 },
-  { key: 'value', label: locale.value === 'zh' ? '性价比' : 'Value', value: reviewSummary.value.value || 0 },
-  { key: 'transport', label: locale.value === 'zh' ? '交通便利' : 'Transport', value: reviewSummary.value.transport || 0 },
-  { key: 'family', label: locale.value === 'zh' ? '适合亲子' : 'Family', value: reviewSummary.value.family || 0 },
+  { key: 'quality', label: t('auto.auto_620331e6'), value: reviewSummary.value.quality || 0 },
+  { key: 'service', label: t('auto.auto_080f76a8'), value: reviewSummary.value.service || 0 },
+  { key: 'value', label: t('auto.auto_a9e5e58e'), value: reviewSummary.value.value || 0 },
+  { key: 'transport', label: t('auto.auto_e8ff3d40'), value: reviewSummary.value.transport || 0 },
+  { key: 'family', label: t('auto.auto_7b74545d'), value: reviewSummary.value.family || 0 },
 ])
 const faqItems = computed(() => [
   {
-    q: locale.value === 'zh' ? '如何使用电子凭证？' : 'How do I use the voucher?',
-    a: product.value?.usage || (locale.value === 'zh' ? '请在现场出示手机凭证和护照。' : 'Show your mobile voucher and passport on site.'),
+    q: t('auto.auto_409b74f0'),
+    a: product.value?.usage || (t('auto.auto_84501dab')),
   },
   {
-    q: locale.value === 'zh' ? '可以免费取消吗？' : 'Can I cancel for free?',
-    a: product.value?.policy || (locale.value === 'zh' ? '请以下单页展示的取消政策为准。' : 'Please follow the cancellation policy shown at checkout.'),
+    q: t('auto.auto_bae29820'),
+    a: product.value?.policy || (t('auto.auto_a8172e44')),
   },
   {
-    q: locale.value === 'zh' ? '是否适合海外游客？' : 'Is this suitable for overseas travellers?',
-    a: locale.value === 'zh' ? '支持英文信息、电子凭证与护照核验提示。' : 'It includes English guidance, mobile voucher support, and passport-use reminders.',
+    q: t('auto.auto_702e74eb'),
+    a: t('auto.auto_78aa0f11'),
   },
 ])
 

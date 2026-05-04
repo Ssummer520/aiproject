@@ -7,8 +7,8 @@
           <span>ChinaTravel</span>
         </router-link>
         <nav class="header-nav">
-          <router-link to="/" class="header-nav-link">{{ locale === 'zh' ? '首页' : 'Home' }}</router-link>
-          <router-link to="/search" class="header-nav-link">{{ locale === 'zh' ? '探索' : 'Explore' }}</router-link>
+          <router-link to="/" class="header-nav-link">{{ $t('auto.auto_9e22e3e6') }}</router-link>
+          <router-link to="/search" class="header-nav-link">{{ $t('auto.auto_796d0feb') }}</router-link>
           <router-link to="/trips" class="header-nav-link">{{ $t('nav.myTrips') }}</router-link>
         </nav>
         <div class="header-actions">
@@ -24,17 +24,17 @@
 
     <div v-if="loading" class="page-loading">
       <div class="spinner"></div>
-      <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
+      <p>{{ $t('auto.auto_f399f5e1') }}</p>
     </div>
 
     <div v-else-if="!destination" class="page-error">
-      <h2>{{ locale === 'zh' ? '未找到目的地' : 'Destination not found' }}</h2>
-      <router-link to="/" class="back-home-btn">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
+      <h2>{{ $t('auto.auto_db025411') }}</h2>
+      <router-link to="/" class="back-home-btn">← {{ $t('auto.auto_9f5b5e10') }}</router-link>
     </div>
 
     <div v-else class="dest-content">
       <div class="dest-breadcrumb">
-        <router-link to="/">{{ locale === 'zh' ? '首页' : 'Home' }}</router-link>
+        <router-link to="/">{{ $t('auto.auto_9e22e3e6') }}</router-link>
         <span>›</span>
         <router-link :to="'/city/' + (destination.city || '').toLowerCase()">{{ destination.city }}</router-link>
         <span>›</span>
@@ -45,8 +45,8 @@
         <div class="gallery-main" @click="openGallery(0)">
           <img :src="destination.cover" :alt="destination.name" class="gallery-main-img" @error="onImgError" />
           <div class="gallery-overlay">
-            <span class="gallery-count">🖼️ {{ (destination.images?.length || 0) + 1 }} {{ locale === 'zh' ? '张照片' : 'photos' }}</span>
-            <button class="gallery-all-btn" @click.stop="openGallery(0)">{{ locale === 'zh' ? '查看全部' : 'View all' }}</button>
+            <span class="gallery-count">🖼️ {{ (destination.images?.length || 0) + 1 }} {{ $t('auto.auto_81e1e049') }}</span>
+            <button class="gallery-all-btn" @click.stop="openGallery(0)">{{ $t('auto.auto_ea841d99') }}</button>
           </div>
         </div>
         <div v-for="(img, i) in (destination.images || []).slice(0, 4)" :key="i" class="gallery-thumb" @click="openGallery(i + 1)">
@@ -63,13 +63,13 @@
             <h1 class="dest-title">{{ destination.name }}</h1>
             <div class="dest-meta-row">
               <span>📍 {{ destination.city }}</span>
-              <span>★ <strong>{{ destination.rating }}</strong> ({{ destination.review_count }} {{ locale === 'zh' ? '条评价' : 'reviews' }})</span>
+              <span>★ <strong>{{ destination.rating }}</strong> ({{ destination.review_count }} {{ $t('auto.auto_4333fc75') }})</span>
               <span>🔖 {{ destination.category || '景点' }}</span>
             </div>
             <div class="dest-actions">
-              <button class="action-btn2" @click="shareDestination">🔗 {{ locale === 'zh' ? '分享' : 'Share' }}</button>
+              <button class="action-btn2" @click="shareDestination">🔗 {{ $t('auto.auto_bf78abd8') }}</button>
               <button class="action-btn2" :class="{ favorited: destination.is_favorite && isLoggedIn }" @click="toggleFav">
-                <span>{{ destination.is_favorite && isLoggedIn ? '♥' : '♡' }}</span> {{ locale === 'zh' ? '收藏' : 'Save' }}
+                <span>{{ destination.is_favorite && isLoggedIn ? '♥' : '♡' }}</span> {{ $t('auto.auto_869d2b3c') }}
               </button>
             </div>
           </div>
@@ -77,40 +77,40 @@
           <div class="quick-info-bar">
             <div class="qi-item">
               <span class="qi-icon">⏰</span>
-              <div><span class="qi-label">{{ locale === 'zh' ? '营业时间' : 'Hours' }}</span><span class="qi-val">{{ destination.opening_hours || '08:00 - 22:00' }}</span></div>
+              <div><span class="qi-label">{{ $t('auto.auto_1f4fc407') }}</span><span class="qi-val">{{ destination.opening_hours || '08:00 - 22:00' }}</span></div>
             </div>
             <div class="qi-item">
               <span class="qi-icon">📏</span>
-              <div><span class="qi-label">{{ locale === 'zh' ? '建议游玩' : 'Duration' }}</span><span class="qi-val">{{ bookingProduct?.duration || destination.duration || ('3-5 ' + (locale === 'zh' ? '小时' : 'hours')) }}</span></div>
+              <div><span class="qi-label">{{ $t('auto.auto_28526384') }}</span><span class="qi-val">{{ bookingProduct?.duration || destination.duration || ('3-5 ' + ($t('auto.auto_3b2af587'))) }}</span></div>
             </div>
             <div class="qi-item">
               <span class="qi-icon">🎫</span>
-              <div><span class="qi-label">{{ locale === 'zh' ? '项目数' : 'Activities' }}</span><span class="qi-val">{{ destination.activity_count || '10+' }}</span></div>
+              <div><span class="qi-label">{{ $t('auto.auto_bba71ff7') }}</span><span class="qi-val">{{ destination.activity_count || '10+' }}</span></div>
             </div>
             <div class="qi-item">
               <span class="qi-icon">✅</span>
-              <div><span class="qi-label">{{ locale === 'zh' ? '语言' : 'Languages' }}</span><span class="qi-val">{{ destination.languages || 'EN, 中文' }}</span></div>
+              <div><span class="qi-label">{{ $t('auto.auto_e7b7bb2b') }}</span><span class="qi-val">{{ destination.languages || 'EN, 中文' }}</span></div>
             </div>
           </div>
 
           <div class="dest-section">
-            <h2 class="section-title">{{ locale === 'zh' ? '关于此地' : 'About this place' }}</h2>
+            <h2 class="section-title">{{ $t('auto.auto_75a6f243') }}</h2>
             <p class="dest-desc">{{ destination.description }}</p>
           </div>
 
           <div class="dest-section" v-if="bookingProduct?.included?.length || destination.amenities?.length">
-            <h2 class="section-title">{{ locale === 'zh' ? '费用包含' : 'What is included' }}</h2>
+            <h2 class="section-title">{{ $t('auto.auto_315b28fb') }}</h2>
             <div class="amenities-grid">
               <div v-for="a in (bookingProduct?.included?.length ? bookingProduct.included : destination.amenities || [])" :key="a" class="amenity-pill">✓ {{ a }}</div>
             </div>
           </div>
 
           <div class="dest-section" v-if="bookingProduct?.meeting_point || bookingProduct?.usage || destination.policy">
-            <h2 class="section-title">{{ locale === 'zh' ? '使用方式与集合地点' : 'How to use & meeting point' }}</h2>
+            <h2 class="section-title">{{ $t('auto.auto_bb01adf6') }}</h2>
             <div class="usage-card">
-              <p v-if="bookingProduct?.meeting_point"><strong>{{ locale === 'zh' ? '集合地点：' : 'Meeting point: ' }}</strong>{{ bookingProduct.meeting_point }}</p>
-              <p v-if="bookingProduct?.usage"><strong>{{ locale === 'zh' ? '使用方式：' : 'How to use: ' }}</strong>{{ bookingProduct.usage }}</p>
-              <p><strong>{{ locale === 'zh' ? '取消政策：' : 'Cancellation policy: ' }}</strong>{{ bookingProduct?.policy || destination.policy }}</p>
+              <p v-if="bookingProduct?.meeting_point"><strong>{{ $t('auto.auto_11a9371b') }}</strong>{{ bookingProduct.meeting_point }}</p>
+              <p v-if="bookingProduct?.usage"><strong>{{ $t('auto.auto_c1b18407') }}</strong>{{ bookingProduct.usage }}</p>
+              <p><strong>{{ $t('auto.auto_02b89bc3') }}</strong>{{ bookingProduct?.policy || destination.policy }}</p>
             </div>
           </div>
         </div>
@@ -155,14 +155,14 @@
             @reserve="reserve"
           />
           <div v-else class="booking-card booking-card--empty">
-            <p>{{ locale === 'zh' ? '该目的地暂未配置可下单商品。' : 'No OTA product is linked to this destination yet.' }}</p>
+            <p>{{ $t('auto.auto_86ab9755') }}</p>
           </div>
 
           <div class="right-widget" v-if="deals.length">
             <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
             <div v-for="deal in deals.slice(0, 2)" :key="deal.id" class="deal-card">
-              <h4>{{ deal.title }}</h4>
-              <p>{{ deal.description }}</p>
+              <h4>{{ localizeText(deal.title) }}</h4>
+              <p>{{ localizeText(deal.description) }}</p>
               <button class="deal-btn">{{ $t('deals.explore') }}</button>
             </div>
           </div>
@@ -171,19 +171,19 @@
             <h3 class="widget-title">{{ $t('common.categories') }}</h3>
             <div class="cat-tags">
               <router-link v-for="cat in categoryTree" :key="cat.id" :to="'/category/' + cat.id" class="cat-tag">
-                <span>{{ cat.icon }}</span> {{ cat.label }}
+                <span>{{ cat.icon }}</span> {{ $t(cat.labelKey) }}
               </router-link>
             </div>
           </div>
 
           <div class="right-widget" v-if="nearby.length">
-            <h3 class="widget-title">{{ locale === 'zh' ? '附近热门' : 'Nearby' }}</h3>
+            <h3 class="widget-title">{{ $t('auto.auto_5dd0eb03') }}</h3>
             <div class="nearby-list">
               <router-link v-for="d in nearby.slice(0, 4)" :key="d.id" :to="'/destination/' + d.id" class="nearby-row">
-                <img :src="d.cover" :alt="d.name" @error="onImgError" />
+                <img :src="d.cover" :alt="localizeDestination(d)" @error="onImgError" />
                 <div>
-                  <div class="nearby-name">{{ d.name }}</div>
-                  <div class="nearby-meta">{{ d.city }} · {{ d.distance_km }}km</div>
+                  <div class="nearby-name">{{ localizeDestination(d) }}</div>
+                  <div class="nearby-meta">{{ localizeCity(d) }} · {{ d.distance_km }}km</div>
                 </div>
               </router-link>
             </div>
@@ -240,8 +240,10 @@ import BookingPanel from '../components/BookingPanel.vue'
 import { useAuth } from '../composables/useAuth'
 import { fetchProductByDestinationId } from '../composables/useProducts'
 import { useBookingPanel } from '../composables/useBookingPanel'
+import { useLocalization } from '../composables/useLocalization'
 
 const { locale, t } = useI18n()
+const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
 const route = useRoute()
 const router = useRouter()
 const { isLoggedIn, user, setAuth, authHeaders } = useAuth()
@@ -370,11 +372,11 @@ async function doLogin() {
       body: JSON.stringify({ email: authEmail.value.trim().toLowerCase(), password: authPassword.value })
     })
     const data = await res.json()
-    if (!res.ok) { authError.value = data.error || 'Login failed'; return }
+    if (!res.ok) { authError.value = data.error === 'invalid_credentials' ? t('auth.invalidCredentials') : (data.error || t('auth.loginFailed')); return }
     setAuth(data.token, data.user)
     showAuthModal.value = null
     fetchDestination()
-  } catch (e) { authError.value = 'Network error' }
+  } catch (e) { authError.value = t('auth.networkError') }
 }
 
 async function doRegister() {
@@ -388,18 +390,18 @@ async function doRegister() {
     const data = await res.json()
     if (!res.ok) { authError.value = data.error || t('auth.registrationFailed'); return }
     showAuthModal.value = 'login'
-  } catch (e) { authError.value = 'Network error' }
+  } catch (e) { authError.value = t('auth.networkError') }
 }
 
 const categoryTree = [
-  { id: 'theme-parks', icon: '🎢', label: 'Theme Parks' },
-  { id: 'museums', icon: '🏛️', label: 'Museums' },
-  { id: 'camping', icon: '🏕️', label: 'Camping' },
-  { id: 'trains', icon: '🚄', label: 'Trains' },
-  { id: 'food', icon: '🍜', label: 'Food Tours' },
-  { id: 'spas', icon: '💆', label: 'Spas' },
-  { id: 'nature', icon: '🏔️', label: 'Nature' },
-  { id: 'shows', icon: '🎭', label: 'Shows' },
+  { id: 'theme-parks', icon: '🎢', labelKey: 'auto.auto_c644051b' },
+  { id: 'museums', icon: '🏛️', labelKey: 'auto.auto_c95e9619' },
+  { id: 'camping', icon: '🏕️', labelKey: 'auto.auto_0af4e014' },
+  { id: 'trains', icon: '🚄', labelKey: 'auto.auto_6058d182' },
+  { id: 'food', icon: '🍜', labelKey: 'auto.auto_a587f6d2' },
+  { id: 'spas', icon: '💆', labelKey: 'auto.auto_dcc60d90' },
+  { id: 'nature', icon: '🏔️', labelKey: 'auto.auto_8cbebb8a' },
+  { id: 'shows', icon: '🎭', labelKey: 'auto.auto_aa5020cc' },
 ]
 
 function handleMouseMove() {}

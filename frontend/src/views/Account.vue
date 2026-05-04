@@ -21,17 +21,17 @@
 
     <div class="account-content">
       <div class="page-header">
-        <h1>{{ locale === 'zh' ? '账户设置' : 'Account Settings' }}</h1>
+        <h1>{{ $t('auto.auto_943fdb43') }}</h1>
       </div>
 
       <div v-if="!isLoggedIn" class="auth-prompt">
-        <p>{{ locale === 'zh' ? '请先登录以查看账户设置' : 'Please sign in to view account settings' }}</p>
-        <button class="auth-btn" @click="showAuthModal = 'login'">{{ locale === 'zh' ? '登录' : 'Sign In' }}</button>
+        <p>{{ $t('auto.auto_6bb5f99a') }}</p>
+        <button class="auth-btn" @click="showAuthModal = 'login'">{{ $t('auto.auto_a4f0af04') }}</button>
       </div>
 
       <template v-else>
         <div class="account-card">
-          <h2>{{ locale === 'zh' ? '个人信息' : 'Personal Information' }}</h2>
+          <h2>{{ $t('auto.auto_726e1ee8') }}</h2>
           <div class="user-info">
             <div class="user-avatar-large">{{ (user?.email || '?')[0].toUpperCase() }}</div>
             <div class="user-details">
@@ -42,25 +42,25 @@
         </div>
 
         <div class="account-card">
-          <h2>{{ locale === 'zh' ? '账户设置' : 'Preferences' }}</h2>
+          <h2>{{ $t('auto.auto_e1fe3f4d') }}</h2>
           <div class="settings-list">
             <div class="settings-item" @click="toggleLang">
-              <span>{{ locale === 'zh' ? '语言' : 'Language' }}</span>
-              <span class="arrow">{{ locale === 'zh' ? '中文' : 'English' }} ↝</span>
+              <span>{{ $t('auto.auto_729bdc9e') }}</span>
+              <span class="arrow">{{ $t('auto.auto_2ca52336') }} ↝</span>
             </div>
             <div class="settings-item" @click="showCurrencyModal = true">
-              <span>{{ locale === 'zh' ? '货币' : 'Currency' }}</span>
+              <span>{{ $t('auto.auto_f2bafa5b') }}</span>
               <span class="arrow">{{ currency }} {{ currencySymbol }} ↝</span>
             </div>
             <div class="settings-item">
-              <span>{{ locale === 'zh' ? '邮件通知' : 'Email Notifications' }}</span>
+              <span>{{ $t('auto.auto_cb67c40f') }}</span>
               <label class="toggle">
                 <input type="checkbox" v-model="emailNotifications" />
                 <span class="slider"></span>
               </label>
             </div>
             <div class="settings-item">
-              <span>{{ locale === 'zh' ? '推送通知' : 'Push Notifications' }}</span>
+              <span>{{ $t('auto.auto_4396fb56') }}</span>
               <label class="toggle">
                 <input type="checkbox" v-model="pushNotifications" />
                 <span class="slider"></span>
@@ -70,12 +70,12 @@
         </div>
 
         <div class="account-card">
-          <h2>{{ locale === 'zh' ? '我的通知' : 'My Notifications' }}</h2>
+          <h2>{{ $t('auto.auto_3ed40bf3') }}</h2>
           <div v-if="notificationsLoading" class="loading-state">
             <div class="spinner"></div>
           </div>
           <div v-else-if="notifications.length === 0" class="empty-state">
-            <p>{{ locale === 'zh' ? '暂无通知' : 'No notifications yet' }}</p>
+            <p>{{ $t('auto.auto_d8298dc2') }}</p>
           </div>
           <div v-else class="notifications-list">
             <div v-for="n in notifications" :key="n.id" class="notification-item" :class="{ unread: !n.read }" @click="markNotificationAsRead(n)">
@@ -92,9 +92,9 @@
         </div>
 
         <div class="account-card danger-zone">
-          <h2>{{ locale === 'zh' ? '危险区域' : 'Danger Zone' }}</h2>
+          <h2>{{ $t('auto.auto_38f922a3') }}</h2>
           <button class="btn-danger" @click="doLogout">
-            {{ locale === 'zh' ? '退出登录' : 'Log Out' }}
+            {{ $t('auto.auto_c44a476c') }}
           </button>
         </div>
       </template>
@@ -103,7 +103,7 @@
     <div v-if="showCurrencyModal" class="modal-overlay" @click.self="showCurrencyModal = false">
       <div class="auth-modal-card">
         <button class="modal-close" @click="showCurrencyModal = false">×</button>
-        <h2 class="auth-modal-title">{{ locale === 'zh' ? '选择货币' : 'Choose Currency' }}</h2>
+        <h2 class="auth-modal-title">{{ t('auto.auto_61d71b04') }}</h2>
         <div class="currency-options">
           <button
             v-for="(symbol, code) in currencySymbols"
@@ -194,7 +194,7 @@ function loadPreferences() {
     const raw = localStorage.getItem(PREFERENCES_KEY)
     if (!raw) return
     const saved = JSON.parse(raw)
-    if (saved.locale === 'en' || saved.locale === 'zh') {
+    if (['en', 'zh'].includes(saved.locale)) {
       locale.value = saved.locale
     }
     if (saved.currency) {
@@ -224,13 +224,13 @@ async function doLogin() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error || 'Login failed'
+      authError.value = data.error === 'invalid_credentials' ? t('auth.invalidCredentials') : (data.error || t('auth.loginFailed'))
       return
     }
     setAuth(data.token, data.user)
     showAuthModal.value = null
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 
@@ -253,7 +253,7 @@ async function doRegister() {
     }
     showAuthModal.value = 'login'
   } catch (e) {
-    authError.value = 'Network error'
+    authError.value = t('auth.networkError')
   }
 }
 

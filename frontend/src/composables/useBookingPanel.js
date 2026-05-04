@@ -6,7 +6,41 @@ function roundMoney(value) {
   return Math.round(value * 100) / 100
 }
 
-export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders, onBooked }) {
+const fallbackMessages = {
+  'booking.choosePackageFirst': 'Choose a package first',
+  'booking.choosePackageFirstSentence': 'Choose a package first.',
+  'booking.noAvailabilityDate': 'No availability for this date',
+  'booking.noAvailabilityDateSentence': 'No availability for this date.',
+  'booking.soldOutDate': 'Sold out for this date',
+  'booking.soldOutDateSentence': 'Sold out for this date.',
+  'booking.onlySpotsLeft': 'Only {stock} spots left',
+  'booking.spotsLeft': '{stock} spots left',
+  'booking.minimumSpendNotMet': 'Minimum spend not met for this coupon.',
+  'booking.couponNotFound': 'Coupon code not found.',
+  'booking.couponInvalid': 'Coupon is invalid or expired.',
+  'booking.enterCoupon': 'Enter a coupon code.',
+  'booking.choosePackageDateFirst': 'Choose a package and date first.',
+  'booking.guestRange': 'Guests must be between {min}-{max}.',
+  'booking.notEnoughSpots': 'Not enough spots left. Please reduce guests.',
+  'booking.signInCart': 'Please sign in before adding to cart.',
+  'booking.addedCart': 'Added to cart. You can checkout from My Trips.',
+  'booking.addCartFailed': 'Failed to add to cart.',
+  'booking.signInItinerary': 'Please sign in before adding to itinerary.',
+  'booking.tripDraft': '{city} trip draft',
+  'booking.addedItinerary': 'Added to itinerary timeline. Reorder it in My Trips.',
+  'booking.addItineraryFailed': 'Failed to add to itinerary.',
+  'booking.signInBooking': 'Please sign in before booking.',
+  'booking.availabilityClosed': 'Not enough availability for this date.',
+  'booking.bookingFailed': 'Booking failed. Please try again.',
+  'booking.fallbackCity': 'China',
+  'booking.fallbackProduct': 'Product',
+}
+
+function fallbackT(key, params = {}) {
+  return (fallbackMessages[key] || key).replace(/\{(\w+)\}/g, (_, name) => params[name] ?? '')
+}
+
+export function useBookingPanel({ product, locale, t = fallbackT, user, isLoggedIn, authHeaders, onBooked }) {
   const today = formatLocalDate(new Date())
   const selectedPackageId = ref(0)
   const selectedDate = ref(today)
@@ -44,15 +78,15 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
       && selectedAvailability.value.stock >= totalGuests.value
   ))
   const availabilityText = computed(() => {
-    if (!selectedPackage.value) return locale.value === 'zh' ? '请先选择套餐' : 'Choose a package first'
-    if (!selectedAvailability.value) return locale.value === 'zh' ? '该日期暂无库存' : 'No availability for this date'
+    if (!selectedPackage.value) return t('booking.choosePackageFirst')
+    if (!selectedAvailability.value) return t('booking.noAvailabilityDate')
     if (selectedAvailability.value.status !== 'available' || selectedAvailability.value.stock <= 0) {
-      return locale.value === 'zh' ? '该日期已售罄' : 'Sold out for this date'
+      return t('booking.soldOutDate')
     }
     if (selectedAvailability.value.stock < totalGuests.value) {
-      return locale.value === 'zh' ? `仅剩 ${selectedAvailability.value.stock} 份，请减少人数` : `Only ${selectedAvailability.value.stock} spots left`
+      return t('booking.onlySpotsLeft', { stock: selectedAvailability.value.stock })
     }
-    return locale.value === 'zh' ? `剩余 ${selectedAvailability.value.stock} 份` : `${selectedAvailability.value.stock} spots left`
+    return t('booking.spotsLeft', { stock: selectedAvailability.value.stock })
   })
 
   function clampGuests() {
@@ -129,12 +163,12 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
   function couponMessage(error) {
     const code = error?.data?.error || error?.message || ''
     if (code === 'coupon_min_spend_not_met') {
-      return locale.value === 'zh' ? '未达到该优惠券最低消费金额。' : 'Minimum spend not met for this coupon.'
+      return t('booking.minimumSpendNotMet')
     }
     if (code === 'coupon_not_found') {
-      return locale.value === 'zh' ? '优惠码不存在。' : 'Coupon code not found.'
+      return t('booking.couponNotFound')
     }
-    return locale.value === 'zh' ? '优惠券不可用或已过期。' : 'Coupon is invalid or expired.'
+    return t('booking.couponInvalid')
   }
 
   async function applyCoupon() {
@@ -142,11 +176,11 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     couponResult.value = null
     const code = couponCode.value.trim()
     if (!code) {
-      couponError.value = locale.value === 'zh' ? '请输入优惠码。' : 'Enter a coupon code.'
+      couponError.value = t('booking.enterCoupon')
       return false
     }
     if (totalPrice.value <= 0) {
-      couponError.value = locale.value === 'zh' ? '请先选择套餐和日期。' : 'Choose a package and date first.'
+      couponError.value = t('booking.choosePackageDateFirst')
       return false
     }
 
@@ -217,7 +251,7 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
       end_time: '11:00',
       item_type: 'product',
       product_id: product.value.id,
-      title: `${product.value.name || 'Product'} · ${selectedPackage.value?.name || ''}`.trim(),
+      title: `${product.value.name || t('booking.fallbackProduct')} · ${selectedPackage.value?.name || ''}`.trim(),
       note: selectedPackage.value?.description || product.value.short_description || product.value.description || '',
       estimated_cost: finalTotalPrice.value,
     }
@@ -225,23 +259,23 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
 
   function validateSelection() {
     if (!selectedPackage.value) {
-      bookingError.value = locale.value === 'zh' ? '请先选择套餐。' : 'Choose a package first.'
+      bookingError.value = t('booking.choosePackageFirstSentence')
       return false
     }
     if (totalGuests.value < minGuests.value || totalGuests.value > maxGuests.value) {
-      bookingError.value = locale.value === 'zh' ? `人数需在 ${minGuests.value}-${maxGuests.value} 人之间。` : `Guests must be between ${minGuests.value} and ${maxGuests.value}.`
+      bookingError.value = t('booking.guestRange', { min: minGuests.value, max: maxGuests.value })
       return false
     }
     if (!selectedAvailability.value) {
-      bookingError.value = locale.value === 'zh' ? '该日期暂无库存。' : 'No availability for this date.'
+      bookingError.value = t('booking.noAvailabilityDateSentence')
       return false
     }
     if (selectedAvailability.value.status !== 'available' || selectedAvailability.value.stock <= 0) {
-      bookingError.value = locale.value === 'zh' ? '该日期已售罄。' : 'Sold out for this date.'
+      bookingError.value = t('booking.soldOutDateSentence')
       return false
     }
     if (selectedAvailability.value.stock < totalGuests.value) {
-      bookingError.value = locale.value === 'zh' ? '库存不足，请减少人数。' : 'Not enough spots left. Please reduce guests.'
+      bookingError.value = t('booking.notEnoughSpots')
       return false
     }
     bookingError.value = ''
@@ -252,17 +286,17 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     bookingError.value = ''
     cartMessage.value = ''
     if (!isLoggedIn.value) {
-      bookingError.value = locale.value === 'zh' ? '请先登录后再加入购物车。' : 'Please sign in before adding to cart.'
+      bookingError.value = t('booking.signInCart')
       return false
     }
     if (!validateSelection()) return false
     cartLoading.value = true
     try {
       const summary = await addCartItem(buildCartPayload(), authHeaders())
-      cartMessage.value = locale.value === 'zh' ? '已加入购物车，可在我的旅行中打包预订。' : 'Added to cart. You can checkout from My Trips.'
+      cartMessage.value = t('booking.addedCart')
       return summary
     } catch (e) {
-      bookingError.value = locale.value === 'zh' ? '加入购物车失败。' : 'Failed to add to cart.'
+      bookingError.value = t('booking.addCartFailed')
       return false
     } finally {
       cartLoading.value = false
@@ -274,7 +308,7 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     bookingError.value = ''
     itineraryMessage.value = ''
     if (!isLoggedIn.value) {
-      bookingError.value = locale.value === 'zh' ? '请先登录后再加入行程。' : 'Please sign in before adding to itinerary.'
+      bookingError.value = t('booking.signInItinerary')
       return false
     }
     if (!validateSelection()) return false
@@ -285,7 +319,7 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
       let plan = (plans || []).find(item => item.status === 'draft' && (!product.value.city || item.city === product.value.city))
       if (!plan) {
         plan = await createItinerary({
-          title: locale.value === 'zh' ? `${product.value.city || '中国'}旅行草稿` : `${product.value.city || 'China'} trip draft`,
+          title: t('booking.tripDraft', { city: product.value.city || t('booking.fallbackCity') }),
           city: product.value.city || '',
           start_date: selectedDate.value,
           end_date: selectedDate.value,
@@ -295,10 +329,10 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
         }, headers)
       }
       const updated = await addItineraryItem(plan.id, buildItineraryPayload(), headers)
-      itineraryMessage.value = locale.value === 'zh' ? '已加入行程时间线，可在我的旅行中调整顺序。' : 'Added to itinerary timeline. Reorder it in My Trips.'
+      itineraryMessage.value = t('booking.addedItinerary')
       return updated
     } catch (e) {
-      bookingError.value = locale.value === 'zh' ? '加入行程失败。' : 'Failed to add to itinerary.'
+      bookingError.value = t('booking.addItineraryFailed')
       return false
     } finally {
       itineraryLoading.value = false
@@ -309,7 +343,7 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     bookingError.value = ''
 
     if (!isLoggedIn.value) {
-      bookingError.value = locale.value === 'zh' ? '请先登录后再预订。' : 'Please sign in before booking.'
+      bookingError.value = t('booking.signInBooking')
       return false
     }
     if (!validateSelection()) return false
@@ -325,8 +359,8 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
       return true
     } catch (e) {
       bookingError.value = e.message === 'availability_closed'
-        ? (locale.value === 'zh' ? '库存不足或该日期不可订。' : 'Not enough availability for this date.')
-        : (locale.value === 'zh' ? '预订失败，请稍后再试。' : 'Booking failed. Please try again.')
+        ? (t('booking.availabilityClosed'))
+        : (t('booking.bookingFailed'))
       return false
     } finally {
       bookingLoading.value = false

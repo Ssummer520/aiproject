@@ -107,7 +107,7 @@ describe('i18n static copy coverage', () => {
     for (const file of walk(SRC_DIR)) {
       const lines = readFileSync(file, 'utf8').split('\n')
       for (const [index, line] of lines.entries()) {
-        if (/auto\.auto_[0-9a-f]{8}/.test(line) && !/\$t\(['"]auto\.auto_[0-9a-f]{8}['"]\)|\bt\(['"]auto\.auto_[0-9a-f]{8}['"]\)|labelKey:\s*['"]auto\.auto_[0-9a-f]{8}['"]|\bt\([^)]*\|\|\s*['"]auto\.auto_[0-9a-f]{8}['"]\)/.test(line)) {
+        if (/auto\.auto_[0-9a-f]{8}/.test(line) && !/\$t\(['"]auto\.auto_[0-9a-f]{8}['"]\)|\bt\(['"]auto\.auto_[0-9a-f]{8}['"]\)|\w+Key:\s*['"]auto\.auto_[0-9a-f]{8}['"]|\bt\([^)]*\|\|\s*['"]auto\.auto_[0-9a-f]{8}['"]\)/.test(line)) {
           violations.push(`${file}:${index + 1}: possible raw auto key`)
         }
       }

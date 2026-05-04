@@ -278,6 +278,7 @@
               <div class="bk-pb-row bk-total"><span>{{ locale === 'zh' ? '总计' : 'Total' }}</span><span>¥{{ selectedPkgPrice * guests + Math.round(selectedPkgPrice * 0.1) }}</span></div>
             </div>
 
+            <p v-if="bookingError" class="bk-error">{{ bookingError }}</p>
             <button class="bk-btn" :disabled="bookingLoading" @click="doBooking">{{ bookingLoading ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '立即预订' : 'Reserve now') }}</button>
             <p class="bk-hint">{{ locale === 'zh' ? '暂时不会扣款' : "You won't be charged yet" }}</p>
 
@@ -387,6 +388,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { nextLocalDate } from '../composables/dateUtils'
 
 const { locale } = useI18n()
 const route = useRoute()
@@ -410,6 +412,7 @@ const selectedDate = ref('')
 const guests = ref(2)
 const showBookingSuccess = ref(false)
 const bookingLoading = ref(false)
+const bookingError = ref('')
 
 const galleryOpen = ref(false)
 const galleryIdx = ref(0)
@@ -418,11 +421,7 @@ function openGallery(idx) { galleryIdx.value = idx; galleryOpen.value = true }
 
 const today = new Date().toISOString().split('T')[0]
 const selectedCheckoutDate = computed(() => {
-  if (!selectedDate.value) return ''
-  const checkInDate = new Date(`${selectedDate.value}T00:00:00`)
-  if (Number.isNaN(checkInDate.getTime())) return ''
-  checkInDate.setDate(checkInDate.getDate() + 1)
-  return checkInDate.toISOString().split('T')[0]
+  return nextLocalDate(selectedDate.value)
 })
 const selectedPkgPrice = computed(() => destination.value?.packages?.[0]?.price || destination.value?.price || 0)
 
@@ -511,8 +510,12 @@ async function shareDestination() {
 }
 
 async function doBooking() {
+  bookingError.value = ''
   if (!isLoggedIn.value) { showAuthModal.value = 'login'; return }
-  if (!selectedDate.value) { alert(locale.value === 'zh' ? '请选择日期' : 'Please select a date'); return }
+  if (!selectedDate.value) {
+    bookingError.value = locale.value === 'zh' ? '请选择日期' : 'Please select a date'
+    return
+  }
   if (!destination.value?.id) return
   bookingLoading.value = true
   try {
@@ -529,10 +532,29 @@ async function doBooking() {
       showBookingSuccess.value = true
     } else {
       const data = await res.json().catch(() => ({}))
-      alert(data.error || (locale.value === 'zh' ? '预订失败' : 'Booking failed'))
+      bookingError.value = mapBookingError(data.error)
     }
-  } catch (e) { console.error(e); alert(locale.value === 'zh' ? '预订失败' : 'Booking failed') }
+  } catch (e) {
+    console.error(e)
+    bookingError.value = locale.value === 'zh' ? '预订失败，请稍后重试' : 'Booking failed. Please try again.'
+  }
   finally { bookingLoading.value = false }
+}
+
+function mapBookingError(errorCode) {
+  if (errorCode === 'invalid_booking_dates') {
+    return locale.value === 'zh' ? '日期无效，请重新选择。' : 'Invalid booking dates. Please choose again.'
+  }
+  if (errorCode === 'login_required') {
+    return locale.value === 'zh' ? '请先登录。' : 'Please sign in first.'
+  }
+  if (errorCode === 'destination_not_found') {
+    return locale.value === 'zh' ? '目的地不存在。' : 'Destination not found.'
+  }
+  if (errorCode === 'invalid_booking_request') {
+    return locale.value === 'zh' ? '预订信息不完整。' : 'Incomplete booking request.'
+  }
+  return locale.value === 'zh' ? '预订失败，请稍后重试。' : 'Booking failed. Please try again.'
 }
 
 async function doLogin() {
@@ -959,6 +981,7 @@ onMounted(() => {
 .bk-total { font-weight: 700; font-size: 1rem; }
 
 .bk-btn { width: 100%; background: #FF385C; color: #fff; border: none; padding: 13px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.bk-error { margin: 0 0 10px; color: var(--danger); font-size: 0.9rem; font-weight: 700; }
 .bk-hint { text-align: center; font-size: 0.82rem; color: #717171; margin: 10px 0 0; }
 
 .bk-perks { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }

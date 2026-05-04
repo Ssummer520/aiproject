@@ -7,6 +7,7 @@
           <button
             v-for="pkg in product.packages || []"
             :key="pkg.id"
+            type="button"
             class="package-option"
             :class="{ active: selectedPackageId === pkg.id }"
             @click="emit('update:selectedPackageId', pkg.id)"
@@ -26,11 +27,11 @@
     </template>
 
     <div :class="cardClass">
-      <div class="booking-price-head" v-if="mode === 'product'">
+      <div v-if="mode === 'product'" class="booking-price-head">
         <span>{{ selectedAvailability ? formatPrice(selectedAvailability.price) : formatPrice(selectedPackage?.price || product.base_price) }}</span>
         <small>{{ locale === 'zh' ? '/ 人起' : '/ person' }}</small>
       </div>
-      <div class="bk-price-row" v-else>
+      <div v-else class="bk-price-row">
         <span class="bk-amount">{{ formatPrice(selectedAvailability ? selectedAvailability.price : selectedPackage?.price || product.base_price) }}</span>
         <span class="bk-unit">/ {{ locale === 'zh' ? '人起' : 'person' }}</span>
         <span class="bk-rating">★ {{ product.rating }}</span>
@@ -53,9 +54,9 @@
           </div>
           <label v-else>{{ locale === 'zh' ? '人数' : 'TRAVELLERS' }}</label>
           <div :class="mode === 'product' ? 'qty-row compact' : 'qty-row'">
-            <button @click="emit('update:adults', Math.max(1, adults - 1))">−</button>
+            <button type="button" :disabled="adults <= 1 || bookingLoading" @click="emit('update:adults', Math.max(1, adults - 1))">−</button>
             <span>{{ adults }}</span>
-            <button @click="emit('update:adults', Math.min(9, adults + 1))">+</button>
+            <button type="button" :disabled="!canIncreaseAdults || bookingLoading" @click="emit('update:adults', Math.min(maxGuests - children, adults + 1))">+</button>
           </div>
         </div>
         <div v-if="mode === 'product'" class="guest-row">
@@ -64,9 +65,9 @@
             <small>{{ locale === 'zh' ? '约7折计价' : '70% price' }}</small>
           </div>
           <div class="qty-row compact">
-            <button @click="emit('update:children', Math.max(0, children - 1))">−</button>
+            <button type="button" :disabled="children <= 0 || bookingLoading" @click="emit('update:children', Math.max(0, children - 1))">−</button>
             <span>{{ children }}</span>
-            <button @click="emit('update:children', Math.min(8, children + 1))">+</button>
+            <button type="button" :disabled="!canIncreaseChildren || bookingLoading" @click="emit('update:children', Math.min(maxGuests - adults, children + 1))">+</button>
           </div>
         </div>
       </div>
@@ -95,6 +96,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCurrency } from '../composables/useCurrency'
 
@@ -121,8 +123,11 @@ const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'up
 const { locale } = useI18n()
 const { formatPrice } = useCurrency()
 
-const panelClass = props.mode === 'product' ? 'product-booking-panel' : 'dest-sidebar'
-const cardClass = props.mode === 'product' ? 'product-booking-card' : 'booking-card'
+const maxGuests = computed(() => Math.max(1, Number(props.selectedPackage?.max_quantity) || 9))
+const canIncreaseAdults = computed(() => props.adults + props.children < maxGuests.value)
+const canIncreaseChildren = computed(() => props.adults + props.children < maxGuests.value)
+const panelClass = computed(() => (props.mode === 'product' ? 'product-booking-panel' : 'dest-sidebar'))
+const cardClass = computed(() => (props.mode === 'product' ? 'product-booking-card' : 'booking-card'))
 </script>
 
 <style scoped>
@@ -198,6 +203,11 @@ const cardClass = props.mode === 'product' ? 'product-booking-card' : 'booking-c
   border: 1px solid #ddd;
   background: #fff;
   cursor: pointer;
+}
+
+.qty-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .qty-row span {

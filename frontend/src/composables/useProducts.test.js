@@ -7,6 +7,7 @@ import {
   fetchOrders,
   fetchProduct,
   fetchProductAvailability,
+  fetchProductByDestinationId,
   fetchProducts,
 } from './useProducts'
 
@@ -37,6 +38,14 @@ describe('useProducts API helpers', () => {
     expect(url).toContain('free_cancel=true')
     expect(url).not.toContain('city=')
     expect(url).not.toContain('ignored=')
+  })
+
+
+  it('fetches a mapped product by destination id', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse({ id: 101, destination_id: 1 }))
+
+    await expect(fetchProductByDestinationId(1)).resolves.toMatchObject({ id: 101, destination_id: 1 })
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/products?destination_id=1')
   })
 
   it('requests product detail and encoded availability date', async () => {

@@ -3,9 +3,10 @@ import { nextTick, ref } from 'vue'
 
 vi.mock('./useProducts', () => ({
   createOrder: vi.fn(),
+  validateCoupon: vi.fn(),
 }))
 
-import { createOrder } from './useProducts'
+import { createOrder, validateCoupon } from './useProducts'
 import { useBookingPanel } from './useBookingPanel'
 
 function buildProduct() {
@@ -91,7 +92,7 @@ describe('useBookingPanel', () => {
   })
 
   it('creates an order and invokes the completion callback', async () => {
-    createOrder.mockResolvedValue({ id: 77, status: 'confirmed' })
+    createOrder.mockResolvedValue({ id: 77, status: 'paid' })
     const booking = createBookingPanelContext()
     booking.syncInitialState()
 
@@ -106,7 +107,7 @@ describe('useBookingPanel', () => {
       contact_name: 'traveler',
       contact_email: 'traveler@example.com',
     }, { Authorization: 'Bearer token' })
-    expect(booking.onBooked).toHaveBeenCalledWith({ id: 77, status: 'confirmed' })
+    expect(booking.onBooked).toHaveBeenCalledWith({ id: 77, status: 'paid' })
   })
 
   it('maps availability closure errors to a user-facing message', async () => {
@@ -117,5 +118,35 @@ describe('useBookingPanel', () => {
     await expect(booking.reserve()).resolves.toBe(false)
 
     expect(booking.bookingError.value).toBe('Not enough availability for this date.')
+  })
+
+  it('applies a coupon and sends coupon_code in order payload', async () => {
+    validateCoupon.mockResolvedValue({ valid: true, discount_amount: 80, coupon: { code: 'WELCOME80', name: 'Welcome' } })
+    createOrder.mockResolvedValue({ id: 88, status: 'paid' })
+    const booking = createBookingPanelContext()
+    booking.syncInitialState()
+    booking.couponCode.value = 'WELCOME80'
+
+    await expect(booking.applyCoupon()).resolves.toBe(true)
+
+    expect(validateCoupon).toHaveBeenCalledWith('WELCOME80', 180)
+    expect(booking.discountAmount.value).toBe(80)
+    expect(booking.finalTotalPrice.value).toBe(100)
+
+    await expect(booking.reserve()).resolves.toBe(true)
+
+    expect(createOrder).toHaveBeenCalledWith(expect.objectContaining({ coupon_code: 'WELCOME80' }), { Authorization: 'Bearer token' })
+  })
+
+  it('blocks checkout when entered coupon fails validation', async () => {
+    validateCoupon.mockRejectedValue(Object.assign(new Error('coupon_not_found'), { data: { error: 'coupon_not_found' } }))
+    const booking = createBookingPanelContext()
+    booking.syncInitialState()
+    booking.couponCode.value = 'BADCODE'
+
+    await expect(booking.reserve()).resolves.toBe(false)
+
+    expect(booking.couponError.value).toBe('Coupon code not found.')
+    expect(createOrder).not.toHaveBeenCalled()
   })
 })

@@ -64,6 +64,7 @@
               <p class="trip-location">📍 {{ trip.display_subtitle }}</p>
               <p class="trip-dates">{{ trip.display_dates }}</p>
               <p class="trip-guests">{{ trip.display_guests }}</p>
+              <p v-if="trip.display_usage" class="trip-usage">🎫 {{ trip.display_usage }}</p>
               <p class="trip-price">{{ trip.display_price }}</p>
               <span v-if="trip.source === 'order'" class="trip-type-badge">{{ locale === 'zh' ? '商品订单' : 'Product order' }}</span>
             </div>
@@ -189,6 +190,7 @@ const normalizedProductOrders = computed(() => productOrders.value.map((order) =
     display_subtitle: `${item.city} · ${item.package_name}`,
     display_dates: item.travel_date,
     display_guests: `${item.adults || 0} ${locale.value === 'zh' ? '成人' : 'adults'}${item.children ? ` · ${item.children} ${locale.value === 'zh' ? '儿童' : 'children'}` : ''}`,
+    display_usage: item.usage || (locale.value === 'zh' ? '请在出行当天出示电子凭证。' : 'Show your mobile voucher on the travel date.'),
     display_price: `${order.currency === 'CNY' ? '¥' : order.currency} ${order.total_amount}`,
     trip_date: item.travel_date,
     action_link: `/product/${item.product_id}`,
@@ -411,10 +413,16 @@ watch(isLoggedIn, (value) => {
 
 .trip-location,
 .trip-dates,
-.trip-guests {
+.trip-guests,
+.trip-usage {
   color: var(--text-muted);
   font-size: 0.9rem;
   margin: 4px 0;
+}
+
+.trip-usage {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .trip-price {

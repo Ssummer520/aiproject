@@ -124,9 +124,9 @@
 
         <main class="results-main">
           <div class="results-header">
-            <h1 v-if="keyword">{{ locale === 'zh' ? `“${keyword}” 的搜索结果` : `Results for "${keyword}"` }}</h1>
-            <h1 v-else>{{ locale === 'zh' ? '全站商品与目的地' : 'All products & destinations' }}</h1>
-            <p class="results-count">{{ productResults.length + results.length }} {{ locale === 'zh' ? '个结果' : 'results found' }}</p>
+            <h1 v-if="keyword">{{ locale === 'zh' ? `“${keyword}” 的可预订商品` : `Bookable products for "${keyword}"` }}</h1>
+            <h1 v-else>{{ locale === 'zh' ? '可预订商品' : 'Bookable products' }}</h1>
+            <p class="results-count">{{ productResults.length }} {{ locale === 'zh' ? '个商品' : 'products found' }} · {{ results.length }} {{ locale === 'zh' ? '个目的地灵感' : 'destination ideas' }}</p>
           </div>
 
           <div v-if="loading" class="loading-state">
@@ -141,15 +141,20 @@
           </div>
 
           <template v-else>
-            <section v-if="productResults.length" class="search-products-section">
-              <h2>{{ locale === 'zh' ? '可预订商品' : 'Bookable products' }}</h2>
+            <section v-if="productResults.length" class="search-products-section search-products-section--primary">
+              <div class="search-section-head">
+                <div>
+                  <h2>{{ locale === 'zh' ? '商品搜索结果' : 'Product results' }}</h2>
+                  <p>{{ locale === 'zh' ? '选择商品进入详情页，可继续选择套餐、日期和人数。' : 'Open a product to choose package, date, and travellers.' }}</p>
+                </div>
+              </div>
               <div class="search-products-grid">
                 <ProductCard v-for="product in productResults" :key="product.id" :product="product" />
               </div>
             </section>
 
             <section v-if="results.length" class="search-destinations-section">
-              <h2>{{ locale === 'zh' ? '目的地灵感' : 'Destination inspiration' }}</h2>
+              <h2>{{ locale === 'zh' ? '目的地灵感（辅助参考）' : 'Destination inspiration' }}</h2>
               <div class="results-grid">
                 <router-link
                   v-for="d in results"
@@ -355,6 +360,8 @@ function syncRouteQuery() {
   if (filters.value.sortBy && filters.value.sortBy !== 'recommended') nextQuery.sort = filters.value.sortBy
   if (filters.value.instantConfirm) nextQuery.instant_confirm = 'true'
   if (filters.value.freeCancel) nextQuery.free_cancel = 'true'
+
+  nextQuery.mode = 'products'
 
   const currentQuery = route.query || {}
   if (JSON.stringify(nextQuery) === JSON.stringify(currentQuery)) return
@@ -847,6 +854,30 @@ watch([keyword, filters], syncRouteQuery, { deep: true })
 .search-destinations-section h2 {
   margin: 0 0 16px;
   font-size: 1.25rem;
+}
+
+.search-products-section--primary {
+  padding: 22px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,248,250,0.9));
+}
+
+.search-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.search-section-head h2 {
+  margin-bottom: 6px;
+}
+
+.search-section-head p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
 }
 
 .search-products-grid {

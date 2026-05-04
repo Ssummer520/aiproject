@@ -47,6 +47,9 @@ func TestOrderServiceCreatePersistsPricedProductOrder(t *testing.T) {
 	if order.Items[0].ProductID != 101 || order.Items[0].PackageID != 1011 {
 		t.Fatalf("unexpected order item: %#v", order.Items[0])
 	}
+	if order.Items[0].Usage == "" {
+		t.Fatalf("expected order item usage instructions")
+	}
 	if order.TotalAmount <= 0 || order.TotalAmount != order.Items[0].Subtotal {
 		t.Fatalf("unexpected totals: order=%v item=%v", order.TotalAmount, order.Items[0].Subtotal)
 	}
@@ -57,6 +60,9 @@ func TestOrderServiceCreatePersistsPricedProductOrder(t *testing.T) {
 	}
 	if len(orders) != 1 || len(orders[0].Items) != 1 {
 		t.Fatalf("expected persisted order with item, got %#v", orders)
+	}
+	if orders[0].Items[0].Usage == "" {
+		t.Fatalf("expected persisted usage instructions")
 	}
 }
 

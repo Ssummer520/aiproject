@@ -101,6 +101,7 @@ func (s *OrderService) Create(userID string, req domain.CreateOrderRequest) (dom
 		PackageName: pkg.Name,
 		City:        product.City,
 		Cover:       product.Cover,
+		Usage:       product.Usage,
 		TravelDate:  req.TravelDate,
 		Adults:      req.Adults,
 		Children:    req.Children,

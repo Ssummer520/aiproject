@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -193,6 +194,7 @@ func migrate(db *sql.DB) error {
 			package_name TEXT NOT NULL,
 			city TEXT NOT NULL,
 			cover TEXT NOT NULL,
+			usage TEXT NOT NULL DEFAULT '',
 			travel_date TEXT NOT NULL,
 			adults INTEGER NOT NULL,
 			children INTEGER NOT NULL,
@@ -202,10 +204,14 @@ func migrate(db *sql.DB) error {
 			PRIMARY KEY(user_id, order_id, id),
 			FOREIGN KEY(user_id, order_id) REFERENCES orders(user_id, id) ON DELETE CASCADE
 		);`,
+		`ALTER TABLE order_items ADD COLUMN usage TEXT NOT NULL DEFAULT '';`,
 		`CREATE INDEX IF NOT EXISTS idx_order_items_user_order ON order_items(user_id, order_id);`,
 	}
 	for _, statement := range statements {
 		if _, err := db.Exec(statement); err != nil {
+			if statement == `ALTER TABLE order_items ADD COLUMN usage TEXT NOT NULL DEFAULT '';` && strings.Contains(err.Error(), "duplicate column name") {
+				continue
+			}
 			return err
 		}
 	}

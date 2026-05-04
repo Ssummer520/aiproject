@@ -25,6 +25,7 @@ type OrderItem struct {
 	PackageName string  `json:"package_name"`
 	City        string  `json:"city"`
 	Cover       string  `json:"cover"`
+	Usage       string  `json:"usage"`
 	TravelDate  string  `json:"travel_date"`
 	Adults      int     `json:"adults"`
 	Children    int     `json:"children"`

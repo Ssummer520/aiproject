@@ -10,6 +10,7 @@ These instructions apply to all files under `backend/`.
 - The server entrypoint is `cmd/server/main.go` and listens on `http://localhost:8888`.
 - APIs are mounted under `/api/v1` and are consumed by the Vite frontend proxy at `/api`.
 - The codebase uses mostly standard-library `net/http`; avoid introducing a web framework unless explicitly requested.
+- OTA phase 1 from `PRODUCT_ROADMAP.md` is complete: Product, ProductPackage, Availability, Order, and OrderItem are implemented with SQLite-backed demo persistence.
 
 ## Architecture
 
@@ -20,9 +21,9 @@ These instructions apply to all files under `backend/`.
   - `infrastructure/` for file repositories, caches, stats, and persistence adapters.
 - Use `internal/` only for shared backend internals such as context keys, common models, DB helpers, or legacy code.
 - Prefer updating the active `services/` implementation over the older `internal/handlers` and `internal/store` paths unless the task specifically targets legacy code.
-- For the OTA phase-1 work, add new business domains as separate services instead of bloating `services/bff`:
+- For OTA product/order work, keep business domains as separate services instead of bloating `services/bff`:
   - `services/product/` owns products, packages, availability, search filters, and product detail data.
-  - `services/order/` owns product orders and order-item persistence.
+  - `services/order/` owns product orders, order-item persistence, voucher/usage instructions, and cancellation.
   - `services/bff/` may aggregate homepage/city/category data, but should delegate product/order operations to their services.
 - Keep `cmd/server/main.go` as the composition root for wiring HTTP handlers and middleware.
 
@@ -44,6 +45,7 @@ These instructions apply to all files under `backend/`.
 - New interactive/backend state should use SQLite via `internal/db.Open()` unless the user explicitly requests JSON-only storage.
 - Extend `internal/db/sqlite.go` migrations for new tables; keep migrations idempotent with `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, and safe seed logic.
 - Seed demo OTA product data through repository/service initialization so a fresh local database can run without manual setup.
+- Preserve safe SQLite migrations for existing local databases, including additive `ALTER TABLE` migrations for order/item fields.
 
 ## Auth And Security
 
@@ -65,6 +67,14 @@ These instructions apply to all files under `backend/`.
   - `POST /api/v1/orders`
   - `POST /api/v1/orders/{id}/cancel`
 - Keep legacy `/api/v1/bookings` behavior available while introducing `/api/v1/orders` for product orders.
+- Treat `/api/v1/orders` as the active OTA order flow; `/api/v1/bookings` is legacy compatibility and should not receive new product-order features.
+
+## Phase 1 Completion Notes
+
+- The completed phase-1 backend flow is: product search/detail -> package availability -> authenticated order creation -> order listing/cancellation.
+- Product order items should include enough display data for Trips without extra joins, including product name, package name, city, cover, travel date, travellers, price, and usage instructions.
+- Current inventory is lightweight demo inventory: order creation validates availability and increments `booked_count`, but does not yet lock/decrement stock or integrate real payment.
+- Phase 2 backend work should focus on reviews, coupons, richer trust metadata, payment/refund state transitions, and stronger inventory handling.
 
 ## Validation
 

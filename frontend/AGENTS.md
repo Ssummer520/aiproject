@@ -10,6 +10,7 @@ These instructions apply to all files under `frontend/`.
 - The development server runs at `http://localhost:5173`.
 - `vite.config.js` proxies `/api` to the Go backend at `http://localhost:8888`.
 - The app uses Vue Router for pages and Vue I18n for Chinese/English copy.
+- OTA phase 1 from `PRODUCT_ROADMAP.md` is complete: the UI supports product channels, product-first search, product detail booking, destination-linked booking, and Trips order management.
 
 ## Architecture
 
@@ -19,10 +20,11 @@ These instructions apply to all files under `frontend/`.
 - Keep route registration in `src/router/index.js`.
 - Keep i18n copy in `src/i18n.js`; when adding user-facing text, add both `en` and `zh` entries when practical.
 - `src/style.css` contains global styling; avoid adding scattered style systems unless requested.
-- For OTA phase-1 work, add product-specific UI without rewriting existing pages wholesale:
+- For OTA product/order work, keep product-specific UI reusable and avoid rewriting existing pages wholesale:
   - Product cards belong in `src/components/` if reused by Home/Search/City/Category.
   - Product detail belongs in a dedicated `src/views/Product.vue` route at `/product/:id`.
   - Product/order API helpers should live in composables when shared across views.
+  - Shared OTA checkout UI belongs in `src/components/BookingPanel.vue`; booking state belongs in `src/composables/useBookingPanel.js`.
 - Preserve the current visual language: rounded cards, hero sections, soft shadows, gradient CTAs, and existing CSS variables.
 
 ## Coding Style
@@ -40,8 +42,17 @@ These instructions apply to all files under `frontend/`.
 - If adding new authenticated requests, include `Authorization: Bearer <token>` consistently with `useAuth.js` patterns.
 - Keep the AI travel assistant client-side unless the user explicitly asks for backend/model integration.
 - OTA phase-1 booking flow should be: product card -> product detail -> package/date/guest selection -> login check -> create order -> Trips page.
+- Keep Home product channels (`Stays`, `Things to do`, `Tickets`, `Tours`, `Transport`, `Deals`) and Search product-first behavior intact when changing discovery UI.
+- Trips should continue to display product order package, travel date, travellers, price, status, usage instructions, cancellation, and book-again entry.
 - Keep product prices compatible with `useCurrency.js`; store base prices from the API and convert only for display.
 - Do not replace existing destination routes; add product routes alongside them.
+
+## Phase 1 Completion Notes
+
+- Completed phase-1 frontend flow is: Home product channel -> Search product result -> `/product/:id` -> `BookingPanel` -> `/api/v1/orders` -> `/trips`.
+- `Destination.vue` also uses the shared `BookingPanel` when a destination-linked product exists; do not reintroduce page-specific legacy booking logic there.
+- Legacy `/api/v1/bookings` remains only for old simple bookings in Trips; new OTA purchases should use `/api/v1/orders`.
+- Phase 2 frontend work should focus on reviews, coupons, richer trust blocks, advanced filters, clearer payment/refund states, and itinerary/AI conversion.
 
 ## Build Artifacts
 
@@ -56,10 +67,11 @@ These instructions apply to all files under `frontend/`.
 
 ```bash
 npm run build
+npm test
 npm run dev
 npm run preview
 ```
 
-- There is currently no configured lint/test script; do not invent one without being asked.
+- Vitest is configured; add focused tests for shared composables or API helpers when changing booking/product behavior.
 - When changing routes or API consumers, check corresponding backend endpoints under `backend/services/bff/api/handlers.go` and `backend/services/auth/api/handlers.go`.
 - For phase-1 OTA work, also check `backend/services/product` and `backend/services/order` endpoint contracts before changing front-end request/response shapes.

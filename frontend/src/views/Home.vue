@@ -188,11 +188,26 @@
                 <h2 class="section-title">{{ locale === 'zh' ? '热门门票与体验' : 'Top tickets & experiences' }}</h2>
                 <p class="section-subtitle section-subtitle--muted">{{ locale === 'zh' ? '选择套餐、日期和人数，像真正 OTA 一样预订' : 'Choose packages, dates, and guests like a real OTA' }}</p>
               </div>
-              <router-link to="/search?mode=products" class="view-all-link">{{ locale === 'zh' ? '查看全部' : 'View all' }}</router-link>
+              <router-link :to="activeProductChannel.search" class="view-all-link">{{ locale === 'zh' ? '查看全部' : 'View all' }}</router-link>
+            </div>
+            <div class="product-channel-tabs">
+              <button
+                v-for="channel in productChannels"
+                :key="channel.id"
+                type="button"
+                :class="{ active: activeProductChannelId === channel.id }"
+                @click="activeProductChannelId = channel.id"
+              >
+                <span>{{ channel.icon }}</span>
+                {{ locale === 'zh' ? channel.labelZh : channel.label }}
+              </button>
             </div>
             <div v-if="productsLoading" class="loading">Loading...</div>
-            <div v-else-if="featuredProducts.length" class="product-home-grid">
-              <ProductCard v-for="product in featuredProducts" :key="product.id" :product="product" />
+            <div v-else-if="activeChannelProducts.length" class="product-home-grid">
+              <ProductCard v-for="product in activeChannelProducts" :key="product.id" :product="product" />
+            </div>
+            <div v-else class="product-home-empty">
+              {{ locale === 'zh' ? '该频道商品即将上线。' : 'More products are coming soon for this channel.' }}
             </div>
           </section>
 
@@ -880,6 +895,33 @@ const trendingThisWeek = ref([])
 const mostViewedNearby = ref([])
 const featuredProducts = ref([])
 const productsLoading = ref(true)
+const activeProductChannelId = ref('things')
+const productChannels = [
+  { id: 'stays', label: 'Stays', labelZh: '住宿', icon: '🏨', search: '/search?mode=products&type=stay' },
+  { id: 'things', label: 'Things to do', labelZh: '玩乐体验', icon: '✨', search: '/search?mode=products' },
+  { id: 'tickets', label: 'Tickets', labelZh: '景点门票', icon: '🎫', search: '/search?mode=products&type=ticket' },
+  { id: 'tours', label: 'Tours', labelZh: '一日游', icon: '🧭', search: '/search?mode=products&type=tour' },
+  { id: 'transport', label: 'Transport', labelZh: '交通接送', icon: '🚗', search: '/search?mode=products&type=transport' },
+  { id: 'deals', label: 'Deals', labelZh: '优惠', icon: '🔥', search: '/search?mode=products&free_cancel=true' },
+]
+const activeProductChannel = computed(() => productChannels.find(channel => channel.id === activeProductChannelId.value) || productChannels[1])
+const activeChannelProducts = computed(() => {
+  const products = featuredProducts.value
+  switch (activeProductChannelId.value) {
+    case 'stays':
+      return products.filter(product => product.type === 'stay')
+    case 'tickets':
+      return products.filter(product => product.type === 'ticket')
+    case 'tours':
+      return products.filter(product => product.type === 'tour')
+    case 'transport':
+      return products.filter(product => product.type === 'transport')
+    case 'deals':
+      return products.filter(product => product.free_cancel || product.instant_confirm).slice(0, 6)
+    default:
+      return products.filter(product => ['ticket', 'tour', 'experience', 'transport'].includes(product.type)).slice(0, 6)
+  }
+})
 const assistantDestinations = computed(() => uniqueDestinations([
   ...recommendations.value,
   ...nearby.value,
@@ -951,7 +993,7 @@ async function fetchFeaturedProducts() {
   productsLoading.value = true
   try {
     const data = await fetchProducts({ sort: 'booked' })
-    featuredProducts.value = (data.results || []).slice(0, 6)
+    featuredProducts.value = data.results || []
   } catch (e) {
     featuredProducts.value = []
   } finally {

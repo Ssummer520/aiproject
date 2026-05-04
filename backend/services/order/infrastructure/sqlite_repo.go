@@ -96,7 +96,7 @@ func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.
 		return domain.Order{}, err
 	}
 
-	_, err = tx.Exec(`INSERT INTO order_items(id, order_id, user_id, product_id, package_id, product_name, package_name, city, cover, travel_date, adults, children, quantity, unit_price, subtotal) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err = tx.Exec(`INSERT INTO order_items(id, order_id, user_id, product_id, package_id, product_name, package_name, city, cover, usage, travel_date, adults, children, quantity, unit_price, subtotal) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		item.ID,
 		item.OrderID,
 		item.UserID,
@@ -106,6 +106,7 @@ func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.
 		item.PackageName,
 		item.City,
 		item.Cover,
+		item.Usage,
 		item.TravelDate,
 		item.Adults,
 		item.Children,
@@ -159,7 +160,7 @@ func (r *SQLiteOrderRepo) get(userID string, orderID int) (domain.Order, bool, e
 }
 
 func (r *SQLiteOrderRepo) listItems(userID string, orderID int) ([]domain.OrderItem, error) {
-	rows, err := r.db.Query(`SELECT id, order_id, user_id, product_id, package_id, product_name, package_name, city, cover, travel_date, adults, children, quantity, unit_price, subtotal FROM order_items WHERE user_id = ? AND order_id = ? ORDER BY id ASC`, userID, orderID)
+	rows, err := r.db.Query(`SELECT id, order_id, user_id, product_id, package_id, product_name, package_name, city, cover, COALESCE(usage, ''), travel_date, adults, children, quantity, unit_price, subtotal FROM order_items WHERE user_id = ? AND order_id = ? ORDER BY id ASC`, userID, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +169,7 @@ func (r *SQLiteOrderRepo) listItems(userID string, orderID int) ([]domain.OrderI
 	items := make([]domain.OrderItem, 0)
 	for rows.Next() {
 		var item domain.OrderItem
-		if err := rows.Scan(&item.ID, &item.OrderID, &item.UserID, &item.ProductID, &item.PackageID, &item.ProductName, &item.PackageName, &item.City, &item.Cover, &item.TravelDate, &item.Adults, &item.Children, &item.Quantity, &item.UnitPrice, &item.Subtotal); err != nil {
+		if err := rows.Scan(&item.ID, &item.OrderID, &item.UserID, &item.ProductID, &item.PackageID, &item.ProductName, &item.PackageName, &item.City, &item.Cover, &item.Usage, &item.TravelDate, &item.Adults, &item.Children, &item.Quantity, &item.UnitPrice, &item.Subtotal); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

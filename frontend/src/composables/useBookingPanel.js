@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { formatLocalDate } from './dateUtils'
-import { createOrder, validateCoupon } from './useProducts'
+import { addCartItem, addItineraryItem, createItinerary, createOrder, fetchItineraries, validateCoupon } from './useProducts'
 
 function roundMoney(value) {
   return Math.round(value * 100) / 100
@@ -14,6 +14,10 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
   const children = ref(0)
   const bookingLoading = ref(false)
   const bookingError = ref('')
+  const cartLoading = ref(false)
+  const cartMessage = ref('')
+  const itineraryLoading = ref(false)
+  const itineraryMessage = ref('')
   const couponCode = ref('')
   const couponLoading = ref(false)
   const couponError = ref('')
@@ -179,6 +183,128 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     couponResult.value = null
   })
 
+
+  function buildOrderPayload() {
+    const payload = {
+      product_id: product.value.id,
+      package_id: selectedPackageId.value,
+      travel_date: selectedDate.value,
+      adults: adults.value,
+      children: children.value,
+      contact_name: user.value?.email?.split('@')?.[0] || 'Guest',
+      contact_email: user.value?.email || '',
+    }
+    if (couponResult.value?.valid) {
+      payload.coupon_code = couponCode.value.trim()
+    }
+    return payload
+  }
+
+  function buildCartPayload() {
+    return {
+      product_id: product.value.id,
+      package_id: selectedPackageId.value,
+      travel_date: selectedDate.value,
+      adults: adults.value,
+      children: children.value,
+    }
+  }
+
+  function buildItineraryPayload() {
+    return {
+      day_index: 1,
+      start_time: '09:00',
+      end_time: '11:00',
+      item_type: 'product',
+      product_id: product.value.id,
+      title: `${product.value.name || 'Product'} · ${selectedPackage.value?.name || ''}`.trim(),
+      note: selectedPackage.value?.description || product.value.short_description || product.value.description || '',
+      estimated_cost: finalTotalPrice.value,
+    }
+  }
+
+  function validateSelection() {
+    if (!selectedPackage.value) {
+      bookingError.value = locale.value === 'zh' ? '请先选择套餐。' : 'Choose a package first.'
+      return false
+    }
+    if (totalGuests.value < minGuests.value || totalGuests.value > maxGuests.value) {
+      bookingError.value = locale.value === 'zh' ? `人数需在 ${minGuests.value}-${maxGuests.value} 人之间。` : `Guests must be between ${minGuests.value} and ${maxGuests.value}.`
+      return false
+    }
+    if (!selectedAvailability.value) {
+      bookingError.value = locale.value === 'zh' ? '该日期暂无库存。' : 'No availability for this date.'
+      return false
+    }
+    if (selectedAvailability.value.status !== 'available' || selectedAvailability.value.stock <= 0) {
+      bookingError.value = locale.value === 'zh' ? '该日期已售罄。' : 'Sold out for this date.'
+      return false
+    }
+    if (selectedAvailability.value.stock < totalGuests.value) {
+      bookingError.value = locale.value === 'zh' ? '库存不足，请减少人数。' : 'Not enough spots left. Please reduce guests.'
+      return false
+    }
+    bookingError.value = ''
+    return true
+  }
+
+  async function addToCart() {
+    bookingError.value = ''
+    cartMessage.value = ''
+    if (!isLoggedIn.value) {
+      bookingError.value = locale.value === 'zh' ? '请先登录后再加入购物车。' : 'Please sign in before adding to cart.'
+      return false
+    }
+    if (!validateSelection()) return false
+    cartLoading.value = true
+    try {
+      const summary = await addCartItem(buildCartPayload(), authHeaders())
+      cartMessage.value = locale.value === 'zh' ? '已加入购物车，可在我的旅行中打包预订。' : 'Added to cart. You can checkout from My Trips.'
+      return summary
+    } catch (e) {
+      bookingError.value = locale.value === 'zh' ? '加入购物车失败。' : 'Failed to add to cart.'
+      return false
+    } finally {
+      cartLoading.value = false
+    }
+  }
+
+
+  async function addToItinerary() {
+    bookingError.value = ''
+    itineraryMessage.value = ''
+    if (!isLoggedIn.value) {
+      bookingError.value = locale.value === 'zh' ? '请先登录后再加入行程。' : 'Please sign in before adding to itinerary.'
+      return false
+    }
+    if (!validateSelection()) return false
+    itineraryLoading.value = true
+    try {
+      const headers = authHeaders()
+      const plans = await fetchItineraries(headers)
+      let plan = (plans || []).find(item => item.status === 'draft' && (!product.value.city || item.city === product.value.city))
+      if (!plan) {
+        plan = await createItinerary({
+          title: locale.value === 'zh' ? `${product.value.city || '中国'}旅行草稿` : `${product.value.city || 'China'} trip draft`,
+          city: product.value.city || '',
+          start_date: selectedDate.value,
+          end_date: selectedDate.value,
+          guests: totalGuests.value,
+          budget: finalTotalPrice.value,
+          status: 'draft',
+        }, headers)
+      }
+      const updated = await addItineraryItem(plan.id, buildItineraryPayload(), headers)
+      itineraryMessage.value = locale.value === 'zh' ? '已加入行程时间线，可在我的旅行中调整顺序。' : 'Added to itinerary timeline. Reorder it in My Trips.'
+      return updated
+    } catch (e) {
+      bookingError.value = locale.value === 'zh' ? '加入行程失败。' : 'Failed to add to itinerary.'
+      return false
+    } finally {
+      itineraryLoading.value = false
+    }
+  }
+
   async function reserve() {
     bookingError.value = ''
 
@@ -186,24 +312,7 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
       bookingError.value = locale.value === 'zh' ? '请先登录后再预订。' : 'Please sign in before booking.'
       return false
     }
-    if (!selectedPackage.value) {
-      bookingError.value = locale.value === 'zh' ? '请先选择套餐。' : 'Please choose a package first.'
-      return false
-    }
-    if (totalGuests.value < minGuests.value || totalGuests.value > maxGuests.value) {
-      bookingError.value = locale.value === 'zh'
-        ? `出行人数需为 ${minGuests.value}-${maxGuests.value} 人。`
-        : `Traveller count must be between ${minGuests.value} and ${maxGuests.value}.`
-      return false
-    }
-    if (!selectedAvailability.value || selectedAvailability.value.status !== 'available') {
-      bookingError.value = locale.value === 'zh' ? '请选择可预订的日期。' : 'Please choose an available date.'
-      return false
-    }
-    if (selectedAvailability.value.stock < totalGuests.value) {
-      bookingError.value = locale.value === 'zh' ? '库存不足，请减少人数或更换日期。' : 'Not enough availability for this date.'
-      return false
-    }
+    if (!validateSelection()) return false
 
     bookingLoading.value = true
     try {
@@ -211,19 +320,7 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
         const valid = await applyCoupon()
         if (!valid) return false
       }
-      const payload = {
-        product_id: product.value.id,
-        package_id: selectedPackageId.value,
-        travel_date: selectedDate.value,
-        adults: adults.value,
-        children: children.value,
-        contact_name: user.value?.email?.split('@')?.[0] || 'Guest',
-        contact_email: user.value?.email || '',
-      }
-      if (couponResult.value?.valid) {
-        payload.coupon_code = couponCode.value.trim()
-      }
-      const order = await createOrder(payload, authHeaders())
+      const order = await createOrder(buildOrderPayload(), authHeaders())
       if (typeof onBooked === 'function') onBooked(order)
       return true
     } catch (e) {
@@ -243,6 +340,10 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     children,
     bookingLoading,
     bookingError,
+    cartLoading,
+    cartMessage,
+    itineraryLoading,
+    itineraryMessage,
     couponCode,
     couponLoading,
     couponError,
@@ -262,6 +363,10 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     syncInitialState,
     applyCoupon,
     clearCoupon,
+    buildCartPayload,
+    buildItineraryPayload,
+    addToCart,
+    addToItinerary,
     reserve,
   }
 }

@@ -162,6 +162,10 @@
             :availability-text="availabilityText"
             :booking-loading="bookingLoading"
             :booking-error="bookingError"
+            :cart-loading="cartLoading"
+            :cart-message="cartMessage"
+            :itinerary-loading="itineraryLoading"
+            :itinerary-message="itineraryMessage"
             :today="today"
             @update:selected-package-id="selectedPackageId = $event"
             @update:selected-date="selectedDate = $event"
@@ -169,6 +173,8 @@
             @update:children="children = $event"
             @update:coupon-code="couponCode = $event"
             @apply-coupon="applyCoupon"
+            @add-to-cart="addToCart"
+            @add-to-itinerary="addToItinerary"
             @reserve="reserve"
           />
         </div>
@@ -209,6 +215,10 @@ const {
   children,
   bookingLoading,
   bookingError,
+  cartLoading,
+  cartMessage,
+  itineraryLoading,
+  itineraryMessage,
   today,
   selectedPackage,
   selectedAvailability,
@@ -224,6 +234,8 @@ const {
   availabilityText,
   syncInitialState,
   applyCoupon,
+  addToCart,
+  addToItinerary,
   reserve,
 } = useBookingPanel({
   product,

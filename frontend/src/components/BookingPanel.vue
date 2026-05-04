@@ -100,10 +100,20 @@
       </div>
 
       <p v-if="bookingError" :class="mode === 'product' ? 'booking-error' : 'bk-error'">{{ bookingError }}</p>
-      <button :class="mode === 'product' ? 'reserve-btn' : 'bk-btn'" :disabled="!canBook || bookingLoading" @click="emit('reserve')">
-        {{ bookingLoading ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '立即预订' : 'Reserve now') }}
+      <p v-if="cartMessage" class="cart-success">{{ cartMessage }}</p>
+      <p v-if="itineraryMessage" class="cart-success">{{ itineraryMessage }}</p>
+      <button type="button" class="itinerary-btn" :disabled="!canBook || itineraryLoading || bookingLoading || cartLoading" @click="emit('addToItinerary')">
+        {{ itineraryLoading ? (locale === 'zh' ? '加入中...' : 'Adding...') : (locale === 'zh' ? '加入行程' : 'Add to itinerary') }}
       </button>
-      <p :class="mode === 'product' ? 'reserve-hint' : 'bk-hint'">{{ locale === 'zh' ? '演示环境使用模拟支付，不会真实扣款。' : 'Demo checkout uses mock payment. You will not be charged.' }}</p>
+      <div :class="mode === 'product' ? 'booking-action-grid' : 'bk-action-grid'">
+        <button type="button" class="cart-btn" :disabled="!canBook || cartLoading || bookingLoading || itineraryLoading" @click="emit('addToCart')">
+          {{ cartLoading ? (locale === 'zh' ? '加入中...' : 'Adding...') : (locale === 'zh' ? '加入购物车' : 'Add to cart') }}
+        </button>
+        <button :class="mode === 'product' ? 'reserve-btn' : 'bk-btn'" :disabled="!canBook || bookingLoading || cartLoading || itineraryLoading" @click="emit('reserve')">
+          {{ bookingLoading ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '立即预订' : 'Reserve now') }}
+        </button>
+      </div>
+      <p :class="mode === 'product' ? 'reserve-hint' : 'bk-hint'">{{ locale === 'zh' ? '可直接预订，也可加入购物车后在我的旅行中打包下单。' : 'Reserve now or add to cart for bundle checkout in My Trips.' }}</p>
 
       <div v-if="mode === 'destination'" class="bk-perks">
         <div class="perk">✓ {{ locale === 'zh' ? '即时确认' : 'Instant confirmation' }}</div>
@@ -141,10 +151,14 @@ const props = defineProps({
   availabilityText: { type: String, required: true },
   bookingLoading: { type: Boolean, default: false },
   bookingError: { type: String, default: '' },
+  cartLoading: { type: Boolean, default: false },
+  cartMessage: { type: String, default: '' },
+  itineraryLoading: { type: Boolean, default: false },
+  itineraryMessage: { type: String, default: '' },
   today: { type: String, required: true },
 })
 
-const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'update:adults', 'update:children', 'update:couponCode', 'applyCoupon', 'reserve'])
+const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'update:adults', 'update:children', 'update:couponCode', 'applyCoupon', 'addToCart', 'addToItinerary', 'reserve'])
 const { locale } = useI18n()
 const { formatPrice } = useCurrency()
 
@@ -329,6 +343,53 @@ const finalTotalPrice = computed(() => props.finalTotalPrice ?? props.totalPrice
   color: var(--danger);
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.cart-success {
+  margin: 0 0 10px;
+  color: #0f766e;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.booking-action-grid,
+.bk-action-grid {
+  display: grid;
+  grid-template-columns: 0.86fr 1fr;
+  gap: 10px;
+}
+
+.itinerary-btn {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 13px 16px;
+  border: 1px solid rgba(0, 122, 255, 0.24);
+  border-radius: 12px;
+  background: rgba(0, 122, 255, 0.06);
+  color: var(--secondary);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.itinerary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cart-btn {
+  width: 100%;
+  padding: 15px 18px;
+  border: 1px solid rgba(255, 56, 92, 0.32);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--primary);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.cart-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .bk-btn {

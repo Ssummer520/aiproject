@@ -10,7 +10,7 @@ These instructions apply to all files under `frontend/`.
 - The development server runs at `http://localhost:5173`.
 - `vite.config.js` proxies `/api` to the Go backend at `http://localhost:8888`.
 - The app uses Vue Router for pages and Vue I18n for Chinese/English copy.
-- OTA phases 1-2 from `PRODUCT_ROADMAP.md` are complete: the UI supports product channels, advanced product-first search, product detail booking with trust/reviews, destination-linked booking, coupons, and Trips order/review management.
+- OTA phases 1-3 from `PRODUCT_ROADMAP.md` are complete: the UI supports product channels, advanced product-first search, product detail booking with trust/reviews, destination-linked booking, coupons, and Trips order/review management.
 
 ## Architecture
 
@@ -53,7 +53,15 @@ These instructions apply to all files under `frontend/`.
 - `Destination.vue` also uses the shared `BookingPanel` when a destination-linked product exists; do not reintroduce page-specific legacy booking logic there.
 - Legacy `/api/v1/bookings` remains only for old simple bookings in Trips; new OTA purchases should use `/api/v1/orders`.
 - Product reviews should be fetched/created through `useProducts.js` helpers and displayed on `Product.vue`; review submission belongs in Trips for completed product orders.
-- Phase 3 frontend work should focus on itinerary timeline, cart/bundle ordering, AI itinerary-to-order conversion, and drag/drop trip planning.
+- Phase 3 frontend itinerary timeline, cart/bundle ordering, AI itinerary generation, and lightweight drag-sort planning are complete.
+
+## Phase 3 Completion Notes
+
+- Completed Phase 3 frontend flow is: Product/Destination shared `BookingPanel` -> add to itinerary, add to cart, or reserve now -> Trips AI planner/timeline/cart workbench -> bundle checkout -> product orders and e-voucher management.
+- `useBookingPanel.js` owns shared package/date/guest/coupon/cart/itinerary state; keep Product and Destination pages thin and avoid page-specific checkout forks.
+- `useProducts.js` contains itinerary and cart API helpers for `/api/v1/itineraries`, `/api/v1/itineraries/generate`, `/api/v1/cart`, and `/api/v1/cart/checkout`.
+- Trips now combines order management, draft itinerary timeline sorting, AI itinerary generation, cart summary, bundle checkout, e-voucher hints, and verified review entry.
+- Future Phase 4 work should focus on merchant/admin operations, CMS/data dashboards, stronger payment/refund UI, and production-grade inventory states.
 
 ## Build Artifacts
 

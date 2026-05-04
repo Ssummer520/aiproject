@@ -10,8 +10,12 @@ import (
 	authApi "travel-api/services/auth/api"
 	authApp "travel-api/services/auth/application"
 	"travel-api/services/bff/api"
+	cartApi "travel-api/services/cart/api"
+	cartApp "travel-api/services/cart/application"
 	couponApi "travel-api/services/coupon/api"
 	couponApp "travel-api/services/coupon/application"
+	itineraryApi "travel-api/services/itinerary/api"
+	itineraryApp "travel-api/services/itinerary/application"
 	orderApi "travel-api/services/order/api"
 	orderApp "travel-api/services/order/application"
 	productApi "travel-api/services/product/api"
@@ -48,12 +52,16 @@ func main() {
 	couponService := couponApp.NewCouponService()
 	reviewService := reviewApp.NewReviewService()
 	orderService := orderApp.NewOrderServiceWithCoupon(productService, couponService)
+	itineraryService := itineraryApp.NewItineraryService(productService)
+	cartService := cartApp.NewCartService(productService, orderService)
 	authHandler := authApi.NewAuthHandlerWithService(authService)
 	bffHandler := api.NewBFFHandler()
 	productHandler := productApi.NewProductHandlerWithService(productService)
 	couponHandler := couponApi.NewCouponHandler(couponService)
 	reviewHandler := reviewApi.NewReviewHandler(reviewService)
 	orderHandler := orderApi.NewOrderHandler(orderService)
+	itineraryHandler := itineraryApi.NewItineraryHandler(itineraryService)
+	cartHandler := cartApi.NewCartHandler(cartService)
 
 	mux := http.NewServeMux()
 
@@ -84,6 +92,11 @@ func main() {
 	})))
 	mux.HandleFunc("/api/v1/coupons", couponHandler.HandleCoupons)
 	mux.HandleFunc("/api/v1/coupons/validate", couponHandler.HandleValidate)
+	mux.Handle("/api/v1/itineraries", authMiddleware(authService, http.HandlerFunc(itineraryHandler.HandleItineraries)))
+	mux.Handle("/api/v1/itineraries/generate", authMiddleware(authService, http.HandlerFunc(itineraryHandler.HandleGenerate)))
+	mux.Handle("/api/v1/itineraries/", authMiddleware(authService, http.HandlerFunc(itineraryHandler.HandleItineraryActions)))
+	mux.Handle("/api/v1/cart", authMiddleware(authService, http.HandlerFunc(cartHandler.HandleCart)))
+	mux.Handle("/api/v1/cart/checkout", authMiddleware(authService, http.HandlerFunc(cartHandler.HandleCheckout)))
 	mux.Handle("/api/v1/orders", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrders)))
 	mux.Handle("/api/v1/orders/", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrderActions)))
 

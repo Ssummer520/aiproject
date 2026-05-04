@@ -157,6 +157,95 @@ export async function refundOrder(id, headers = {}) {
   return postOrderAction(id, 'refund', headers)
 }
 
+
+
+export async function fetchItineraries(headers = {}) {
+  const res = await fetch(`${API}/itineraries`, { headers })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'itineraries_request_failed', res.status, data)
+  return data
+}
+
+export async function createItinerary(payload, headers = {}) {
+  const res = await fetch(`${API}/itineraries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(payload),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'itinerary_request_failed', res.status, data)
+  return data
+}
+
+export async function addItineraryItem(id, payload, headers = {}) {
+  const res = await fetch(`${API}/itineraries/${id}/items`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(payload),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'itinerary_item_request_failed', res.status, data)
+  return data
+}
+
+export async function moveItineraryItem(itineraryId, itemId, direction, headers = {}) {
+  const res = await fetch(`${API}/itineraries/${itineraryId}/items/${itemId}/move`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ direction }),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'move_itinerary_item_failed', res.status, data)
+  return data
+}
+
+export async function generateItinerary(payload, headers = {}) {
+  const res = await fetch(`${API}/itineraries/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(payload),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'generate_itinerary_failed', res.status, data)
+  return data
+}
+
+export async function fetchCart(headers = {}) {
+  const res = await fetch(`${API}/cart`, { headers })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'cart_request_failed', res.status, data)
+  return data
+}
+
+export async function addCartItem(payload, headers = {}) {
+  const res = await fetch(`${API}/cart`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(payload),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'add_cart_item_failed', res.status, data)
+  return data
+}
+
+export async function clearCart(headers = {}) {
+  const res = await fetch(`${API}/cart`, { method: 'DELETE', headers })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'clear_cart_failed', res.status, data)
+  return data
+}
+
+export async function checkoutCart(payload = {}, headers = {}) {
+  const res = await fetch(`${API}/cart/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(payload),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) throw requestError(data.error || 'checkout_cart_failed', res.status, data)
+  return data
+}
+
 export async function fetchBookings(headers = {}) {
   const res = await fetch(`${API}/bookings`, { headers })
   const data = await parseJSONSafe(res)

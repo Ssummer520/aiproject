@@ -28,6 +28,81 @@
       </div>
 
       <template v-else>
+        <section class="trip-workbench">
+          <div class="ai-planner-card">
+            <div>
+              <span class="section-kicker">AI Trip Planner</span>
+              <h2>{{ locale === 'zh' ? '生成可保存行程' : 'Generate a bookable itinerary' }}</h2>
+              <p>{{ locale === 'zh' ? '输入“杭州 2 天亲子低预算”，自动生成早中晚时间线并推荐可购买商品。' : 'Try “Hangzhou 2 days family low budget” to create a day-by-day plan with purchasable products.' }}</p>
+            </div>
+            <form class="ai-planner-form" @submit.prevent="generatePlan">
+              <input v-model="aiPrompt" class="auth-input" :placeholder="locale === 'zh' ? '杭州 2 天亲子低预算' : 'Hangzhou 2 days family low budget'" />
+              <button class="auth-submit" type="submit" :disabled="aiLoading">{{ aiLoading ? (locale === 'zh' ? '生成中...' : 'Generating...') : (locale === 'zh' ? '生成并保存' : 'Generate & save') }}</button>
+            </form>
+            <p v-if="plannerMessage" class="planner-message">{{ plannerMessage }}</p>
+          </div>
+
+          <div class="workbench-grid">
+            <section class="timeline-card">
+              <div class="section-head">
+                <div>
+                  <span class="section-kicker">Itinerary</span>
+                  <h2>{{ locale === 'zh' ? '行程时间线' : 'Trip timeline' }}</h2>
+                </div>
+                <strong>{{ formatMoney('CNY', itineraryBudget) }}</strong>
+              </div>
+              <div v-if="!itineraries.length" class="mini-empty">{{ locale === 'zh' ? '还没有草稿行程，先用 AI 生成一个。' : 'No draft itinerary yet. Generate one with AI first.' }}</div>
+              <article v-for="plan in itineraries" :key="plan.id" class="itinerary-block">
+                <div class="itinerary-title-row">
+                  <h3>{{ plan.title }}</h3>
+                  <span>{{ plan.city }} · {{ plan.guests }} {{ locale === 'zh' ? '人' : 'guests' }}</span>
+                </div>
+                <div v-for="day in groupItineraryItems(plan)" :key="`${plan.id}-${day.day}`" class="day-block">
+                  <strong>{{ locale === 'zh' ? `第 ${day.day} 天` : `Day ${day.day}` }}</strong>
+                  <div v-for="item in day.items" :key="item.id" class="timeline-item">
+                    <div class="timeline-time">{{ item.start_time || '09:00' }}</div>
+                    <div class="timeline-body">
+                      <router-link v-if="item.product_id" :to="`/product/${item.product_id}`">{{ item.title }}</router-link>
+                      <strong v-else>{{ item.title }}</strong>
+                      <p>{{ item.note }}</p>
+                      <small>{{ formatMoney('CNY', item.estimated_cost) }}</small>
+                    </div>
+                    <div class="timeline-actions">
+                      <button type="button" @click="moveTimelineItem(plan.id, item.id, 'up')">↑</button>
+                      <button type="button" @click="moveTimelineItem(plan.id, item.id, 'down')">↓</button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </section>
+
+            <section class="cart-card">
+              <div class="section-head">
+                <div>
+                  <span class="section-kicker">Cart</span>
+                  <h2>{{ locale === 'zh' ? '打包购物车' : 'Bundle cart' }}</h2>
+                </div>
+                <strong>{{ formatMoney(cart.currency, cart.total_amount) }}</strong>
+              </div>
+              <div v-if="!cart.items?.length" class="mini-empty">{{ locale === 'zh' ? '从商品详情页加入购物车后，可在这里多商品下单。' : 'Add products from detail pages, then checkout multiple items here.' }}</div>
+              <article v-for="item in cart.items" :key="item.id" class="cart-line">
+                <img :src="item.cover || FALLBACK_IMAGE" :alt="item.product_name" @error="onImgError" />
+                <div>
+                  <router-link :to="`/product/${item.product_id}`">{{ item.product_name }}</router-link>
+                  <p>{{ item.city }} · {{ item.package_name }} · {{ item.travel_date }}</p>
+                  <small>{{ item.adults }} {{ locale === 'zh' ? '成人' : 'adults' }}{{ item.children ? ` · ${item.children} ${locale === 'zh' ? '儿童' : 'children'}` : '' }}</small>
+                </div>
+                <strong>{{ formatMoney(cart.currency, item.subtotal) }}</strong>
+              </article>
+              <div v-if="cart.items?.length" class="cart-actions">
+                <button class="trip-action" type="button" :disabled="cartLoading" @click="clearCartItems">{{ locale === 'zh' ? '清空' : 'Clear' }}</button>
+                <button class="auth-submit" type="button" :disabled="cartLoading" @click="checkoutCartItems">{{ cartLoading ? (locale === 'zh' ? '下单中...' : 'Checking out...') : (locale === 'zh' ? '打包下单' : 'Checkout bundle') }}</button>
+              </div>
+              <p v-if="cartMessage" class="planner-message">{{ cartMessage }}</p>
+            </section>
+          </div>
+        </section>
+
         <div class="trips-tabs">
           <button :class="{ active: activeTab === 'upcoming' }" @click="activeTab = 'upcoming'">
             {{ locale === 'zh' ? '即将出行' : 'Upcoming' }}
@@ -179,7 +254,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { fetchBookings, fetchOrders, cancelBooking, cancelOrder, completeOrder, refundOrder, createProductReview } from '../composables/useProducts'
+import { fetchBookings, fetchOrders, cancelBooking, cancelOrder, completeOrder, refundOrder, createProductReview, fetchItineraries, generateItinerary, moveItineraryItem, fetchCart, clearCart, checkoutCart } from '../composables/useProducts'
 
 const { locale } = useI18n()
 const router = useRouter()
@@ -188,6 +263,13 @@ const { isLoggedIn, user, setAuth, authHeaders } = useAuth()
 const loading = ref(true)
 const trips = ref([])
 const productOrders = ref([])
+const itineraries = ref([])
+const cart = ref({ items: [], total_amount: 0, currency: 'CNY' })
+const aiPrompt = ref('杭州 2 天亲子低预算')
+const aiLoading = ref(false)
+const plannerMessage = ref('')
+const cartLoading = ref(false)
+const cartMessage = ref('')
 const activeTab = ref('upcoming')
 const showAuthModal = ref(null)
 const authEmail = ref('')
@@ -214,6 +296,8 @@ function formatMoney(currency = 'CNY', amount = 0) {
   const symbol = currency === 'CNY' ? '¥' : currency
   return `${symbol} ${Math.round(Number(amount || 0) * 100) / 100}`
 }
+
+const itineraryBudget = computed(() => itineraries.value.reduce((sum, plan) => sum + (plan.items || []).reduce((itemSum, item) => itemSum + Number(item.estimated_cost || 0), 0), 0))
 
 const reviewScoreFields = computed(() => [
   { key: 'quality', label: locale.value === 'zh' ? '体验质量' : 'Quality' },
@@ -291,6 +375,79 @@ function formatTripStatus(status) {
 
 function canCancelTrip(trip) {
   return ['confirmed', 'paid'].includes(trip.status)
+}
+
+function groupItineraryItems(plan) {
+  const groups = new Map()
+  ;(plan.items || []).forEach((item) => {
+    const day = Math.max(1, Number(item.day_index) || 1)
+    if (!groups.has(day)) groups.set(day, [])
+    groups.get(day).push(item)
+  })
+  return Array.from(groups.entries())
+    .sort(([left], [right]) => left - right)
+    .map(([day, items]) => ({
+      day,
+      items: [...items].sort((left, right) => (left.sort_order - right.sort_order) || String(left.start_time).localeCompare(String(right.start_time))),
+    }))
+}
+
+async function generatePlan() {
+  const prompt = aiPrompt.value.trim()
+  if (!prompt) return
+  aiLoading.value = true
+  plannerMessage.value = ''
+  try {
+    const plan = await generateItinerary({ prompt, save: true }, authHeaders())
+    itineraries.value = [plan, ...itineraries.value.filter(item => item.id !== plan.id)]
+    plannerMessage.value = locale.value === 'zh' ? '行程已生成并保存。' : 'Itinerary generated and saved.'
+  } catch (e) {
+    plannerMessage.value = locale.value === 'zh' ? '行程生成失败，请稍后重试。' : 'Failed to generate itinerary. Please try again.'
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+async function moveTimelineItem(planId, itemId, direction) {
+  try {
+    const updated = await moveItineraryItem(planId, itemId, direction, authHeaders())
+    const idx = itineraries.value.findIndex(item => item.id === updated.id)
+    if (idx >= 0) itineraries.value[idx] = updated
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function clearCartItems() {
+  cartLoading.value = true
+  cartMessage.value = ''
+  try {
+    await clearCart(authHeaders())
+    cart.value = { items: [], total_amount: 0, currency: 'CNY' }
+    cartMessage.value = locale.value === 'zh' ? '购物车已清空。' : 'Cart cleared.'
+  } catch (e) {
+    cartMessage.value = locale.value === 'zh' ? '清空失败。' : 'Failed to clear cart.'
+  } finally {
+    cartLoading.value = false
+  }
+}
+
+async function checkoutCartItems() {
+  cartLoading.value = true
+  cartMessage.value = ''
+  try {
+    const data = await checkoutCart({}, authHeaders())
+    if (data.orders?.length) {
+      productOrders.value = [...data.orders, ...productOrders.value]
+    }
+    cart.value = { items: [], total_amount: 0, currency: 'CNY' }
+    cartMessage.value = locale.value === 'zh' ? '打包下单成功，电子凭证已进入订单。' : 'Bundle checkout succeeded. E-vouchers are in orders.'
+    activeTab.value = 'upcoming'
+  } catch (e) {
+    cartMessage.value = locale.value === 'zh' ? '打包下单失败，请检查库存。' : 'Bundle checkout failed. Please check availability.'
+  } finally {
+    cartLoading.value = false
+  }
 }
 
 function updateOrder(order) {
@@ -378,12 +535,16 @@ async function fetchTrips() {
   loading.value = true
   tripsError.value = ''
   try {
-    const [bookings, orders] = await Promise.all([
+    const [bookings, orders, plans, cartSummary] = await Promise.all([
       fetchBookings(authHeaders()),
       fetchOrders(authHeaders()),
+      fetchItineraries(authHeaders()),
+      fetchCart(authHeaders()),
     ])
     trips.value = bookings
     productOrders.value = orders
+    itineraries.value = plans
+    cart.value = cartSummary
   } catch (e) {
     console.error(e)
     if (e.status === 401) {
@@ -796,6 +957,166 @@ watch(isLoggedIn, (value) => {
   font-size: 0.9rem;
   margin: 0;
 }
+
+.trip-workbench {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.ai-planner-card,
+.timeline-card,
+.cart-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ai-planner-card {
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 420px);
+  gap: 20px;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(255, 56, 92, 0.08), rgba(0, 122, 255, 0.08)), var(--surface);
+}
+
+.section-kicker {
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-planner-card h2,
+.section-head h2 {
+  margin: 4px 0 6px;
+}
+
+.ai-planner-card p,
+.timeline-body p,
+.cart-line p,
+.mini-empty {
+  color: var(--text-muted);
+}
+
+.ai-planner-form {
+  display: grid;
+  gap: 10px;
+}
+
+.planner-message {
+  margin: 0;
+  color: #0f766e;
+  font-weight: 800;
+}
+
+.workbench-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.9fr;
+  gap: 18px;
+}
+
+.section-head,
+.itinerary-title-row,
+.cart-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.itinerary-block,
+.day-block {
+  display: grid;
+  gap: 12px;
+}
+
+.itinerary-block {
+  margin-top: 16px;
+}
+
+.itinerary-title-row h3 {
+  margin: 0;
+}
+
+.itinerary-title-row span {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: var(--bg-soft);
+}
+
+.timeline-time {
+  color: var(--primary);
+  font-weight: 950;
+}
+
+.timeline-body a,
+.cart-line a {
+  color: var(--text);
+  font-weight: 950;
+  text-decoration: none;
+}
+
+.timeline-body p,
+.cart-line p {
+  margin: 4px 0;
+  font-size: 0.88rem;
+}
+
+.timeline-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.timeline-actions button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cart-line {
+  display: grid;
+  grid-template-columns: 62px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.cart-line img {
+  width: 62px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.cart-actions {
+  margin-top: 16px;
+}
+
+@media (max-width: 860px) {
+  .ai-planner-card,
+  .workbench-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 </style>
 
 <style scoped>

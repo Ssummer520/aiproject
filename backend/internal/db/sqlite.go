@@ -245,6 +245,54 @@ func migrate(db *sql.DB) error {
 			FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_reviews_product_created ON reviews(product_id, created_at DESC);`,
+
+		`CREATE TABLE IF NOT EXISTS itineraries (
+			id INTEGER NOT NULL,
+			user_id TEXT NOT NULL,
+			title TEXT NOT NULL,
+			city TEXT NOT NULL,
+			start_date TEXT NOT NULL,
+			end_date TEXT NOT NULL,
+			guests INTEGER NOT NULL,
+			budget REAL NOT NULL DEFAULT 0,
+			status TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			PRIMARY KEY(user_id, id)
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_itineraries_user_status ON itineraries(user_id, status, start_date);`,
+		`CREATE TABLE IF NOT EXISTS itinerary_items (
+			id INTEGER NOT NULL,
+			itinerary_id INTEGER NOT NULL,
+			user_id TEXT NOT NULL,
+			day_index INTEGER NOT NULL,
+			start_time TEXT NOT NULL,
+			end_time TEXT NOT NULL,
+			item_type TEXT NOT NULL,
+			product_id INTEGER NOT NULL DEFAULT 0,
+			destination_id INTEGER NOT NULL DEFAULT 0,
+			title TEXT NOT NULL,
+			note TEXT NOT NULL,
+			estimated_cost REAL NOT NULL DEFAULT 0,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			PRIMARY KEY(user_id, itinerary_id, id),
+			FOREIGN KEY(user_id, itinerary_id) REFERENCES itineraries(user_id, id) ON DELETE CASCADE
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_itinerary_items_order ON itinerary_items(user_id, itinerary_id, day_index, sort_order);`,
+		`CREATE TABLE IF NOT EXISTS cart_items (
+			id INTEGER NOT NULL,
+			user_id TEXT NOT NULL,
+			product_id INTEGER NOT NULL,
+			package_id INTEGER NOT NULL,
+			travel_date TEXT NOT NULL,
+			adults INTEGER NOT NULL,
+			children INTEGER NOT NULL,
+			quantity INTEGER NOT NULL,
+			selected_options TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			PRIMARY KEY(user_id, id)
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_cart_items_user_created ON cart_items(user_id, created_at DESC);`,
 	}
 	for _, statement := range statements {
 		if _, err := db.Exec(statement); err != nil {

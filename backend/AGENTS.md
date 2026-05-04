@@ -10,7 +10,7 @@ These instructions apply to all files under `backend/`.
 - The server entrypoint is `cmd/server/main.go` and listens on `http://localhost:8888`.
 - APIs are mounted under `/api/v1` and are consumed by the Vite frontend proxy at `/api`.
 - The codebase uses mostly standard-library `net/http`; avoid introducing a web framework unless explicitly requested.
-- OTA phases 1-2 from `PRODUCT_ROADMAP.md` are complete: Product, ProductPackage, Availability, Order/OrderItem, Coupon, and Review are implemented with SQLite-backed demo persistence.
+- OTA phases 1-3 from `PRODUCT_ROADMAP.md` are complete: Product, ProductPackage, Availability, Order/OrderItem, Coupon, and Review are implemented with SQLite-backed demo persistence.
 
 ## Architecture
 
@@ -83,7 +83,15 @@ These instructions apply to all files under `backend/`.
 - Product order items should include enough display data for Trips without extra joins, including product name, package name, city, cover, travel date, travellers, price, coupon totals, and usage instructions.
 - Reviews are verified at the service boundary by checking matching user product orders; anonymous or unmatched reviews must be rejected.
 - Current inventory is lightweight demo inventory: order creation validates availability and increments `booked_count`, but does not yet lock/decrement stock or integrate real payment.
-- Phase 3 backend work should focus on itinerary, cart/bundle ordering, AI itinerary-to-order conversion, and stronger inventory locking.
+- Phase 3 backend itinerary, cart/bundle ordering, and AI itinerary generation are complete; stronger inventory locking remains future work.
+
+## Phase 3 Completion Notes
+
+- Completed Phase 3 backend domains are `services/itinerary` and `services/cart`, backed by SQLite migrations in `internal/db/sqlite.go`.
+- Itinerary APIs support authenticated list/create/get, adding product/destination/custom timeline items, up/down item sorting, and local rule-based AI generation via `/api/v1/itineraries/generate`.
+- Cart APIs support authenticated summary, add item, clear cart, and multi-item checkout via `/api/v1/cart/checkout`; checkout creates product orders through `services/order` and clears the cart after success.
+- Keep order creation as the source of booking truth; itinerary and cart services should orchestrate but not duplicate product inventory/order pricing rules.
+- Future Phase 4 work should strengthen inventory locking, payment idempotency, merchant operations, CMS, and refund workflow depth.
 
 ## Validation
 

@@ -31,29 +31,6 @@
         <div class="product-layout">
           <div class="product-main">
             <section class="product-panel">
-              <h2>{{ locale === 'zh' ? '选择套餐' : 'Choose a package' }}</h2>
-              <div class="package-list">
-                <button
-                  v-for="pkg in product.packages || []"
-                  :key="pkg.id"
-                  class="package-option"
-                  :class="{ active: selectedPackageId === pkg.id }"
-                  @click="selectedPackageId = pkg.id"
-                >
-                  <div>
-                    <strong>{{ pkg.name }}</strong>
-                    <p>{{ pkg.description }}</p>
-                    <small>{{ pkg.refund_policy }}</small>
-                  </div>
-                  <div class="package-price">
-                    <del v-if="pkg.original_price > pkg.price">{{ formatPrice(pkg.original_price) }}</del>
-                    <span>{{ formatPrice(pkg.price) }}</span>
-                  </div>
-                </button>
-              </div>
-            </section>
-
-            <section class="product-panel">
               <h2>{{ locale === 'zh' ? '费用包含' : 'What is included' }}</h2>
               <div class="info-grid">
                 <div>
@@ -81,59 +58,29 @@
             </section>
           </div>
 
-          <aside class="product-booking-card">
-            <div class="booking-price-head">
-              <span>{{ selectedAvailability ? formatPrice(selectedAvailability.price) : formatPrice(selectedPackage?.price || product.base_price) }}</span>
-              <small>{{ locale === 'zh' ? '/ 人起' : '/ person' }}</small>
-            </div>
-
-            <label class="booking-field">
-              <span>{{ locale === 'zh' ? '出行日期' : 'Travel date' }}</span>
-              <input v-model="selectedDate" type="date" :min="today" />
-            </label>
-
-            <div class="stock-line" :class="{ danger: selectedAvailability && selectedAvailability.stock <= 5 }">
-              {{ availabilityText }}
-            </div>
-
-            <div class="guest-box">
-              <div class="guest-row">
-                <div>
-                  <strong>{{ locale === 'zh' ? '成人' : 'Adults' }}</strong>
-                  <small>{{ locale === 'zh' ? '12岁及以上' : 'Age 12+' }}</small>
-                </div>
-                <div class="qty-row compact">
-                  <button @click="adults = Math.max(1, adults - 1)">−</button>
-                  <span>{{ adults }}</span>
-                  <button @click="adults = Math.min(9, adults + 1)">+</button>
-                </div>
-              </div>
-              <div class="guest-row">
-                <div>
-                  <strong>{{ locale === 'zh' ? '儿童' : 'Children' }}</strong>
-                  <small>{{ locale === 'zh' ? '约7折计价' : '70% price' }}</small>
-                </div>
-                <div class="qty-row compact">
-                  <button @click="children = Math.max(0, children - 1)">−</button>
-                  <span>{{ children }}</span>
-                  <button @click="children = Math.min(8, children + 1)">+</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="price-breakdown">
-              <div><span>{{ locale === 'zh' ? '成人' : 'Adults' }} × {{ adults }}</span><span>{{ formatPrice(unitPrice * adults) }}</span></div>
-              <div v-if="children"><span>{{ locale === 'zh' ? '儿童' : 'Children' }} × {{ children }}</span><span>{{ formatPrice(unitPrice * 0.7 * children) }}</span></div>
-              <hr />
-              <div class="total"><span>{{ locale === 'zh' ? '总计' : 'Total' }}</span><span>{{ formatPrice(totalPrice) }}</span></div>
-            </div>
-
-            <p v-if="bookingError" class="booking-error">{{ bookingError }}</p>
-            <button class="reserve-btn" :disabled="!canBook || bookingLoading" @click="reserve">
-              {{ bookingLoading ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '立即预订' : 'Reserve now') }}
-            </button>
-            <p class="reserve-hint">{{ locale === 'zh' ? '演示环境使用模拟支付，不会真实扣款。' : 'Demo checkout uses mock payment. You will not be charged.' }}</p>
-          </aside>
+          <BookingPanel
+            mode="product"
+            :product="product"
+            :show-packages="true"
+            :selected-package-id="selectedPackageId"
+            :selected-package="selectedPackage"
+            :selected-availability="selectedAvailability"
+            :selected-date="selectedDate"
+            :adults="adults"
+            :children="children"
+            :unit-price="unitPrice"
+            :total-price="totalPrice"
+            :can-book="canBook"
+            :availability-text="availabilityText"
+            :booking-loading="bookingLoading"
+            :booking-error="bookingError"
+            :today="today"
+            @update:selected-package-id="selectedPackageId = $event"
+            @update:selected-date="selectedDate = $event"
+            @update:adults="adults = $event"
+            @update:children="children = $event"
+            @reserve="reserve"
+          />
         </div>
       </template>
     </main>
@@ -141,41 +88,47 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import BookingPanel from '../components/BookingPanel.vue'
 import SiteHeader from '../components/SiteHeader.vue'
-import { fetchProduct, createOrder } from '../composables/useProducts'
+import { fetchProduct } from '../composables/useProducts'
 import { useAuth } from '../composables/useAuth'
-import { useCurrency } from '../composables/useCurrency'
+import { useBookingPanel } from '../composables/useBookingPanel'
 
 const route = useRoute()
 const router = useRouter()
 const { locale } = useI18n()
 const { isLoggedIn, user, authHeaders } = useAuth()
-const { formatPrice } = useCurrency()
 
 const product = ref(null)
 const loading = ref(true)
-const selectedPackageId = ref(0)
-const selectedDate = ref(new Date().toISOString().split('T')[0])
-const adults = ref(1)
-const children = ref(0)
-const bookingLoading = ref(false)
-const bookingError = ref('')
 const fallback = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80'
-const today = new Date().toISOString().split('T')[0]
 
-const selectedPackage = computed(() => (product.value?.packages || []).find(pkg => pkg.id === selectedPackageId.value))
-const selectedAvailability = computed(() => (product.value?.availability || []).find(item => item.package_id === selectedPackageId.value && item.date === selectedDate.value))
-const unitPrice = computed(() => selectedAvailability.value?.price || selectedPackage.value?.price || product.value?.base_price || 0)
-const totalPrice = computed(() => unitPrice.value * adults.value + unitPrice.value * 0.7 * children.value)
-const canBook = computed(() => selectedPackage.value && selectedDate.value && selectedAvailability.value?.status === 'available' && selectedAvailability.value.stock >= adults.value + children.value)
-const availabilityText = computed(() => {
-  if (!selectedPackage.value) return locale.value === 'zh' ? '请先选择套餐' : 'Choose a package first'
-  if (!selectedAvailability.value) return locale.value === 'zh' ? '该日期暂无库存' : 'No availability for this date'
-  if (selectedAvailability.value.status !== 'available' || selectedAvailability.value.stock <= 0) return locale.value === 'zh' ? '该日期已售罄' : 'Sold out for this date'
-  return locale.value === 'zh' ? `剩余 ${selectedAvailability.value.stock} 份` : `${selectedAvailability.value.stock} spots left`
+const {
+  selectedPackageId,
+  selectedDate,
+  adults,
+  children,
+  bookingLoading,
+  bookingError,
+  today,
+  selectedPackage,
+  selectedAvailability,
+  unitPrice,
+  totalPrice,
+  canBook,
+  availabilityText,
+  syncInitialState,
+  reserve,
+} = useBookingPanel({
+  product,
+  locale,
+  user,
+  isLoggedIn,
+  authHeaders,
+  onBooked: () => router.push('/trips'),
 })
 
 function onImgError(e) {
@@ -186,44 +139,11 @@ async function loadProduct() {
   loading.value = true
   try {
     product.value = await fetchProduct(route.params.id)
-    selectedPackageId.value = product.value?.packages?.[0]?.id || 0
-    const firstAvailable = (product.value?.availability || []).find(item => item.status === 'available' && item.stock > 0)
-    if (firstAvailable?.date) selectedDate.value = firstAvailable.date
+    syncInitialState()
   } catch (e) {
     product.value = null
   } finally {
     loading.value = false
-  }
-}
-
-async function reserve() {
-  bookingError.value = ''
-  if (!isLoggedIn.value) {
-    bookingError.value = locale.value === 'zh' ? '请先登录后再预订。' : 'Please sign in before booking.'
-    return
-  }
-  if (!canBook.value) {
-    bookingError.value = locale.value === 'zh' ? '请选择有库存的套餐和日期。' : 'Please choose an available package and date.'
-    return
-  }
-  bookingLoading.value = true
-  try {
-    await createOrder({
-      product_id: product.value.id,
-      package_id: selectedPackageId.value,
-      travel_date: selectedDate.value,
-      adults: adults.value,
-      children: children.value,
-      contact_name: user.value?.email?.split('@')?.[0] || 'Guest',
-      contact_email: user.value?.email || '',
-    }, authHeaders())
-    router.push('/trips')
-  } catch (e) {
-    bookingError.value = e.message === 'availability_closed'
-      ? (locale.value === 'zh' ? '库存不足或该日期不可订。' : 'Not enough availability for this date.')
-      : (locale.value === 'zh' ? '预订失败，请稍后再试。' : 'Booking failed. Please try again.')
-  } finally {
-    bookingLoading.value = false
   }
 }
 

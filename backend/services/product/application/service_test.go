@@ -58,3 +58,18 @@ func TestProductServiceFilters(t *testing.T) {
 		t.Fatalf("expected only transport product, got %#v", transport.Results)
 	}
 }
+
+func TestProductServiceGetByDestinationID(t *testing.T) {
+	service := NewProductService()
+
+	product, err := service.GetByDestinationID(1)
+	if err != nil {
+		t.Fatalf("get product by destination: %v", err)
+	}
+	if product.ID != 101 || product.DestinationID != 1 {
+		t.Fatalf("unexpected destination mapping: %#v", product)
+	}
+	if _, err := service.GetByDestinationID(999999); err != ErrProductNotFound {
+		t.Fatalf("expected ErrProductNotFound, got %v", err)
+	}
+}

@@ -1,7 +1,5 @@
 <template>
   <div class="dest-page" @mousemove="handleMouseMove">
-
-    <!-- ======= 顶部导航栏 ======= -->
     <header class="dest-header">
       <div class="dest-header-inner">
         <router-link to="/" class="header-logo">
@@ -24,22 +22,17 @@
       </div>
     </header>
 
-    <!-- ======= 加载中 ======= -->
     <div v-if="loading" class="page-loading">
       <div class="spinner"></div>
       <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
     </div>
 
-    <!-- ======= 未找到 ======= -->
     <div v-else-if="!destination" class="page-error">
       <h2>{{ locale === 'zh' ? '未找到目的地' : 'Destination not found' }}</h2>
       <router-link to="/" class="back-home-btn">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
     </div>
 
-    <!-- ======= 主内容 ======= -->
     <div v-else class="dest-content">
-
-      <!-- 面包屑 -->
       <div class="dest-breadcrumb">
         <router-link to="/">Home</router-link>
         <span>›</span>
@@ -48,7 +41,6 @@
         <span>{{ destination.name }}</span>
       </div>
 
-      <!-- 图片画廊 -->
       <div class="gallery-grid">
         <div class="gallery-main" @click="openGallery(0)">
           <img :src="destination.cover" :alt="destination.name" class="gallery-main-img" @error="onImgError" />
@@ -62,13 +54,8 @@
         </div>
       </div>
 
-      <!-- 页面主体：左侧信息 + 右侧预订 -->
       <div class="dest-body">
-
-        <!-- ====== 左侧信息区 ====== -->
         <div class="dest-main">
-
-          <!-- 标题区 -->
           <div class="dest-title-block">
             <div class="dest-tags">
               <span v-for="t in (destination.tags || []).slice(0, 3)" :key="t" class="dest-tag">{{ t }}</span>
@@ -87,7 +74,6 @@
             </div>
           </div>
 
-          <!-- 快速信息条 -->
           <div class="quick-info-bar">
             <div class="qi-item">
               <span class="qi-icon">⏰</span>
@@ -95,7 +81,7 @@
             </div>
             <div class="qi-item">
               <span class="qi-icon">📏</span>
-              <div><span class="qi-label">{{ locale === 'zh' ? '建议游玩' : 'Duration' }}</span><span class="qi-val">{{ destination.duration || '3-5 ' + (locale === 'zh' ? '小时' : 'hours') }}</span></div>
+              <div><span class="qi-label">{{ locale === 'zh' ? '建议游玩' : 'Duration' }}</span><span class="qi-val">{{ bookingProduct?.duration || destination.duration || ('3-5 ' + (locale === 'zh' ? '小时' : 'hours')) }}</span></div>
             </div>
             <div class="qi-item">
               <span class="qi-icon">🎫</span>
@@ -107,189 +93,57 @@
             </div>
           </div>
 
-          <!-- 关于 -->
           <div class="dest-section">
             <h2 class="section-title">{{ locale === 'zh' ? '关于此地' : 'About this place' }}</h2>
             <p class="dest-desc">{{ destination.description }}</p>
           </div>
 
-          <!-- 亮点 -->
-          <div class="dest-section" v-if="destination.highlights?.length">
-            <h2 class="section-title">{{ locale === 'zh' ? '特色亮点' : 'Highlights' }}</h2>
-            <div class="highlights-grid">
-              <div v-for="(h, i) in destination.highlights" :key="i" class="hl-card">
-                <span class="hl-icon">{{ ['🌟','🎯','🏆','💎','🎪','🎭'][i % 6] }}</span>
-                <div><h4>{{ h.title }}</h4><p>{{ h.desc }}</p></div>
-              </div>
+          <div class="dest-section" v-if="bookingProduct?.included?.length || destination.amenities?.length">
+            <h2 class="section-title">{{ locale === 'zh' ? '费用包含' : 'What is included' }}</h2>
+            <div class="amenities-grid">
+              <div v-for="a in (bookingProduct?.included?.length ? bookingProduct.included : destination.amenities || [])" :key="a" class="amenity-pill">✓ {{ a }}</div>
             </div>
           </div>
 
-          <!-- 包含内容 -->
-          <div class="dest-section" v-if="destination.amenities?.length">
-            <h2 class="section-title">{{ locale === 'zh' ? '包含内容' : "What's included" }}</h2>
-            <div class="amenities-list">
-              <div v-for="a in destination.amenities" :key="a" class="amenity-item">
-                <span class="amenity-check">✓</span> {{ a }}
-              </div>
+          <div class="dest-section" v-if="bookingProduct?.meeting_point || bookingProduct?.usage || destination.policy">
+            <h2 class="section-title">{{ locale === 'zh' ? '使用方式与集合地点' : 'How to use & meeting point' }}</h2>
+            <div class="usage-card">
+              <p v-if="bookingProduct?.meeting_point"><strong>{{ locale === 'zh' ? '集合地点：' : 'Meeting point: ' }}</strong>{{ bookingProduct.meeting_point }}</p>
+              <p v-if="bookingProduct?.usage"><strong>{{ locale === 'zh' ? '使用方式：' : 'How to use: ' }}</strong>{{ bookingProduct.usage }}</p>
+              <p><strong>{{ locale === 'zh' ? '取消政策：' : 'Cancellation policy: ' }}</strong>{{ bookingProduct?.policy || destination.policy }}</p>
             </div>
           </div>
+        </div>
 
-          <!-- 位置 -->
-          <div class="dest-section">
-            <h2 class="section-title">{{ locale === 'zh' ? '位置与交通' : 'Location & Transport' }}</h2>
-            <div class="location-box">
-              <div class="map-placeholder-box">
-                <span class="map-pin-icon">📍</span>
-                <p>{{ destination.name }}</p>
-                <p class="map-coords">{{ destination.lat?.toFixed(4) }}, {{ destination.lng?.toFixed(4) }}</p>
-              </div>
-              <div class="location-text">
-                <p v-if="destination.address">📍 {{ destination.address }}</p>
-                <p v-if="destination.transport">🚇 {{ destination.transport }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 评价 -->
-          <div class="dest-section">
-            <div class="reviews-title-row">
-              <h2 class="section-title">{{ locale === 'zh' ? '旅客评价' : 'Reviews' }}</h2>
-              <div class="rating-big-box">
-                <span class="rating-num">{{ destination.rating }}</span>
-                <div class="rating-info">
-                  <div class="stars">★★★★★</div>
-                  <span class="rating-count">{{ destination.review_count }} {{ locale === 'zh' ? '条' : 'reviews' }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="rating-bars">
-              <div v-for="item in ratingBreakdown" :key="item.label" class="rb-row">
-                <span class="rb-label">{{ item.label }}</span>
-                <div class="rb-bar"><div class="rb-fill" :style="{ width: item.pct + '%' }"></div></div>
-                <span class="rb-pct">{{ item.pct }}%</span>
-              </div>
-            </div>
-            <div class="reviews-list">
-              <div v-for="r in reviews" :key="r.user" class="review-item">
-                <div class="review-user">
-                  <div class="reviewer-avatar">{{ r.user[0].toUpperCase() }}</div>
-                  <div class="reviewer-info">
-                    <strong>{{ r.user }}</strong>
-                    <div class="reviewer-meta">
-                      <span class="r-rating">★ {{ r.rating }}</span>
-                      <span>{{ r.date }}</span>
-                      <span class="r-type">{{ r.type }}</span>
-                    </div>
-                  </div>
-                </div>
-                <p class="review-text">{{ r.text }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 本周收藏榜 -->
-          <div class="dest-section" v-if="trendingThisWeek.length">
-            <h2 class="section-title">🔥 {{ locale === 'zh' ? '本周收藏榜' : 'Trending this week' }}</h2>
-            <div class="leaderboard">
-              <router-link v-for="(d, idx) in trendingThisWeek.slice(0, 5)" :key="'t-' + d.id" :to="'/destination/' + d.id" class="lb-row">
-                <span class="lb-rank" :class="{ top: idx < 3 }">{{ idx + 1 }}</span>
-                <img :src="d.cover" :alt="d.name" class="lb-thumb" @error="onImgError" />
-                <div class="lb-info">
-                  <span class="lb-name">{{ d.name }}</span>
-                  <span class="lb-meta">{{ d.city }}</span>
-                </div>
-                <button class="fav-btn-sm" :class="{ favorited: d.is_favorite && isLoggedIn }" @click.prevent.stop="toggleFav(d)">
-                  {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
-                </button>
-              </router-link>
-            </div>
-          </div>
-
-          <!-- 周边人气榜 -->
-          <div class="dest-section" v-if="mostViewedNearby.length">
-            <h2 class="section-title">📈 {{ locale === 'zh' ? '周边人气榜' : 'Most viewed nearby' }}</h2>
-            <div class="leaderboard">
-              <router-link v-for="(d, idx) in mostViewedNearby.slice(0, 5)" :key="'v-' + d.id" :to="'/destination/' + d.id" class="lb-row">
-                <span class="lb-rank" :class="{ top: idx < 3 }">{{ idx + 1 }}</span>
-                <img :src="d.cover" :alt="d.name" class="lb-thumb" @error="onImgError" />
-                <div class="lb-info">
-                  <span class="lb-name">{{ d.name }}</span>
-                  <span class="lb-meta">{{ d.city }} · {{ d.distance_km }}km</span>
-                </div>
-              </router-link>
-            </div>
-          </div>
-
-          <!-- 推荐目的地 -->
-          <div class="dest-section" v-if="recommendations.length">
-            <h2 class="section-title">{{ locale === 'zh' ? '相似推荐' : 'You might also like' }}</h2>
-            <div class="recs-scroll" ref="recsRef">
-              <div class="recs-track">
-                <router-link v-for="(d, idx) in displayRecommendations" :key="'r-' + idx" :to="'/destination/' + d.id" class="rec-card">
-                  <div class="rec-cover">
-                    <img :src="d.cover" :alt="d.name" @error="onImgError" />
-                    <button class="fav-btn-rec" :class="{ favorited: d.is_favorite && isLoggedIn }" @click.prevent.stop="toggleFav(d)">
-                      {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
-                    </button>
-                  </div>
-                  <div class="rec-body">
-                    <div class="rec-name">{{ d.name }}</div>
-                    <div class="rec-meta">{{ d.city }} · ★ {{ d.rating }}</div>
-                    <div class="rec-price">¥{{ 168 + idx * 10 }} <span>{{ $t('common.night') }}</span></div>
-                  </div>
-                </router-link>
-              </div>
-            </div>
-          </div>
-
-        </div><!-- /dest-main -->
-
-        <!-- ====== 右侧预订区 ====== -->
         <div class="dest-sidebar">
-          <!-- 预订卡片 -->
-          <div class="booking-card">
-            <div class="bk-price-row">
-              <span class="bk-amount">¥{{ selectedPkgPrice }}</span>
-              <span class="bk-unit">/ {{ locale === 'zh' ? '人起' : 'person' }}</span>
-              <span class="bk-rating">★ {{ destination.rating }}</span>
-            </div>
-
-            <div class="bk-form">
-              <div class="bk-row">
-                <div class="bk-group">
-                  <label>{{ locale === 'zh' ? '日期' : 'DATE' }}</label>
-                  <input type="date" v-model="selectedDate" :min="today" />
-                </div>
-              </div>
-              <div class="bk-group bk-group-full">
-                <label>{{ locale === 'zh' ? '人数' : 'TRAVELLERS' }}</label>
-                <div class="qty-row">
-                  <button @click="guests = Math.max(1, guests - 1)">−</button>
-                  <span>{{ guests }}</span>
-                  <button @click="guests = Math.min(10, guests + 1)">+</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="bk-price-detail" v-if="selectedPkgPrice">
-              <div class="bk-pb-row"><span>¥{{ selectedPkgPrice }} × {{ guests }}</span><span>¥{{ selectedPkgPrice * guests }}</span></div>
-              <div class="bk-pb-row"><span>{{ locale === 'zh' ? '服务费' : 'Service fee' }}</span><span>¥{{ Math.round(selectedPkgPrice * 0.1) }}</span></div>
-              <hr class="bk-div" />
-              <div class="bk-pb-row bk-total"><span>{{ locale === 'zh' ? '总计' : 'Total' }}</span><span>¥{{ selectedPkgPrice * guests + Math.round(selectedPkgPrice * 0.1) }}</span></div>
-            </div>
-
-            <p v-if="bookingError" class="bk-error">{{ bookingError }}</p>
-            <button class="bk-btn" :disabled="bookingLoading" @click="doBooking">{{ bookingLoading ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '立即预订' : 'Reserve now') }}</button>
-            <p class="bk-hint">{{ locale === 'zh' ? '暂时不会扣款' : "You won't be charged yet" }}</p>
-
-            <div class="bk-perks">
-              <div class="perk">✓ {{ locale === 'zh' ? '即时确认' : 'Instant confirmation' }}</div>
-              <div class="perk">🔄 {{ locale === 'zh' ? '免费取消' : 'Free cancellation' }}</div>
-              <div class="perk">🎫 {{ locale === 'zh' ? '手机凭证' : 'Mobile voucher' }}</div>
-            </div>
+          <BookingPanel
+            v-if="bookingProduct"
+            mode="destination"
+            :product="bookingProduct"
+            :show-packages="true"
+            :selected-package-id="selectedPackageId"
+            :selected-package="selectedPackage"
+            :selected-availability="selectedAvailability"
+            :selected-date="selectedDate"
+            :adults="adults"
+            :children="children"
+            :unit-price="unitPrice"
+            :total-price="totalPrice"
+            :can-book="canBook"
+            :availability-text="availabilityText"
+            :booking-loading="bookingLoading"
+            :booking-error="bookingError"
+            :today="today"
+            @update:selected-package-id="selectedPackageId = $event"
+            @update:selected-date="selectedDate = $event"
+            @update:adults="adults = $event"
+            @update:children="children = $event"
+            @reserve="reserve"
+          />
+          <div v-else class="booking-card booking-card--empty">
+            <p>{{ locale === 'zh' ? '该目的地暂未配置可下单商品。' : 'No OTA product is linked to this destination yet.' }}</p>
           </div>
 
-          <!-- Deals -->
           <div class="right-widget" v-if="deals.length">
             <h3 class="widget-title">🔥 {{ $t('deals.title') }}</h3>
             <div v-for="deal in deals.slice(0, 2)" :key="deal.id" class="deal-card">
@@ -299,7 +153,6 @@
             </div>
           </div>
 
-          <!-- 分类 -->
           <div class="right-widget">
             <h3 class="widget-title">{{ $t('common.categories') }}</h3>
             <div class="cat-tags">
@@ -309,7 +162,6 @@
             </div>
           </div>
 
-          <!-- 附近 -->
           <div class="right-widget" v-if="nearby.length">
             <h3 class="widget-title">{{ locale === 'zh' ? '附近热门' : 'Nearby' }}</h3>
             <div class="nearby-list">
@@ -323,17 +175,14 @@
             </div>
           </div>
 
-          <!-- 信任 -->
           <div class="right-widget trust-box">
             <div class="trust-row"><span>🔒</span><div><strong>{{ $t('trust.securePayment') }}</strong><p>{{ $t('trust.securePaymentDesc') }}</p></div></div>
             <div class="trust-row"><span>🎧</span><div><strong>{{ $t('trust.support') }}</strong><p>{{ $t('trust.supportDesc') }}</p></div></div>
           </div>
-        </div><!-- /dest-sidebar -->
+        </div>
+      </div>
+    </div>
 
-      </div><!-- /dest-body -->
-    </div><!-- /dest-content -->
-
-    <!-- 图片画廊弹层 -->
     <div v-if="galleryOpen" class="gallery-modal" @click.self="galleryOpen = false">
       <button class="gm-close" @click="galleryOpen = false">×</button>
       <button class="gm-prev" @click="galleryIdx = (galleryIdx - 1 + galleryAll.length) % galleryAll.length">‹</button>
@@ -342,17 +191,6 @@
       <div class="gm-counter">{{ galleryIdx + 1 }} / {{ galleryAll.length }}</div>
     </div>
 
-    <!-- 预订成功 -->
-    <div v-if="showBookingSuccess" class="modal-overlay" @click.self="showBookingSuccess = false">
-      <div class="success-modal">
-        <div class="success-icon">✓</div>
-        <h2>{{ locale === 'zh' ? '预订成功！' : 'Booking Confirmed!' }}</h2>
-        <p>{{ locale === 'zh' ? '感谢您的预订！' : 'Your booking is confirmed.' }}</p>
-        <button class="success-btn" @click="showBookingSuccess = false; router.push('/trips')">{{ locale === 'zh' ? '查看订单' : 'View My Trips' }}</button>
-      </div>
-    </div>
-
-    <!-- Auth Modal -->
     <div v-if="showAuthModal" class="modal-overlay" @click.self="showAuthModal = null">
       <div class="auth-modal">
         <button class="modal-close" @click="showAuthModal = null">×</button>
@@ -363,94 +201,79 @@
             <input v-model="authPassword" type="password" placeholder="Password" required class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
             <button type="submit" class="auth-submit">Sign in</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'register'">Create account</button>
           </form>
         </template>
-        <template v-else>
+        <template v-else-if="showAuthModal === 'register'">
           <h2>Create account</h2>
           <form @submit.prevent="doRegister" class="auth-form">
             <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password (min 6)" required class="auth-input" />
+            <input v-model="authPassword" type="password" placeholder="Password (min 6)" required minlength="6" class="auth-input" />
             <input v-model="authConfirmPassword" type="password" placeholder="Confirm password" class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
             <button type="submit" class="auth-submit">Register</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'login'">Already have an account?</button>
           </form>
         </template>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import BookingPanel from '../components/BookingPanel.vue'
 import { useAuth } from '../composables/useAuth'
-import { nextLocalDate } from '../composables/dateUtils'
+import { fetchProductByDestinationId } from '../composables/useProducts'
+import { useBookingPanel } from '../composables/useBookingPanel'
 
 const { locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { isLoggedIn, user, setAuth, clearAuth, authHeaders } = useAuth()
+const { isLoggedIn, user, setAuth, authHeaders } = useAuth()
 
 const API = '/api/v1'
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'
 function onImgError(e) { if (e?.target && e.target.src !== FALLBACK_IMAGE) e.target.src = FALLBACK_IMAGE }
-
 function toggleLang() { locale.value = locale.value === 'en' ? 'zh' : 'en' }
 
 const destination = ref(null)
+const bookingProduct = ref(null)
 const loading = ref(true)
 const showAuthModal = ref(null)
 const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const authError = ref('')
-const selectedDate = ref('')
-const guests = ref(2)
-const showBookingSuccess = ref(false)
-const bookingLoading = ref(false)
-const bookingError = ref('')
 
 const galleryOpen = ref(false)
 const galleryIdx = ref(0)
 const galleryAll = computed(() => [destination.value?.cover, ...(destination.value?.images || [])].filter(Boolean))
 function openGallery(idx) { galleryIdx.value = idx; galleryOpen.value = true }
 
-const today = new Date().toISOString().split('T')[0]
-const selectedCheckoutDate = computed(() => {
-  return nextLocalDate(selectedDate.value)
-})
-const selectedPkgPrice = computed(() => destination.value?.packages?.[0]?.price || destination.value?.price || 0)
-
-const ratingBreakdown = computed(() => {
-  if (!destination.value) return []
-  const total = destination.value.review_count || 100
-  return [
-    { label: locale.value === 'zh' ? '非常好' : 'Excellent', pct: Math.round(total * 0.45) },
-    { label: locale.value === 'zh' ? '很好' : 'Very Good', pct: Math.round(total * 0.28) },
-    { label: locale.value === 'zh' ? '好' : 'Good', pct: Math.round(total * 0.15) },
-    { label: locale.value === 'zh' ? '一般' : 'Average', pct: Math.round(total * 0.08) },
-    { label: locale.value === 'zh' ? '差' : 'Poor', pct: Math.round(total * 0.04) },
-  ]
-})
-
-const reviews = computed(() => {
-  const texts = {
-    en: [
-      { user: 'Sarah Chen', rating: 5, date: 'Mar 2026', type: 'Solo', text: 'Absolutely stunning! The views were breathtaking. Highly recommended!' },
-      { user: 'Mike Johnson', rating: 5, date: 'Feb 2026', type: 'Family', text: 'Perfect for families! Kids loved every moment. Staff were incredibly friendly.' },
-      { user: 'Emma Liu', rating: 4, date: 'Feb 2026', type: 'Couple', text: 'Beautiful scenery and great atmosphere. A bit crowded on weekends but still worth it.' },
-    ],
-    zh: [
-      { user: '李明', rating: 5, date: '2026年3月', type: '独自', text: '太棒了！风景令人惊叹。强烈推荐！' },
-      { user: '王芳', rating: 5, date: '2026年2月', type: '家庭', text: '非常适合家庭！孩子们玩得很开心，工作人员非常友好。' },
-      { user: '张伟', rating: 4, date: '2026年2月', type: '情侣', text: '风景优美，气氛很好。周末有点挤但仍然值得。' },
-    ]
-  }
-  return texts[locale.value] || texts.en
+const {
+  selectedPackageId,
+  selectedDate,
+  adults,
+  children,
+  bookingLoading,
+  bookingError,
+  today,
+  selectedPackage,
+  selectedAvailability,
+  unitPrice,
+  totalPrice,
+  canBook,
+  availabilityText,
+  syncInitialState,
+  reserve,
+} = useBookingPanel({
+  product: bookingProduct,
+  locale,
+  user,
+  isLoggedIn,
+  authHeaders,
+  onBooked: () => router.push('/trips'),
 })
 
 const nearby = ref([])
@@ -459,21 +282,24 @@ const deals = ref([])
 const trendingThisWeek = ref([])
 const mostViewedNearby = ref([])
 
-const recsRef = ref(null)
-
-const filteredRecommendations = computed(() =>
-  (recommendations.value || []).filter(d => d?.id && d?.cover && d.id !== destination.value?.id)
-)
-const displayRecommendations = computed(() =>
-  filteredRecommendations.value.length ? [...filteredRecommendations.value, ...filteredRecommendations.value] : []
-)
-
 async function fetchDestination() {
   loading.value = true
   try {
     const res = await fetch(`${API}/destinations/${route.params.id}`, { headers: { 'Accept-Language': locale.value, ...authHeaders() } })
-    if (res.ok) destination.value = await res.json()
-  } catch (e) { console.error(e) } finally { loading.value = false }
+    if (res.ok) {
+      destination.value = await res.json()
+      try {
+        bookingProduct.value = await fetchProductByDestinationId(destination.value.id)
+        syncInitialState()
+      } catch (_) {
+        bookingProduct.value = null
+      }
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
 }
 
 async function fetchHomePage() {
@@ -506,55 +332,7 @@ async function shareDestination() {
   const url = window.location.href
   const title = destination.value?.name || ''
   if (navigator.share) { try { await navigator.share({ title, url }) } catch (e) {} }
-  else { try { await navigator.clipboard.writeText(url); alert('已复制!') } catch (e) { alert('已复制!') } }
-}
-
-async function doBooking() {
-  bookingError.value = ''
-  if (!isLoggedIn.value) { showAuthModal.value = 'login'; return }
-  if (!selectedDate.value) {
-    bookingError.value = locale.value === 'zh' ? '请选择日期' : 'Please select a date'
-    return
-  }
-  if (!destination.value?.id) return
-  bookingLoading.value = true
-  try {
-    const res = await fetch(`${API}/bookings`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({
-        destination_id: destination.value.id,
-        check_in: selectedDate.value,
-        check_out: selectedCheckoutDate.value || selectedDate.value,
-        guests: guests.value
-      })
-    })
-    if (res.ok) {
-      showBookingSuccess.value = true
-    } else {
-      const data = await res.json().catch(() => ({}))
-      bookingError.value = mapBookingError(data.error)
-    }
-  } catch (e) {
-    console.error(e)
-    bookingError.value = locale.value === 'zh' ? '预订失败，请稍后重试' : 'Booking failed. Please try again.'
-  }
-  finally { bookingLoading.value = false }
-}
-
-function mapBookingError(errorCode) {
-  if (errorCode === 'invalid_booking_dates') {
-    return locale.value === 'zh' ? '日期无效，请重新选择。' : 'Invalid booking dates. Please choose again.'
-  }
-  if (errorCode === 'login_required') {
-    return locale.value === 'zh' ? '请先登录。' : 'Please sign in first.'
-  }
-  if (errorCode === 'destination_not_found') {
-    return locale.value === 'zh' ? '目的地不存在。' : 'Destination not found.'
-  }
-  if (errorCode === 'invalid_booking_request') {
-    return locale.value === 'zh' ? '预订信息不完整。' : 'Incomplete booking request.'
-  }
-  return locale.value === 'zh' ? '预订失败，请稍后重试。' : 'Booking failed. Please try again.'
+  else { try { await navigator.clipboard.writeText(url) } catch (e) {} }
 }
 
 async function doLogin() {
@@ -601,18 +379,12 @@ function handleMouseMove() {}
 
 watch(locale, () => { fetchDestination(); fetchHomePage() })
 watch(showAuthModal, () => { authError.value = '' })
-watch(showBookingSuccess, (value) => {
-  if (!value) return
-  fetchHomePage()
-})
 
 onMounted(() => {
-  selectedDate.value = today
   fetchDestination()
   fetchHomePage()
 })
 </script>
-
 <style scoped>
 /* ====== 全局 ====== */
 .dest-page {

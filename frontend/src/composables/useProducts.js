@@ -30,6 +30,15 @@ export async function fetchProduct(id) {
   return res.json()
 }
 
+export async function fetchProductByDestinationId(destinationId) {
+  const res = await fetch(`${API}/products?destination_id=${encodeURIComponent(destinationId)}`)
+  const data = await parseJSONSafe(res)
+  if (!res.ok) {
+    throw requestError(data.error || 'product_request_failed', res.status, data)
+  }
+  return data
+}
+
 export async function fetchProductAvailability(id, date = '') {
   const suffix = date ? `?date=${encodeURIComponent(date)}` : ''
   const res = await fetch(`${API}/products/${id}/availability${suffix}`)

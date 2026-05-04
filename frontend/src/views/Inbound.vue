@@ -4,7 +4,7 @@
     <main class="inbound-content">
       <section class="inbound-hero">
         <div>
-          <span class="section-kicker">China Inbound Kit</span>
+          <span class="section-kicker">{{ locale === 'zh' ? '中国旅行工具包' : 'China Inbound Kit' }}</span>
           <h1>{{ locale === 'zh' ? '中国入境游工具包' : 'China travel, made arrival-ready' }}</h1>
           <p>{{ locale === 'zh' ? '把 eSIM、接送、高铁、城市通票、支付预约攻略和中文沟通一次准备好。' : 'Prepare eSIM, transfers, high-speed rail, city passes, payment/reservation guides, and Chinese communication in one place.' }}</p>
         </div>
@@ -26,7 +26,7 @@
 
         <section class="inbound-grid">
           <article class="inbound-card">
-            <div class="card-head"><div><span class="section-kicker">Rail</span><h2>{{ locale === 'zh' ? '高铁建议' : 'High-speed rail' }}</h2></div></div>
+            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '高铁' : 'Rail' }}</span><h2>{{ locale === 'zh' ? '高铁建议' : 'High-speed rail' }}</h2></div></div>
             <div class="route-list">
               <div v-for="route in rails" :key="route.id" class="route-row">
                 <strong>{{ route.from }} → {{ route.to }}</strong>
@@ -38,7 +38,7 @@
           </article>
 
           <article class="inbound-card">
-            <div class="card-head"><div><span class="section-kicker">Transfer</span><h2>{{ locale === 'zh' ? '机场接送' : 'Airport transfers' }}</h2></div></div>
+            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '接送' : 'Transfer' }}</span><h2>{{ locale === 'zh' ? '机场接送' : 'Airport transfers' }}</h2></div></div>
             <div class="route-list">
               <div v-for="transfer in transfers" :key="transfer.id" class="route-row">
                 <strong>{{ transfer.city }} · {{ transfer.from }} → {{ transfer.to }}</strong>
@@ -51,7 +51,7 @@
         </section>
 
         <section class="inbound-card">
-          <div class="card-head"><div><span class="section-kicker">City Pass</span><h2>{{ locale === 'zh' ? '城市通票' : 'City passes' }}</h2></div></div>
+          <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '城市通票' : 'City Pass' }}</span><h2>{{ locale === 'zh' ? '城市通票' : 'City passes' }}</h2></div></div>
           <div class="pass-grid">
             <article v-for="pass in passes" :key="pass.id" class="pass-card">
               <strong>{{ pass.name }}</strong>
@@ -64,7 +64,7 @@
 
         <section class="inbound-grid">
           <article class="inbound-card concierge-card">
-            <div><span class="section-kicker">AI Concierge</span><h2>{{ locale === 'zh' ? '跨语言旅行管家' : 'Cross-language concierge' }}</h2></div>
+            <div><span class="section-kicker">{{ locale === 'zh' ? 'AI 管家' : 'AI Concierge' }}</span><h2>{{ locale === 'zh' ? '跨语言旅行管家' : 'Cross-language concierge' }}</h2></div>
             <form class="concierge-form" @submit.prevent="askConcierge">
               <input v-model="conciergePrompt" class="auth-input" :placeholder="locale === 'zh' ? '帮我生成给司机的中文，并安排杭州2天低预算' : 'Generate Chinese for driver and plan Hangzhou 2 days low budget'" />
               <button class="primary-btn" type="submit" :disabled="conciergeLoading">{{ conciergeLoading ? (locale === 'zh' ? '生成中...' : 'Generating...') : (locale === 'zh' ? '生成建议' : 'Generate') }}</button>
@@ -80,7 +80,7 @@
           </article>
 
           <article class="inbound-card">
-            <div><span class="section-kicker">Guides</span><h2>{{ locale === 'zh' ? '海外游客城市攻略' : 'City practical guides' }}</h2></div>
+            <div><span class="section-kicker">{{ locale === 'zh' ? '攻略' : 'Guides' }}</span><h2>{{ locale === 'zh' ? '海外游客城市攻略' : 'City practical guides' }}</h2></div>
             <select v-model="selectedCity" class="auth-input"><option v-for="guide in guides" :key="guide.city" :value="guide.city">{{ guide.city }}</option></select>
             <div v-if="selectedGuide" class="guide-detail">
               <p><strong>{{ locale === 'zh' ? '最佳季节：' : 'Best season: ' }}</strong>{{ selectedGuide.best_season }}</p>

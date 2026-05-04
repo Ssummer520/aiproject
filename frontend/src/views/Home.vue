@@ -16,9 +16,9 @@
       <div class="header-actions">
         <button class="map-toggle-header" @click="showMapModal = true">
           <span class="map-icon">🗺️</span>
-          <span>Map</span>
+          <span>{{ $t('ui.map') }}</span>
         </button>
-        <button class="action-btn" @click="toggleLang" title="Switch Language/Currency">🌐 {{ locale.toUpperCase() }}</button>
+        <button class="action-btn" @click="toggleLang" :title="$t('ui.switchLanguageCurrency')">🌐 {{ locale.toUpperCase() }}</button>
         <div class="currency-dropdown">
           <button class="currency-btn" @click="showCurrencyMenu = !showCurrencyMenu">
             {{ currencySymbol }} {{ currency }}
@@ -34,9 +34,9 @@
         <div class="user-profile" v-if="isLoggedIn">
           <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
           <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
-          <button class="logout-btn" @click="logout">Log out</button>
+          <button class="logout-btn" @click="logout">{{ $t('auth.logOut') }}</button>
         </div>
-        <button v-else class="signin-btn" @click="showAuthModal = 'login'">Sign in</button>
+        <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
       </div>
     </header>
 
@@ -105,14 +105,14 @@
             </div>
 
             <button v-if="categoryTree.length > 6" class="cat-show-more" :class="{ expanded: showAllCats }" @click="showAllCats = !showAllCats">
-              {{ showAllCats ? 'Show Less' : 'Show More' }}
+              {{ showAllCats ? $t('ui.showLess') : $t('ui.showMore') }}
             </button>
           </div>
         </div>
 
         <div class="sidebar-widget nearby-widget">
           <h3 class="filter-title">{{ $t('nearby.title') }}</h3>
-          <div v-if="nearbyLoading" class="loading">Loading...</div>
+          <div v-if="nearbyLoading" class="loading">{{ $t('ui.loading') }}</div>
           <div v-else-if="nearbyError" class="error">{{ nearbyError }}</div>
           <div v-else class="nearby-list-unified">
             <router-link v-for="d in nearby.slice(0, 5)" :key="d.id" :to="'/destination/' + d.id" class="nearby-item-unified">
@@ -136,11 +136,11 @@
                 <div class="header-left">
                   <h2 class="section-title">{{ $t('recommendations.title') }}</h2>
                   <p v-if="isLoggedIn" class="section-subtitle">{{ $t('recommendations.locationHint') }}</p>
-                  <p v-else class="section-subtitle section-subtitle--muted">{{ locale === 'zh' ? '登录后可同步收藏与浏览记录' : 'Sign in to sync wishlist & history' }}</p>
+                  <p v-else class="section-subtitle section-subtitle--muted">{{ $t('auth.syncHint') }}</p>
                 </div>
-                <router-link to="/search" class="view-all-link">View all</router-link>
+                <router-link to="/search" class="view-all-link">{{ $t('homeContent.viewAll') }}</router-link>
               </div>
-              <div v-if="recLoading" class="loading">Loading...</div>
+              <div v-if="recLoading" class="loading">{{ $t('ui.loading') }}</div>
               <div v-else-if="recError" class="error">{{ recError }}</div>
               <div
                 v-else
@@ -202,7 +202,7 @@
                 {{ locale === 'zh' ? channel.labelZh : channel.label }}
               </button>
             </div>
-            <div v-if="productsLoading" class="loading">Loading...</div>
+            <div v-if="productsLoading" class="loading">{{ $t('ui.loading') }}</div>
             <div v-else-if="activeChannelProducts.length" class="product-home-grid">
               <ProductCard v-for="product in activeChannelProducts" :key="product.id" :product="product" />
             </div>
@@ -224,7 +224,7 @@
                 <router-link v-for="(d, idx) in nearby" :key="'nearby-' + idx" :to="'/destination/' + d.id" class="dest-card carousel-item">
                   <div class="cover-wrap">
                     <img :src="d.cover" :alt="d.name" class="cover" loading="lazy" @error="onImgError" />
-                    <div class="card-badge">HOT</div>
+                    <div class="card-badge">{{ $t('homeContent.hotBadge') }}</div>
                   </div>
                   <div class="body">
                     <div class="name">{{ d.name }}</div>
@@ -271,14 +271,14 @@
               <div class="guide-card">
                 <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400" alt="Guide 1" class="guide-img" @error="onImgError" />
                 <div class="guide-info">
-                  <h3>Top 10 Street Foods in Chengdu</h3>
+                  <h3>{{ $t('homeContent.streetFoodsTitle') }}</h3>
                   <span>{{ $t('common.readMore') }} →</span>
                 </div>
               </div>
               <div class="guide-card">
                 <img src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=400" alt="Guide 2" class="guide-img" @error="onImgError" />
                 <div class="guide-info">
-                  <h3>Hidden Gems of Beijing</h3>
+                  <h3>{{ $t('homeContent.beijingGemsTitle') }}</h3>
                   <span>{{ $t('common.readMore') }} →</span>
                 </div>
               </div>
@@ -292,24 +292,24 @@
               <div class="blog-card blog-card-lg">
                 <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800" class="blog-img" @error="onImgError" />
                 <div class="blog-content">
-                  <span class="blog-tag">Road Trip</span>
-                  <h3>Switzerland of the East: A Week in Tibet</h3>
-                  <p>Discovering the hidden valleys and sacred mountains of the Himalayas.</p>
+                  <span class="blog-tag">{{ $t('homeContent.roadTripTag') }}</span>
+                  <h3>{{ $t('homeContent.tibetTitle') }}</h3>
+                  <p>{{ $t('homeContent.himalayaDesc') }}</p>
                 </div>
               </div>
               <div class="blog-col">
                 <div class="blog-card blog-card-sm">
                   <img src="https://images.unsplash.com/photo-1528127269322-539801943592?w=600" class="blog-img" @error="onImgError" />
                   <div class="blog-content">
-                    <span class="blog-tag">Culture</span>
-                    <h3>The Ancient Art of Tea Making in Hangzhou</h3>
+                    <span class="blog-tag">{{ $t('homeContent.teaTag') }}</span>
+                    <h3>{{ $t('homeContent.teaTitle') }}</h3>
                   </div>
                 </div>
                 <div class="blog-card blog-card-sm">
                   <img src="https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=600" class="blog-img" @error="onImgError" />
                   <div class="blog-content">
-                    <span class="blog-tag">Food</span>
-                    <h3>Why Spicy Food is Life in Sichuan</h3>
+                    <span class="blog-tag">{{ $t('homeContent.foodTag') }}</span>
+                    <h3>{{ $t('homeContent.foodTitle') }}</h3>
                   </div>
                 </div>
               </div>
@@ -323,27 +323,27 @@
           <div class="sidebar-widget history-wishlist-widget">
             <h3 class="widget-title">{{ $t('nav.history') }} / {{ $t('nav.wishlist') }}</h3>
             <template v-if="!isLoggedIn">
-              <p class="auth-required-hint">Sign in to view your history and wishlist.</p>
-              <button class="auth-required-btn" @click="showAuthModal = 'login'">Sign in</button>
+              <p class="auth-required-hint">{{ $t('auth.authRequiredHistory') }}</p>
+              <button class="auth-required-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
             </template>
             <template v-else>
               <div class="tabs tabs-compact">
-                <button :class="{ active: activeSidebarTab === 'history' }" @click="activeSidebarTab = 'history'">Recent</button>
-                <button :class="{ active: activeSidebarTab === 'wishlist' }" @click="activeSidebarTab = 'wishlist'">Wishlist</button>
+                <button :class="{ active: activeSidebarTab === 'history' }" @click="activeSidebarTab = 'history'">{{ $t('ui.recent') }}</button>
+                <button :class="{ active: activeSidebarTab === 'wishlist' }" @click="activeSidebarTab = 'wishlist'">{{ $t('nav.wishlist') }}</button>
               </div>
               <div v-if="activeSidebarTab === 'history'" class="sidebar-dest-list">
                 <router-link v-for="d in history" :key="d.id" :to="'/destination/' + d.id" class="sidebar-dest-row">
                   <img :src="d.cover" :alt="d.name" class="sidebar-dest-thumb" @error="onImgError" />
                   <span class="sidebar-dest-name">{{ d.name }}</span>
                 </router-link>
-                <p v-if="history.length === 0" class="empty-hint-mini">No recent views</p>
+                <p v-if="history.length === 0" class="empty-hint-mini">{{ $t('common.noRecent') }}</p>
               </div>
               <div v-else class="sidebar-dest-list">
                 <router-link v-for="d in wishlist" :key="d.id" :to="'/destination/' + d.id" class="sidebar-dest-row">
                   <img :src="d.cover" :alt="d.name" class="sidebar-dest-thumb" @error="onImgError" />
                   <span class="sidebar-dest-name">{{ d.name }}</span>
                 </router-link>
-                <p v-if="wishlist.length === 0" class="empty-hint-mini">No wishlist items</p>
+                <p v-if="wishlist.length === 0" class="empty-hint-mini">{{ $t('ui.noWishlist') }}</p>
               </div>
             </template>
           </div>
@@ -365,14 +365,14 @@
           <h3 class="widget-title">{{ $t('common.inspiration') }}</h3>
           <div class="inspiration-list">
             <article class="mini-inspiration">
-              <span class="ins-badge">Topic</span>
-              <h4>48h in Hangzhou</h4>
-              <p>Cycling West Lake & Lingyin Temple</p>
+              <span class="ins-badge">{{ $t('ui.topic') }}</span>
+              <h4>{{ $t('homeContent.hangzhou48Title') }}</h4>
+              <p>{{ $t('homeContent.hangzhou48Desc') }}</p>
             </article>
             <article class="mini-inspiration">
-              <span class="ins-badge hot">Hot</span>
-              <h4>Family Fun List</h4>
-              <p>Top theme parks in Shanghai & beyond</p>
+              <span class="ins-badge hot">{{ $t('ui.hot') }}</span>
+              <h4>{{ $t('homeContent.familyFunTitle') }}</h4>
+              <p>{{ $t('homeContent.familyFunDesc') }}</p>
             </article>
           </div>
         </div>
@@ -466,7 +466,7 @@
         <span>🌍 {{ $t('trust.globalSupport') }}</span>
       </div>
       <div class="footer-links">
-        <p>© 2026 ChinaTravel, Inc. · Created by Alan Wang · <a href="#">Privacy</a> · <a href="#">Terms</a></p>
+        <p>© 2026 ChinaTravel, Inc. · Created by Alan Wang · <a href="#">{{ $t('homeContent.privacy') }}</a> · <a href="#">{{ $t('homeContent.terms') }}</a></p>
       </div>
     </footer>
 
@@ -475,46 +475,46 @@
       <div class="auth-modal-card">
         <button class="modal-close" @click="showAuthModal = null">×</button>
         <template v-if="showAuthModal === 'login'">
-          <h2 class="auth-modal-title">Sign in</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.signIn') }}</h2>
           <form @submit.prevent="doLogin" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password" required class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.password')" required class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Sign in</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'forgot'">Forgot password?</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'register'">Create account</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.signIn') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'forgot'">{{ $t('auth.forgotPasswordQuestion') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'register'">{{ $t('auth.createAccount') }}</button>
           </form>
         </template>
         <template v-else-if="showAuthModal === 'register'">
-          <h2 class="auth-modal-title">Create account</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.createAccount') }}</h2>
           <form @submit.prevent="doRegister" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password (min 6)" required minlength="6" class="auth-input" />
-            <input v-model="authConfirmPassword" type="password" placeholder="Confirm password" class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.passwordMin')" required minlength="6" class="auth-input" />
+            <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmPassword')" class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Register</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'login'">Already have an account? Sign in</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.register') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.alreadyHaveAccount') }}</button>
           </form>
         </template>
         <template v-else-if="showAuthModal === 'forgot'">
-          <h2 class="auth-modal-title">Forgot password</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.forgotPassword') }}</h2>
           <form @submit.prevent="doForgotPassword" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
             <p v-if="authSuccess" class="auth-success">{{ authSuccess }}</p>
-            <button type="submit" class="auth-submit">Send reset link</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'login'">Back to Sign in</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.sendResetLink') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.backToSignIn') }}</button>
           </form>
         </template>
         <template v-else-if="showAuthModal === 'reset'">
-          <h2 class="auth-modal-title">Reset password</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.resetPassword') }}</h2>
           <form @submit.prevent="doResetPassword" class="auth-form">
-            <input v-model="authResetToken" type="text" placeholder="Reset token (from email)" class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="New password (min 6)" required minlength="6" class="auth-input" />
-            <input v-model="authConfirmPassword" type="password" placeholder="Confirm new password" class="auth-input" />
+            <input v-model="authResetToken" type="text" :placeholder="$t('auth.resetToken')" class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.newPassword')" required minlength="6" class="auth-input" />
+            <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmNewPassword')" class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Reset password</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'login'">Back to Sign in</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.resetPassword') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.backToSignIn') }}</button>
           </form>
         </template>
       </div>
@@ -561,7 +561,7 @@ import { fetchProducts } from '../composables/useProducts'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 import ProductCard from '../components/ProductCard.vue'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const { token, user, isLoggedIn, setAuth, clearAuth, authHeaders } = useAuth()
@@ -599,7 +599,7 @@ async function doLogin() {
 async function doRegister() {
   authError.value = ''
   if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = 'Passwords do not match'
+    authError.value = t('auth.passwordsDoNotMatch')
     return
   }
   try {
@@ -610,10 +610,10 @@ async function doRegister() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'email_already_registered' ? 'Email already registered.' : (data.error || 'Registration failed')
+      authError.value = data.error === 'email_already_registered' ? t('auth.emailAlreadyRegistered') : (data.error || t('auth.registrationFailed'))
       return
     }
-    authSuccess.value = 'Account created. Sign in below.'
+    authSuccess.value = t('auth.accountCreated')
     showAuthModal.value = 'login'
   } catch (e) {
     authError.value = 'Network error'
@@ -631,7 +631,7 @@ async function doForgotPassword() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'user_not_found' ? 'No account with this email.' : (data.error || 'Request failed')
+      authError.value = data.error === 'user_not_found' ? t('auth.noAccount') : (data.error || t('auth.requestFailed'))
       return
     }
     authSuccess.value = 'Check your email for reset link. (Demo: use reset_token from response if needed.)'
@@ -645,7 +645,7 @@ async function doForgotPassword() {
 async function doResetPassword() {
   authError.value = ''
   if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = 'Passwords do not match'
+    authError.value = t('auth.passwordsDoNotMatch')
     return
   }
   try {
@@ -659,7 +659,7 @@ async function doResetPassword() {
       authError.value = data.error === 'invalid_or_expired_token' ? 'Invalid or expired reset token.' : (data.error || 'Reset failed')
       return
     }
-    authSuccess.value = 'Password reset. Sign in below.'
+    authSuccess.value = t('auth.passwordReset')
     showAuthModal.value = 'login'
   } catch (e) {
     authError.value = 'Network error'

@@ -7,8 +7,8 @@
           <span>ChinaTravel</span>
         </router-link>
         <nav class="header-nav">
-          <router-link to="/" class="header-nav-link">Home</router-link>
-          <router-link to="/search" class="header-nav-link">Explore</router-link>
+          <router-link to="/" class="header-nav-link">{{ locale === 'zh' ? '首页' : 'Home' }}</router-link>
+          <router-link to="/search" class="header-nav-link">{{ locale === 'zh' ? '探索' : 'Explore' }}</router-link>
           <router-link to="/trips" class="header-nav-link">{{ $t('nav.myTrips') }}</router-link>
         </nav>
         <div class="header-actions">
@@ -17,7 +17,7 @@
             <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
             <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
           </div>
-          <button v-else class="signin-btn" @click="showAuthModal = 'login'">Sign in</button>
+          <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
         </div>
       </div>
     </header>
@@ -34,7 +34,7 @@
 
     <div v-else class="dest-content">
       <div class="dest-breadcrumb">
-        <router-link to="/">Home</router-link>
+        <router-link to="/">{{ locale === 'zh' ? '首页' : 'Home' }}</router-link>
         <span>›</span>
         <router-link :to="'/city/' + (destination.city || '').toLowerCase()">{{ destination.city }}</router-link>
         <span>›</span>
@@ -209,22 +209,22 @@
       <div class="auth-modal">
         <button class="modal-close" @click="showAuthModal = null">×</button>
         <template v-if="showAuthModal === 'login'">
-          <h2>Sign in</h2>
+          <h2>{{ $t('auth.signIn') }}</h2>
           <form @submit.prevent="doLogin" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password" required class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.password')" required class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Sign in</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.signIn') }}</button>
           </form>
         </template>
         <template v-else-if="showAuthModal === 'register'">
-          <h2>Create account</h2>
+          <h2>{{ $t('auth.createAccount') }}</h2>
           <form @submit.prevent="doRegister" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password (min 6)" required minlength="6" class="auth-input" />
-            <input v-model="authConfirmPassword" type="password" placeholder="Confirm password" class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.passwordMin')" required minlength="6" class="auth-input" />
+            <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmPassword')" class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Register</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.register') }}</button>
           </form>
         </template>
       </div>
@@ -241,7 +241,7 @@ import { useAuth } from '../composables/useAuth'
 import { fetchProductByDestinationId } from '../composables/useProducts'
 import { useBookingPanel } from '../composables/useBookingPanel'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { isLoggedIn, user, setAuth, authHeaders } = useAuth()
@@ -379,14 +379,14 @@ async function doLogin() {
 
 async function doRegister() {
   authError.value = ''
-  if (authPassword.value !== authConfirmPassword.value) { authError.value = 'Passwords do not match'; return }
+  if (authPassword.value !== authConfirmPassword.value) { authError.value = t('auth.passwordsDoNotMatch'); return }
   try {
     const res = await fetch(API + '/auth/register', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: authEmail.value.trim().toLowerCase(), password: authPassword.value })
     })
     const data = await res.json()
-    if (!res.ok) { authError.value = data.error || 'Registration failed'; return }
+    if (!res.ok) { authError.value = data.error || t('auth.registrationFailed'); return }
     showAuthModal.value = 'login'
   } catch (e) { authError.value = 'Network error' }
 }

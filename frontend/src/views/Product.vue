@@ -84,7 +84,7 @@
                 <h2>{{ locale === 'zh' ? '真实评价' : 'Verified reviews' }}</h2>
                 <select v-model="reviewLanguage">
                   <option value="">{{ locale === 'zh' ? '全部语言' : 'All languages' }}</option>
-                  <option value="en">English</option>
+                  <option value="en">{{ locale === 'zh' ? '英文' : 'English' }}</option>
                   <option value="zh">中文</option>
                 </select>
               </div>

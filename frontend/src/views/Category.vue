@@ -15,7 +15,7 @@
           <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
           <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
         </div>
-        <button v-else class="signin-btn" @click="showAuthModal = 'login'">Sign in</button>
+        <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
       </div>
     </header>
 

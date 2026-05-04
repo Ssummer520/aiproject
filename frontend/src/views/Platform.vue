@@ -4,7 +4,7 @@
     <main class="platform-content">
       <section class="platform-hero">
         <div>
-          <span class="section-kicker">Phase 4 Platform</span>
+          <span class="section-kicker">{{ locale === 'zh' ? '四期平台' : 'Phase 4 Platform' }}</span>
           <h1>{{ locale === 'zh' ? '运营平台' : 'Operations Platform' }}</h1>
           <p>{{ locale === 'zh' ? '商家、库存、售后、会员、CMS 与经营数据的可运营平台雏形。' : 'Merchant, inventory, after-sales, membership, CMS, and operating metrics in one console.' }}</p>
         </div>
@@ -34,7 +34,7 @@
         <section class="platform-grid">
           <article class="platform-card">
             <div class="card-head">
-              <div><span class="section-kicker">Merchant</span><h2>{{ locale === 'zh' ? '商家后台' : 'Merchant console' }}</h2></div>
+              <div><span class="section-kicker">{{ locale === 'zh' ? '商家' : 'Merchant' }}</span><h2>{{ locale === 'zh' ? '商家后台' : 'Merchant console' }}</h2></div>
               <strong>{{ merchants.length }}</strong>
             </div>
             <div class="merchant-list">
@@ -46,12 +46,12 @@
           </article>
 
           <article class="platform-card">
-            <div class="card-head"><div><span class="section-kicker">Membership</span><h2>{{ locale === 'zh' ? '会员积分' : 'Membership' }}</h2></div><strong>{{ profile.membership_level || 'Silver' }}</strong></div>
+            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '会员' : 'Membership' }}</span><h2>{{ locale === 'zh' ? '会员积分' : 'Membership' }}</h2></div><strong>{{ profile.membership_level || 'Silver' }}</strong></div>
             <form class="profile-form" @submit.prevent="saveProfile">
               <input v-model="profileForm.display_name" class="auth-input" :placeholder="locale === 'zh' ? '显示名' : 'Display name'" />
               <input v-model="profileForm.nationality" class="auth-input" :placeholder="locale === 'zh' ? '国籍' : 'Nationality'" />
               <input v-model.number="profileForm.points_balance" class="auth-input" type="number" min="0" :placeholder="locale === 'zh' ? '积分' : 'Points'" />
-              <select v-model="profileForm.membership_level" class="auth-input"><option>Silver</option><option>Gold</option><option>Platinum</option></select>
+              <select v-model="profileForm.membership_level" class="auth-input"><option value="Silver">{{ locale === 'zh' ? '白银' : 'Silver' }}</option><option value="Gold">{{ locale === 'zh' ? '黄金' : 'Gold' }}</option><option value="Platinum">{{ locale === 'zh' ? '铂金' : 'Platinum' }}</option></select>
               <button class="primary-btn" type="submit" :disabled="profileSaving">{{ profileSaving ? (locale === 'zh' ? '保存中...' : 'Saving...') : (locale === 'zh' ? '保存会员资料' : 'Save profile') }}</button>
             </form>
             <p v-if="profileMessage" class="success-text">{{ profileMessage }}</p>
@@ -59,10 +59,10 @@
         </section>
 
         <section class="platform-card">
-          <div class="card-head"><div><span class="section-kicker">Inventory</span><h2>{{ locale === 'zh' ? '日期价格库存' : 'Date price inventory' }}</h2></div><button class="secondary-btn" @click="quickRestock">{{ locale === 'zh' ? '一键补库存' : 'Quick restock' }}</button></div>
+          <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '库存' : 'Inventory' }}</span><h2>{{ locale === 'zh' ? '日期价格库存' : 'Date price inventory' }}</h2></div><button class="secondary-btn" @click="quickRestock">{{ locale === 'zh' ? '一键补库存' : 'Quick restock' }}</button></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Product</th><th>Merchant</th><th>Date</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead>
+              <thead><tr><th>{{ locale === 'zh' ? '商品' : 'Product' }}</th><th>{{ locale === 'zh' ? '商家' : 'Merchant' }}</th><th>{{ locale === 'zh' ? '日期' : 'Date' }}</th><th>{{ locale === 'zh' ? '价格' : 'Price' }}</th><th>{{ locale === 'zh' ? '库存' : 'Stock' }}</th><th>{{ locale === 'zh' ? '状态' : 'Status' }}</th></tr></thead>
               <tbody>
                 <tr v-for="item in inventory.slice(0, 10)" :key="`${item.package_id}-${item.date}`">
                   <td><router-link :to="`/product/${item.product_id}`">{{ item.product_name }}</router-link><small>{{ item.package_name }}</small></td>
@@ -79,7 +79,7 @@
 
         <section class="platform-grid">
           <article class="platform-card">
-            <div class="card-head"><div><span class="section-kicker">After-sales</span><h2>{{ locale === 'zh' ? '订单售后' : 'After-sales' }}</h2></div><strong>{{ orders.length }}</strong></div>
+            <div class="card-head"><div><span class="section-kicker">{{ locale === 'zh' ? '售后' : 'After-sales' }}</span><h2>{{ locale === 'zh' ? '订单售后' : 'After-sales' }}</h2></div><strong>{{ orders.length }}</strong></div>
             <div class="order-list">
               <div v-for="order in orders.slice(0, 6)" :key="`${order.user_id}-${order.id}`" class="order-row">
                 <div><strong>#{{ order.id }} · {{ order.product_name }}</strong><p>{{ order.user_id }} · {{ order.travel_date }} · ¥{{ order.total_amount }}</p></div>
@@ -93,7 +93,7 @@
             <div class="card-head"><div><span class="section-kicker">CMS</span><h2>{{ locale === 'zh' ? '内容 CMS' : 'Content CMS' }}</h2></div><strong>{{ cms.length }}</strong></div>
             <form class="cms-form" @submit.prevent="createArticle">
               <input v-model="cmsForm.title" class="auth-input" :placeholder="locale === 'zh' ? '攻略标题' : 'Guide title'" />
-              <input v-model="cmsForm.slug" class="auth-input" placeholder="slug" />
+              <input v-model="cmsForm.slug" class="auth-input" :placeholder="locale === 'zh' ? '路径标识 slug' : 'slug'" />
               <textarea v-model="cmsForm.summary" class="auth-input" :placeholder="locale === 'zh' ? '摘要' : 'Summary'"></textarea>
               <button class="primary-btn" type="submit" :disabled="cmsSaving">{{ cmsSaving ? (locale === 'zh' ? '发布中...' : 'Publishing...') : (locale === 'zh' ? '发布攻略' : 'Publish guide') }}</button>
             </form>

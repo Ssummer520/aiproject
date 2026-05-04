@@ -10,13 +10,13 @@
         <router-link to="/trips" class="header-nav-link">{{ $t('nav.myTrips') }}</router-link>
       </nav>
       <div class="header-actions">
-        <button class="action-btn" @click="toggleLang" title="Switch Language">🌐 {{ locale.toUpperCase() }}</button>
+        <button class="action-btn" @click="toggleLang" :title="$t('ui.switchLanguageCurrency')">🌐 {{ locale.toUpperCase() }}</button>
         <div class="user-profile" v-if="isLoggedIn">
           <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
           <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
-          <button class="logout-btn" @click="logout">Log out</button>
+          <button class="logout-btn" @click="logout">{{ $t('auth.logOut') }}</button>
         </div>
-        <button v-else class="signin-btn" @click="showAuthModal = 'login'">Sign in</button>
+        <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
       </div>
     </header>
 
@@ -263,24 +263,24 @@
       <div class="auth-modal-card">
         <button class="modal-close" @click="showAuthModal = null">×</button>
         <template v-if="showAuthModal === 'login'">
-          <h2 class="auth-modal-title">Sign in</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.signIn') }}</h2>
           <form @submit.prevent="doLogin" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password" required class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.password')" required class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Sign in</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'register'">Create account</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.signIn') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'register'">{{ $t('auth.createAccount') }}</button>
           </form>
         </template>
         <template v-else-if="showAuthModal === 'register'">
-          <h2 class="auth-modal-title">Create account</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.createAccount') }}</h2>
           <form @submit.prevent="doRegister" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password (min 6)" required minlength="6" class="auth-input" />
-            <input v-model="authConfirmPassword" type="password" placeholder="Confirm password" class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.passwordMin')" required minlength="6" class="auth-input" />
+            <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmPassword')" class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Register</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'login'">Already have an account? Sign in</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.register') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.alreadyHaveAccount') }}</button>
           </form>
         </template>
       </div>
@@ -296,7 +296,7 @@ import { useAuth } from '../composables/useAuth'
 import { fetchProducts } from '../composables/useProducts'
 import ProductCard from '../components/ProductCard.vue'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { isLoggedIn, user, setAuth, clearAuth, authHeaders } = useAuth()
@@ -537,7 +537,7 @@ async function doLogin() {
 async function doRegister() {
   authError.value = ''
   if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = 'Passwords do not match'
+    authError.value = t('auth.passwordsDoNotMatch')
     return
   }
   try {
@@ -548,7 +548,7 @@ async function doRegister() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error || 'Registration failed'
+      authError.value = data.error || t('auth.registrationFailed')
       return
     }
     showAuthModal.value = 'login'

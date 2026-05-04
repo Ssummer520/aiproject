@@ -11,13 +11,13 @@
     <nav class="header-nav">
       <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('guide')">{{ $t('nav.guides') }}</button>
       <router-link to="/trips" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/trips') }">{{ $t('nav.myTrips') }}</router-link>
-      <router-link to="/inbound" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/inbound') }">{{ locale === 'zh' ? '入境工具包' : 'Inbound Kit' }}</router-link>
+      <router-link to="/inbound" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/inbound') }">{{ $t('nav.inbound') }}</router-link>
       <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('history')">{{ $t('nav.history') }}</button>
       <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('wishlist')">{{ $t('nav.wishlist') }}</button>
     </nav>
 
     <div class="header-actions">
-      <button class="action-btn" @click="toggleLang" title="Switch Language/Currency">🌐 {{ locale.toUpperCase() }}</button>
+      <button class="action-btn" @click="toggleLang" :title="$t('ui.switchLanguageCurrency')">🌐 {{ locale.toUpperCase() }}</button>
 
       <div class="currency-dropdown">
         <button class="currency-btn" @click="showCurrencyMenu = !showCurrencyMenu">
@@ -39,9 +39,9 @@
       <div class="user-profile" v-if="isLoggedIn">
         <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
         <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
-        <button class="logout-btn" @click="logout">Log out</button>
+        <button class="logout-btn" @click="logout">{{ $t('auth.logOut') }}</button>
       </div>
-      <button v-else class="signin-btn" @click="showAuthModal = 'login'">Sign in</button>
+      <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
     </div>
 
     <!-- Auth Modal -->
@@ -51,49 +51,49 @@
           <button class="modal-close" @click="showAuthModal = null">×</button>
 
           <template v-if="showAuthModal === 'login'">
-            <h2 class="auth-modal-title">Sign in</h2>
+            <h2 class="auth-modal-title">{{ $t('auth.signIn') }}</h2>
             <form @submit.prevent="doLogin" class="auth-form">
-              <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-              <input v-model="authPassword" type="password" placeholder="Password" required class="auth-input" />
+              <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+              <input v-model="authPassword" type="password" :placeholder="$t('auth.password')" required class="auth-input" />
               <p v-if="authError" class="auth-error">{{ authError }}</p>
-              <button type="submit" class="auth-submit">Sign in</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'forgot'">Forgot password?</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'register'">Create account</button>
+              <button type="submit" class="auth-submit">{{ $t('auth.signIn') }}</button>
+              <button type="button" class="auth-link" @click="showAuthModal = 'forgot'">{{ $t('auth.forgotPasswordQuestion') }}</button>
+              <button type="button" class="auth-link" @click="showAuthModal = 'register'">{{ $t('auth.createAccount') }}</button>
             </form>
           </template>
 
           <template v-else-if="showAuthModal === 'register'">
-            <h2 class="auth-modal-title">Create account</h2>
+            <h2 class="auth-modal-title">{{ $t('auth.createAccount') }}</h2>
             <form @submit.prevent="doRegister" class="auth-form">
-              <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-              <input v-model="authPassword" type="password" placeholder="Password (min 6)" required minlength="6" class="auth-input" />
-              <input v-model="authConfirmPassword" type="password" placeholder="Confirm password" class="auth-input" />
+              <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+              <input v-model="authPassword" type="password" :placeholder="$t('auth.passwordMin')" required minlength="6" class="auth-input" />
+              <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmPassword')" class="auth-input" />
               <p v-if="authError" class="auth-error">{{ authError }}</p>
-              <button type="submit" class="auth-submit">Register</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'login'">Already have an account? Sign in</button>
+              <button type="submit" class="auth-submit">{{ $t('auth.register') }}</button>
+              <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.alreadyHaveAccount') }}</button>
             </form>
           </template>
 
           <template v-else-if="showAuthModal === 'forgot'">
-            <h2 class="auth-modal-title">Forgot password</h2>
+            <h2 class="auth-modal-title">{{ $t('auth.forgotPassword') }}</h2>
             <form @submit.prevent="doForgotPassword" class="auth-form">
-              <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
+              <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
               <p v-if="authError" class="auth-error">{{ authError }}</p>
               <p v-if="authSuccess" class="auth-success">{{ authSuccess }}</p>
-              <button type="submit" class="auth-submit">Send reset link</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'login'">Back to Sign in</button>
+              <button type="submit" class="auth-submit">{{ $t('auth.sendResetLink') }}</button>
+              <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.backToSignIn') }}</button>
             </form>
           </template>
 
           <template v-else-if="showAuthModal === 'reset'">
-            <h2 class="auth-modal-title">Reset password</h2>
+            <h2 class="auth-modal-title">{{ $t('auth.resetPassword') }}</h2>
             <form @submit.prevent="doResetPassword" class="auth-form">
-              <input v-model="authResetToken" type="text" placeholder="Reset token (from email)" class="auth-input" />
-              <input v-model="authPassword" type="password" placeholder="New password (min 6)" required minlength="6" class="auth-input" />
-              <input v-model="authConfirmPassword" type="password" placeholder="Confirm new password" class="auth-input" />
+              <input v-model="authResetToken" type="text" :placeholder="$t('auth.resetToken')" class="auth-input" />
+              <input v-model="authPassword" type="password" :placeholder="$t('auth.newPassword')" required minlength="6" class="auth-input" />
+              <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmNewPassword')" class="auth-input" />
               <p v-if="authError" class="auth-error">{{ authError }}</p>
-              <button type="submit" class="auth-submit">Reset password</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'login'">Back to Sign in</button>
+              <button type="submit" class="auth-submit">{{ $t('auth.resetPassword') }}</button>
+              <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.backToSignIn') }}</button>
             </form>
           </template>
         </div>
@@ -115,7 +115,7 @@ const props = defineProps({
 
 const emit = defineEmits(['scrollTo', 'loginSuccess'])
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { token, user, isLoggedIn, setAuth, authHeaders } = useAuth()
@@ -196,7 +196,7 @@ async function doLogin() {
 async function doRegister() {
   authError.value = ''
   if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = 'Passwords do not match'
+    authError.value = t('auth.passwordsDoNotMatch')
     return
   }
   try {
@@ -207,10 +207,10 @@ async function doRegister() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'email_already_registered' ? 'Email already registered.' : (data.error || 'Registration failed')
+      authError.value = data.error === 'email_already_registered' ? t('auth.emailAlreadyRegistered') : (data.error || t('auth.registrationFailed'))
       return
     }
-    authSuccess.value = 'Account created. Sign in below.'
+    authSuccess.value = t('auth.accountCreated')
     showAuthModal.value = 'login'
   } catch (e) {
     authError.value = 'Network error'
@@ -228,7 +228,7 @@ async function doForgotPassword() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error === 'user_not_found' ? 'No account with this email.' : (data.error || 'Request failed')
+      authError.value = data.error === 'user_not_found' ? t('auth.noAccount') : (data.error || t('auth.requestFailed'))
       return
     }
     authSuccess.value = 'Check your email for reset link.'
@@ -242,7 +242,7 @@ async function doForgotPassword() {
 async function doResetPassword() {
   authError.value = ''
   if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = 'Passwords do not match'
+    authError.value = t('auth.passwordsDoNotMatch')
     return
   }
   try {
@@ -256,7 +256,7 @@ async function doResetPassword() {
       authError.value = data.error === 'invalid_or_expired_token' ? 'Invalid or expired reset token.' : (data.error || 'Reset failed')
       return
     }
-    authSuccess.value = 'Password reset. Sign in below.'
+    authSuccess.value = t('auth.passwordReset')
     showAuthModal.value = 'login'
   } catch (e) {
     authError.value = 'Network error'

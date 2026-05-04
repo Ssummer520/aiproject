@@ -15,7 +15,7 @@
           <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
           <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
         </div>
-        <button v-else class="signin-btn" @click="showAuthModal = 'login'">Sign in</button>
+        <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
       </div>
     </header>
 
@@ -31,7 +31,7 @@
         <section class="trip-workbench">
           <div class="ai-planner-card">
             <div>
-              <span class="section-kicker">AI Trip Planner</span>
+              <span class="section-kicker">{{ locale === 'zh' ? 'AI 行程规划' : 'AI Trip Planner' }}</span>
               <h2>{{ locale === 'zh' ? '生成可保存行程' : 'Generate a bookable itinerary' }}</h2>
               <p>{{ locale === 'zh' ? '输入“杭州 2 天亲子低预算”，自动生成早中晚时间线并推荐可购买商品。' : 'Try “Hangzhou 2 days family low budget” to create a day-by-day plan with purchasable products.' }}</p>
             </div>
@@ -46,7 +46,7 @@
             <section class="timeline-card">
               <div class="section-head">
                 <div>
-                  <span class="section-kicker">Itinerary</span>
+                  <span class="section-kicker">{{ locale === 'zh' ? '行程' : 'Itinerary' }}</span>
                   <h2>{{ locale === 'zh' ? '行程时间线' : 'Trip timeline' }}</h2>
                 </div>
                 <strong>{{ formatMoney('CNY', itineraryBudget) }}</strong>
@@ -79,7 +79,7 @@
             <section class="cart-card">
               <div class="section-head">
                 <div>
-                  <span class="section-kicker">Cart</span>
+                  <span class="section-kicker">{{ locale === 'zh' ? '购物车' : 'Cart' }}</span>
                   <h2>{{ locale === 'zh' ? '打包购物车' : 'Bundle cart' }}</h2>
                 </div>
                 <strong>{{ formatMoney(cart.currency, cart.total_amount) }}</strong>
@@ -224,24 +224,24 @@
       <div class="auth-modal-card">
         <button class="modal-close" @click="showAuthModal = null">×</button>
         <template v-if="showAuthModal === 'login'">
-          <h2 class="auth-modal-title">Sign in</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.signIn') }}</h2>
           <form @submit.prevent="doLogin" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password" required class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.password')" required class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Sign in</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'register'">Create account</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.signIn') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'register'">{{ $t('auth.createAccount') }}</button>
           </form>
         </template>
         <template v-else-if="showAuthModal === 'register'">
-          <h2 class="auth-modal-title">Create account</h2>
+          <h2 class="auth-modal-title">{{ $t('auth.createAccount') }}</h2>
           <form @submit.prevent="doRegister" class="auth-form">
-            <input v-model="authEmail" type="email" placeholder="Email" required class="auth-input" />
-            <input v-model="authPassword" type="password" placeholder="Password (min 6)" required minlength="6" class="auth-input" />
-            <input v-model="authConfirmPassword" type="password" placeholder="Confirm password" class="auth-input" />
+            <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
+            <input v-model="authPassword" type="password" :placeholder="$t('auth.passwordMin')" required minlength="6" class="auth-input" />
+            <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmPassword')" class="auth-input" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
-            <button type="submit" class="auth-submit">Register</button>
-            <button type="button" class="auth-link" @click="showAuthModal = 'login'">Already have an account? Sign in</button>
+            <button type="submit" class="auth-submit">{{ $t('auth.register') }}</button>
+            <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.alreadyHaveAccount') }}</button>
           </form>
         </template>
       </div>
@@ -256,7 +256,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { fetchBookings, fetchOrders, cancelBooking, cancelOrder, completeOrder, refundOrder, createProductReview, fetchItineraries, generateItinerary, moveItineraryItem, fetchCart, clearCart, checkoutCart } from '../composables/useProducts'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const router = useRouter()
 const { isLoggedIn, user, setAuth, authHeaders } = useAuth()
 
@@ -582,7 +582,7 @@ async function doLogin() {
 async function doRegister() {
   authError.value = ''
   if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = 'Passwords do not match'
+    authError.value = t('auth.passwordsDoNotMatch')
     return
   }
   try {
@@ -593,7 +593,7 @@ async function doRegister() {
     })
     const data = await res.json()
     if (!res.ok) {
-      authError.value = data.error || 'Registration failed'
+      authError.value = data.error || t('auth.registrationFailed')
       return
     }
     showAuthModal.value = 'login'

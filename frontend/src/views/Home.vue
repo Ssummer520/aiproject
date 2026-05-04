@@ -1,44 +1,6 @@
 <template>
-  <div class="travel-home" @mousemove="handleMouseMove">
-    <header class="site-header" :class="{ 'header--visible': headerVisible }">
-      <router-link to="/" class="header-logo">
-        <span class="logo-icon">✈️</span>
-        <span>ChinaTravel</span>
-      </router-link>
-
-      <nav class="header-nav">
-        <a href="#travel-guide" class="header-nav-link" @click.prevent="scrollToGuide">{{ $t('nav.guides') }}</a>
-        <router-link to="/trips" class="header-nav-link">{{ $t('nav.myTrips') }}</router-link>
-        <a href="#" class="header-nav-link" @click.prevent="scrollToHistory">{{ $t('nav.history') }}</a>
-        <a href="#" class="header-nav-link" @click.prevent="scrollToWishlist">{{ $t('nav.wishlist') }}</a>
-      </nav>
-
-      <div class="header-actions">
-        <button class="map-toggle-header" @click="showMapModal = true">
-          <span class="map-icon">🗺️</span>
-          <span>{{ $t('ui.map') }}</span>
-        </button>
-        <button class="action-btn" @click="toggleLang" :title="$t('ui.switchLanguageCurrency')">🌐 {{ locale.toUpperCase() }}</button>
-        <div class="currency-dropdown">
-          <button class="currency-btn" @click="showCurrencyMenu = !showCurrencyMenu">
-            {{ currencySymbol }} {{ currency }}
-            <span class="dropdown-arrow">▼</span>
-          </button>
-          <div class="currency-menu" :class="{ show: showCurrencyMenu }">
-            <button v-for="c in currencies" :key="c.code" :class="{ active: currency === c.code }" @click="selectCurrency(c.code)">
-              {{ c.symbol }} {{ c.code }} - {{ c.name }}
-            </button>
-          </div>
-        </div>
-
-        <div class="user-profile" v-if="isLoggedIn">
-          <router-link to="/account" class="user-name">{{ user?.email }}</router-link>
-          <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
-          <button class="logout-btn" @click="logout">{{ $t('auth.logOut') }}</button>
-        </div>
-        <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
-      </div>
-    </header>
+  <div class="travel-home">
+    <SiteHeader @scrollTo="handleHeaderScroll" @login-request="showAuthModal = 'login'" />
 
     <!-- Airbnb 风格：全屏沉浸式 Hero -->
     <div class="hero" :class="{ 'hero--collapsed': heroCollapsed }">
@@ -551,12 +513,12 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { useCurrency } from '../composables/useCurrency'
 import { useTravelAssistant } from '../composables/useTravelAssistant'
 import { fetchProducts } from '../composables/useProducts'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 import ProductCard from '../components/ProductCard.vue'
 import { useLocalization } from '../composables/useLocalization'
+import SiteHeader from '../components/SiteHeader.vue'
 
 const { locale, t } = useI18n()
 const { localizeText, localizeField, localizeList, localizeDestination, localizeCity } = useLocalization()
@@ -565,7 +527,6 @@ const route = useRoute()
 const { token, user, isLoggedIn, setAuth, clearAuth, authHeaders } = useAuth()
 
 const showAuthModal = ref(null)
-const showMapModal = ref(false)
 const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
@@ -662,37 +623,6 @@ async function doResetPassword() {
   } catch (e) {
     authError.value = t('auth.networkError')
   }
-}
-
-function logout() {
-  fetch(API + '/auth/logout', { method: 'POST', headers: authHeaders() }).catch(() => {})
-  clearAuth()
-  fetchHomePage()
-}
-
-const { currency, setCurrency, formatPrice, getSymbol, currencySymbols } = useCurrency()
-const currencySymbol = computed(() => getSymbol())
-const showCurrencyMenu = ref(false)
-const currencies = [
-  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'KRW', symbol: '₩', name: 'Korean Won' },
-  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
-  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
-  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' }
-]
-
-function selectCurrency(code) {
-  setCurrency(code)
-  showCurrencyMenu.value = false
-}
-
-function toggleLang() {
-  locale.value = locale.value === 'en' ? 'zh' : 'en'
 }
 
 const API = '/api/v1'
@@ -828,18 +758,6 @@ function scrollNearbyActivities(dir) {
   }
 }
 
-function scrollToWishlist() {
-  if (!isLoggedIn.value) {
-    showAuthModal.value = 'login'
-    return
-  }
-  activeSidebarTab.value = 'wishlist'
-  const sidebar = document.querySelector('.sidebar-right')
-  if (sidebar) {
-    sidebar.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
-}
-
 function scrollToGuide() {
   const guide = document.querySelector('#travel-guide, .travel-guide')
   if (guide) {
@@ -848,10 +766,6 @@ function scrollToGuide() {
 }
 
 function scrollToHistory() {
-  if (!isLoggedIn.value) {
-    showAuthModal.value = 'login'
-    return
-  }
   activeSidebarTab.value = 'history'
   const sidebar = document.querySelector('.sidebar-right')
   if (sidebar) {
@@ -1058,7 +972,6 @@ const heroImages = [
 ]
 const heroIndex = ref(0)
 const heroCollapsed = ref(false)
-const headerVisible = ref(false)
 const showAiHint = ref(false)
 const pauseAiHint = ref(false)
 const aiPulse = ref(false)
@@ -1084,22 +997,12 @@ function startAiHintLoop() {
 }
 let heroTimer = null
 let scrollListener = null
-let headerTimer = null
-
-function handleMouseMove() {
-  headerVisible.value = true
-  if (headerTimer) clearTimeout(headerTimer)
-  headerTimer = setTimeout(() => {
-    headerVisible.value = false
-  }, 2000)
-}
 
 async function handleRouteFocus(focus) {
   if (!focus) return
   await nextTick()
   if (focus === 'guide') scrollToGuide()
   if (focus === 'history') scrollToHistory()
-  if (focus === 'wishlist') scrollToWishlist()
 
   const nextQuery = { ...route.query }
   delete nextQuery.focus
@@ -1109,10 +1012,6 @@ async function handleRouteFocus(focus) {
 watch(locale, () => {
   fetchHomePage()
   resetTravelAssistantGreeting()
-})
-watch(showAuthModal, () => {
-  authError.value = ''
-  authSuccess.value = ''
 })
 watch(locale, () => {
   searchPlaceholderIndex.value = 0
@@ -1133,9 +1032,6 @@ onMounted(() => {
     heroCollapsed.value = window.scrollY > 120
   }
   window.addEventListener('scroll', scrollListener, { passive: true })
-  
-  // 点击外部关闭货币菜单
-  document.addEventListener('click', handleClickOutside)
 
   if (route.query.focus) {
     handleRouteFocus(route.query.focus)
@@ -1148,13 +1044,10 @@ onUnmounted(() => {
   if (scrollListener) window.removeEventListener('scroll', scrollListener)
   if (aiHintTimer) clearTimeout(aiHintTimer)
   if (aiPulseTimer) clearTimeout(aiPulseTimer)
-  document.removeEventListener('click', handleClickOutside)
 })
 
-function handleClickOutside(e) {
-  const dropdown = document.querySelector('.currency-dropdown')
-  if (dropdown && !dropdown.contains(e.target)) {
-    showCurrencyMenu.value = false
-  }
+function handleHeaderScroll(section) {
+  if (section === 'guide') scrollToGuide()
+  if (section === 'history') scrollToHistory()
 }
 </script>

@@ -81,6 +81,30 @@
         <div :class="mode === 'product' ? 'total' : 'bk-pb-row bk-total'"><span>{{ t('auto.auto_1158568e') }}</span><span>{{ formatPrice(finalTotalPrice) }}</span></div>
       </div>
 
+      <div v-if="travelersLoading || travelers.length" class="traveler-select-box">
+        <div class="traveler-select-head">
+          <strong>{{ t('booking.travelers') }}</strong>
+          <router-link to="/account">{{ t('booking.manageTravelers') }}</router-link>
+        </div>
+        <p v-if="travelersLoading" class="traveler-hint">{{ t('booking.travelersLoading') }}</p>
+        <div v-else class="traveler-chip-list">
+          <button
+            v-for="traveler in travelers"
+            :key="traveler.id"
+            type="button"
+            class="traveler-chip"
+            :class="{ active: selectedTravelerIds.includes(traveler.id) }"
+            :disabled="bookingLoading"
+            @click="emit('toggleTraveler', traveler.id)"
+          >
+            <span>{{ traveler.name }}</span>
+            <small>{{ traveler.document_type }} · {{ traveler.document_no_masked }}</small>
+            <em v-if="traveler.is_default">{{ t('userContext.defaultTraveler') }}</em>
+          </button>
+        </div>
+        <p v-if="travelerMessage" class="traveler-hint">{{ travelerMessage }}</p>
+      </div>
+
       <div :class="mode === 'product' ? 'coupon-box' : 'coupon-box coupon-box--compact'">
         <div class="coupon-input-row">
           <input
@@ -155,10 +179,14 @@ const props = defineProps({
   cartMessage: { type: String, default: '' },
   itineraryLoading: { type: Boolean, default: false },
   itineraryMessage: { type: String, default: '' },
+  travelers: { type: Array, default: () => [] },
+  selectedTravelerIds: { type: Array, default: () => [] },
+  travelersLoading: { type: Boolean, default: false },
+  travelerMessage: { type: String, default: '' },
   today: { type: String, required: true },
 })
 
-const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'update:adults', 'update:children', 'update:couponCode', 'applyCoupon', 'addToCart', 'addToItinerary', 'reserve'])
+const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'update:adults', 'update:children', 'update:couponCode', 'applyCoupon', 'addToCart', 'addToItinerary', 'reserve', 'toggleTraveler'])
 const { locale, t } = useI18n()
 const { formatPrice } = useCurrency()
 
@@ -275,6 +303,77 @@ const finalTotalPrice = computed(() => props.finalTotalPrice ?? props.totalPrice
   border: 1px dashed rgba(255, 56, 92, 0.28);
   border-radius: 14px;
   background: rgba(255, 56, 92, 0.05);
+}
+
+.traveler-select-box {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid rgba(0, 102, 204, 0.16);
+  border-radius: 14px;
+  background: rgba(0, 102, 204, 0.05);
+}
+
+.traveler-select-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.traveler-select-head a {
+  color: var(--secondary);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.traveler-chip-list {
+  display: grid;
+  gap: 8px;
+}
+
+.traveler-chip {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.traveler-chip.active {
+  border-color: var(--secondary);
+  background: rgba(0, 102, 204, 0.08);
+}
+
+.traveler-chip span {
+  font-weight: 900;
+}
+
+.traveler-chip small,
+.traveler-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.traveler-chip em {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--secondary);
+  font-style: normal;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.traveler-hint {
+  margin: 0;
+  font-weight: 700;
 }
 
 .coupon-input-row {

@@ -167,6 +167,43 @@ func TestOrderServiceCreateAppliesCouponDiscount(t *testing.T) {
 	}
 }
 
+type fakeTravelerSnapshotter struct{}
+
+func (fakeTravelerSnapshotter) BuildOrderSnapshots(userID string, req TravelerSnapshotRequest) ([]domain.Traveler, error) {
+	return []domain.Traveler{{
+		SourceTravelerID: req.TravelerIDs[0],
+		Name:             "Alan",
+		DocumentType:     "PASSPORT",
+		DocumentNoMasked: "E1***5678",
+	}}, nil
+}
+
+func TestOrderServicePersistsTravelerSnapshots(t *testing.T) {
+	service := newTestOrderService()
+	service.SetTravelerSnapshotProvider(fakeTravelerSnapshotter{})
+
+	order, err := service.Create("user-snapshot", domain.CreateOrderRequest{
+		ProductID:   101,
+		PackageID:   1011,
+		TravelDate:  nextTravelDate(),
+		Adults:      1,
+		TravelerIDs: []int{7},
+	})
+	if err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+	if len(order.Travelers) != 1 || order.Travelers[0].DocumentNoMasked != "E1***5678" {
+		t.Fatalf("expected created traveler snapshot, got %#v", order.Travelers)
+	}
+	orders, err := service.List("user-snapshot")
+	if err != nil {
+		t.Fatalf("list orders: %v", err)
+	}
+	if len(orders) != 1 || len(orders[0].Travelers) != 1 || orders[0].Travelers[0].SourceTravelerID != 7 {
+		t.Fatalf("expected persisted traveler snapshot, got %#v", orders)
+	}
+}
+
 func TestOrderServiceRejectsInvalidCoupon(t *testing.T) {
 	service := NewOrderServiceWithCoupon(productApp.NewProductService(), couponApp.NewCouponService())
 

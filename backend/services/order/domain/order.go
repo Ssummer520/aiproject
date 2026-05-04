@@ -16,6 +16,7 @@ type Order struct {
 	UpdatedAt      string      `json:"updated_at"`
 	CancelledAt    string      `json:"cancelled_at,omitempty"`
 	Items          []OrderItem `json:"items"`
+	Travelers      []Traveler  `json:"travelers"`
 }
 
 type OrderItem struct {
@@ -38,12 +39,40 @@ type OrderItem struct {
 }
 
 type CreateOrderRequest struct {
-	ProductID    int    `json:"product_id"`
-	PackageID    int    `json:"package_id"`
-	TravelDate   string `json:"travel_date"`
-	Adults       int    `json:"adults"`
-	Children     int    `json:"children"`
-	ContactName  string `json:"contact_name"`
-	ContactEmail string `json:"contact_email"`
-	CouponCode   string `json:"coupon_code"`
+	ProductID    int             `json:"product_id"`
+	PackageID    int             `json:"package_id"`
+	TravelDate   string          `json:"travel_date"`
+	Adults       int             `json:"adults"`
+	Children     int             `json:"children"`
+	ContactName  string          `json:"contact_name"`
+	ContactEmail string          `json:"contact_email"`
+	CouponCode   string          `json:"coupon_code"`
+	TravelerIDs  []int           `json:"traveler_ids"`
+	Travelers    []TravelerInput `json:"travelers"`
+}
+
+type TravelerInput struct {
+	Name         string `json:"name"`
+	Gender       string `json:"gender"`
+	BirthDate    string `json:"birth_date"`
+	DocumentType string `json:"document_type"`
+	DocumentNo   string `json:"document_no"`
+	Nationality  string `json:"nationality"`
+	Phone        string `json:"phone"`
+	Email        string `json:"email"`
+}
+
+type Traveler struct {
+	ID               int    `json:"id"`
+	OrderID          int    `json:"order_id"`
+	UserID           string `json:"user_id"`
+	SourceTravelerID int    `json:"source_traveler_id,omitempty"`
+	Name             string `json:"name"`
+	Gender           string `json:"gender"`
+	BirthDate        string `json:"birth_date"`
+	DocumentType     string `json:"document_type"`
+	DocumentNoMasked string `json:"document_no_masked"`
+	Nationality      string `json:"nationality"`
+	Phone            string `json:"phone"`
+	Email            string `json:"email"`
 }

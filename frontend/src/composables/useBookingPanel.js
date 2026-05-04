@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { formatLocalDate } from './dateUtils'
 import { addCartItem, addItineraryItem, createItinerary, createOrder, fetchItineraries, validateCoupon } from './useProducts'
+import { fetchTravelers } from './useUser'
 
 function roundMoney(value) {
   return Math.round(value * 100) / 100
@@ -56,6 +57,10 @@ export function useBookingPanel({ product, locale, t = fallbackT, user, isLogged
   const couponLoading = ref(false)
   const couponError = ref('')
   const couponResult = ref(null)
+  const travelers = ref([])
+  const selectedTravelerIds = ref([])
+  const travelersLoading = ref(false)
+  const travelerMessage = ref('')
 
   const selectedPackage = computed(() => (product.value?.packages || []).find(pkg => pkg.id === selectedPackageId.value))
   const selectedAvailability = computed(() => (product.value?.availability || []).find(item => item.package_id === selectedPackageId.value && item.date === selectedDate.value))
@@ -150,8 +155,51 @@ export function useBookingPanel({ product, locale, t = fallbackT, user, isLogged
     }
 
     clampGuests()
+    clampSelectedTravelers()
     bookingError.value = ''
     clearCoupon(false)
+  }
+
+  function clampSelectedTravelers() {
+    selectedTravelerIds.value = selectedTravelerIds.value
+      .filter((id, index, list) => list.indexOf(id) === index)
+      .slice(0, totalGuests.value)
+  }
+
+  function toggleTraveler(travelerId) {
+    if (selectedTravelerIds.value.includes(travelerId)) {
+      selectedTravelerIds.value = selectedTravelerIds.value.filter(id => id !== travelerId)
+      return
+    }
+    if (selectedTravelerIds.value.length >= totalGuests.value) {
+      travelerMessage.value = t('booking.maxTravelers', { count: totalGuests.value })
+      return
+    }
+    selectedTravelerIds.value = [...selectedTravelerIds.value, travelerId]
+    travelerMessage.value = ''
+  }
+
+  async function loadTravelers() {
+    travelerMessage.value = ''
+    if (!isLoggedIn.value) {
+      travelers.value = []
+      selectedTravelerIds.value = []
+      return
+    }
+    travelersLoading.value = true
+    try {
+      travelers.value = await fetchTravelers(authHeaders())
+      const defaultTraveler = travelers.value.find(item => item.is_default)
+      if (defaultTraveler && selectedTravelerIds.value.length === 0) {
+        selectedTravelerIds.value = [defaultTraveler.id]
+      }
+      clampSelectedTravelers()
+    } catch (e) {
+      travelers.value = []
+      travelerMessage.value = t('booking.travelerLoadFailed')
+    } finally {
+      travelersLoading.value = false
+    }
   }
 
   function clearCoupon(clearCode = true) {
@@ -206,6 +254,7 @@ export function useBookingPanel({ product, locale, t = fallbackT, user, isLogged
 
   watch([adults, children], () => {
     clampGuests()
+    clampSelectedTravelers()
   }, { flush: 'sync' })
 
   watch([totalPrice, selectedPackageId, selectedDate], () => {
@@ -217,6 +266,9 @@ export function useBookingPanel({ product, locale, t = fallbackT, user, isLogged
     couponResult.value = null
   })
 
+  watch(isLoggedIn, () => {
+    loadTravelers()
+  }, { immediate: true })
 
   function buildOrderPayload() {
     const payload = {
@@ -230,6 +282,9 @@ export function useBookingPanel({ product, locale, t = fallbackT, user, isLogged
     }
     if (couponResult.value?.valid) {
       payload.coupon_code = couponCode.value.trim()
+    }
+    if (selectedTravelerIds.value.length) {
+      payload.traveler_ids = selectedTravelerIds.value
     }
     return payload
   }
@@ -382,6 +437,10 @@ export function useBookingPanel({ product, locale, t = fallbackT, user, isLogged
     couponLoading,
     couponError,
     couponResult,
+    travelers,
+    selectedTravelerIds,
+    travelersLoading,
+    travelerMessage,
     today,
     selectedPackage,
     selectedAvailability,
@@ -397,7 +456,10 @@ export function useBookingPanel({ product, locale, t = fallbackT, user, isLogged
     syncInitialState,
     applyCoupon,
     clearCoupon,
+    loadTravelers,
+    toggleTraveler,
     buildCartPayload,
+    buildOrderPayload,
     buildItineraryPayload,
     addToCart,
     addToItinerary,

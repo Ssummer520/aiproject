@@ -20,18 +20,43 @@ import (
 	itineraryApp "travel-api/services/itinerary/application"
 	orderApi "travel-api/services/order/api"
 	orderApp "travel-api/services/order/application"
+	orderDomain "travel-api/services/order/domain"
 	platformApi "travel-api/services/platform/api"
 	platformApp "travel-api/services/platform/application"
 	productApi "travel-api/services/product/api"
 	productApp "travel-api/services/product/application"
 	reviewApi "travel-api/services/review/api"
 	reviewApp "travel-api/services/review/application"
+	userApi "travel-api/services/user/api"
+	userApp "travel-api/services/user/application"
+	userDomain "travel-api/services/user/domain"
 )
+
+type orderTravelerSnapshotAdapter struct {
+	service *userApp.UserService
+}
+
+func (a orderTravelerSnapshotAdapter) BuildOrderSnapshots(userID string, req orderApp.TravelerSnapshotRequest) ([]orderDomain.Traveler, error) {
+	travelers := make([]userDomain.TravelerProfileInput, 0, len(req.Travelers))
+	for _, traveler := range req.Travelers {
+		travelers = append(travelers, userDomain.TravelerProfileInput{
+			Name:         traveler.Name,
+			Gender:       traveler.Gender,
+			BirthDate:    traveler.BirthDate,
+			DocumentType: traveler.DocumentType,
+			DocumentNo:   traveler.DocumentNo,
+			Nationality:  traveler.Nationality,
+			Phone:        traveler.Phone,
+			Email:        traveler.Email,
+		})
+	}
+	return a.service.BuildOrderSnapshots(userID, userDomain.TravelerSnapshotRequest{TravelerIDs: req.TravelerIDs, Travelers: travelers})
+}
 
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept-Language, Authorization")
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusNoContent)
@@ -52,15 +77,19 @@ func authMiddleware(authService *authApp.AuthService, next http.Handler) http.Ha
 
 func main() {
 	authService := authApp.NewAuthService()
+	userService := userApp.NewUserService()
+	authService.SetUserDefaultsCallback(userService.EnsureUserDefaults)
 	productService := productApp.NewProductService()
 	couponService := couponApp.NewCouponService()
 	reviewService := reviewApp.NewReviewService()
 	orderService := orderApp.NewOrderServiceWithCoupon(productService, couponService)
+	orderService.SetTravelerSnapshotProvider(orderTravelerSnapshotAdapter{service: userService})
 	itineraryService := itineraryApp.NewItineraryService(productService)
 	cartService := cartApp.NewCartService(productService, orderService)
 	platformService := platformApp.NewPlatformService()
 	inboundService := inboundApp.NewInboundService()
 	authHandler := authApi.NewAuthHandlerWithService(authService)
+	userHandler := userApi.NewUserHandler(userService)
 	bffHandler := api.NewBFFHandler()
 	productHandler := productApi.NewProductHandlerWithService(productService)
 	couponHandler := couponApi.NewCouponHandler(couponService)
@@ -80,6 +109,7 @@ func main() {
 	mux.HandleFunc("/api/v1/auth/reset-password", authHandler.ResetPassword)
 	mux.HandleFunc("/api/v1/auth/me", authHandler.Me)
 	mux.HandleFunc("/api/v1/auth/logout", authHandler.Logout)
+	mux.Handle("/api/v1/users/me/", authMiddleware(authService, http.HandlerFunc(userHandler.HandleMe)))
 
 	// BFF (auth middleware sets userID in context; empty if not logged in)
 	mux.Handle("/api/v1/home", authMiddleware(authService, http.HandlerFunc(bffHandler.GetHomePage)))

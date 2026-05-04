@@ -55,7 +55,7 @@ func (r *FileUserRepo) migrateFromJSON() {
 	}
 	for _, u := range users {
 		_, _ = r.db.Exec(
-			`INSERT OR IGNORE INTO users(id, email, password_hash, created_at) VALUES(?, ?, ?, ?)`,
+			`INSERT OR IGNORE INTO users(id, email, password_hash, created_at, status) VALUES(?, ?, ?, ?, 'active')`,
 			u.ID,
 			strings.ToLower(u.Email),
 			u.PasswordHash,
@@ -68,7 +68,7 @@ func (r *FileUserRepo) FindByEmail(email string) (*domain.User, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return scanUser(r.db.QueryRow(
-		`SELECT id, email, password_hash, created_at FROM users WHERE email = ?`,
+		`SELECT id, email, password_hash, created_at FROM users WHERE email = ? AND COALESCE(status, 'active') = 'active'`,
 		strings.ToLower(email),
 	))
 }
@@ -77,7 +77,7 @@ func (r *FileUserRepo) FindByID(id string) (*domain.User, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return scanUser(r.db.QueryRow(
-		`SELECT id, email, password_hash, created_at FROM users WHERE id = ?`,
+		`SELECT id, email, password_hash, created_at FROM users WHERE id = ? AND COALESCE(status, 'active') = 'active'`,
 		id,
 	))
 }
@@ -86,7 +86,7 @@ func (r *FileUserRepo) Create(u domain.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	_, err := r.db.Exec(
-		`INSERT INTO users(id, email, password_hash, created_at) VALUES(?, ?, ?, ?)`,
+		`INSERT INTO users(id, email, password_hash, created_at, status) VALUES(?, ?, ?, ?, 'active')`,
 		u.ID,
 		strings.ToLower(u.Email),
 		u.PasswordHash,
@@ -116,6 +116,12 @@ func (r *FileUserRepo) Update(u *domain.User) error {
 		return os.ErrNotExist
 	}
 	return nil
+}
+
+func (r *FileUserRepo) TouchLogin(userID string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	_, _ = r.db.Exec(`UPDATE users SET last_login_at = ? WHERE id = ?`, time.Now().Format(time.RFC3339Nano), userID)
 }
 
 func scanUser(row *sql.Row) (*domain.User, bool) {

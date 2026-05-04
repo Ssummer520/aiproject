@@ -139,6 +139,7 @@
               <p class="trip-location">📍 {{ trip.display_subtitle }}</p>
               <p class="trip-dates">{{ trip.display_dates }}</p>
               <p class="trip-guests">{{ trip.display_guests }}</p>
+              <p v-if="trip.display_travelers" class="trip-travelers">👥 {{ trip.display_travelers }}</p>
               <p v-if="trip.display_usage" class="trip-usage">🎫 {{ trip.display_usage }}</p>
               <p v-if="trip.discount_amount" class="trip-discount">🎟️ {{ $t('auto.auto_304e4e10') }} -{{ formatMoney(trip.currency, trip.discount_amount) }} · {{ trip.coupon_code }}</p>
               <p class="trip-price">{{ trip.display_price }}</p>
@@ -344,6 +345,7 @@ const normalizedBookings = computed(() => trips.value.map((trip) => ({
 
 const normalizedProductOrders = computed(() => productOrders.value.map((order) => {
   const item = order.items?.[0] || {}
+  const travelerNames = (order.travelers || []).map(traveler => `${traveler.name}${traveler.document_no_masked ? ` · ${traveler.document_no_masked}` : ''}`)
   return {
     ...order,
     key: `order-${order.id}`,
@@ -353,6 +355,7 @@ const normalizedProductOrders = computed(() => productOrders.value.map((order) =
     display_subtitle: `${item.city} · ${item.package_name}`,
     display_dates: item.travel_date,
     display_guests: `${item.adults || 0} ${t('auto.auto_93827aa4')}${item.children ? ` · ${item.children} ${t('auto.auto_01173363')}` : ''}`,
+    display_travelers: travelerNames.join(' / '),
     display_usage: item.usage || (t('auto.auto_00706a79')),
     display_price: formatMoney(order.currency, order.total_amount),
     trip_date: item.travel_date,

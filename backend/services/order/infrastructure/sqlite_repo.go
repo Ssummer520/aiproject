@@ -52,11 +52,16 @@ func (r *SQLiteOrderRepo) ListByUser(userID string) ([]domain.Order, error) {
 			return nil, err
 		}
 		orders[i].Items = items
+		travelers, err := r.listTravelers(userID, orders[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		orders[i].Travelers = travelers
 	}
 	return orders, nil
 }
 
-func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.OrderItem) (domain.Order, error) {
+func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.OrderItem, travelers []domain.Traveler) (domain.Order, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -73,6 +78,11 @@ func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.
 	item.ID = itemID
 	item.OrderID = orderID
 	item.UserID = userID
+	for index := range travelers {
+		travelers[index].ID = index + 1
+		travelers[index].OrderID = orderID
+		travelers[index].UserID = userID
+	}
 
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -120,11 +130,32 @@ func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.
 	if err != nil {
 		return domain.Order{}, err
 	}
+	for _, traveler := range travelers {
+		_, err = tx.Exec(`INSERT INTO order_travelers(id, user_id, order_id, source_traveler_id, name, gender, birth_date, document_type, document_no_masked, nationality, phone, email, created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			traveler.ID,
+			traveler.UserID,
+			traveler.OrderID,
+			traveler.SourceTravelerID,
+			traveler.Name,
+			traveler.Gender,
+			traveler.BirthDate,
+			traveler.DocumentType,
+			traveler.DocumentNoMasked,
+			traveler.Nationality,
+			traveler.Phone,
+			traveler.Email,
+			now,
+		)
+		if err != nil {
+			return domain.Order{}, err
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return domain.Order{}, err
 	}
 
 	order.Items = []domain.OrderItem{item}
+	order.Travelers = travelers
 	return order, nil
 }
 
@@ -159,6 +190,11 @@ func (r *SQLiteOrderRepo) get(userID string, orderID int) (domain.Order, bool, e
 		return domain.Order{}, false, err
 	}
 	order.Items = items
+	travelers, err := r.listTravelers(userID, orderID)
+	if err != nil {
+		return domain.Order{}, false, err
+	}
+	order.Travelers = travelers
 	return order, true, nil
 }
 
@@ -178,6 +214,24 @@ func (r *SQLiteOrderRepo) listItems(userID string, orderID int) ([]domain.OrderI
 		items = append(items, item)
 	}
 	return items, rows.Err()
+}
+
+func (r *SQLiteOrderRepo) listTravelers(userID string, orderID int) ([]domain.Traveler, error) {
+	rows, err := r.db.Query(`SELECT id, order_id, user_id, source_traveler_id, name, gender, birth_date, document_type, document_no_masked, nationality, phone, email FROM order_travelers WHERE user_id = ? AND order_id = ? ORDER BY id ASC`, userID, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	travelers := make([]domain.Traveler, 0)
+	for rows.Next() {
+		var traveler domain.Traveler
+		if err := rows.Scan(&traveler.ID, &traveler.OrderID, &traveler.UserID, &traveler.SourceTravelerID, &traveler.Name, &traveler.Gender, &traveler.BirthDate, &traveler.DocumentType, &traveler.DocumentNoMasked, &traveler.Nationality, &traveler.Phone, &traveler.Email); err != nil {
+			return nil, err
+		}
+		travelers = append(travelers, traveler)
+	}
+	return travelers, rows.Err()
 }
 
 func (r *SQLiteOrderRepo) nextOrderID(userID string) (int, error) {

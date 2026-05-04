@@ -49,9 +49,15 @@ func migrate(db *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS users (
 			id TEXT PRIMARY KEY,
 			email TEXT NOT NULL UNIQUE,
+			phone TEXT NOT NULL DEFAULT '',
 			password_hash TEXT NOT NULL,
-			created_at TEXT NOT NULL
+			status TEXT NOT NULL DEFAULT 'active',
+			created_at TEXT NOT NULL,
+			last_login_at TEXT
 		);`,
+		`ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT '';`,
+		`ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active';`,
+		`ALTER TABLE users ADD COLUMN last_login_at TEXT;`,
 		`CREATE TABLE IF NOT EXISTS tokens (
 			token TEXT PRIMARY KEY,
 			user_id TEXT NOT NULL,
@@ -336,6 +342,72 @@ func migrate(db *sql.DB) error {
 			points_balance INTEGER NOT NULL DEFAULT 0,
 			updated_at TEXT NOT NULL
 		);`,
+		`ALTER TABLE user_profiles ADD COLUMN travel_style TEXT NOT NULL DEFAULT '';`,
+		`ALTER TABLE user_profiles ADD COLUMN budget_level TEXT NOT NULL DEFAULT '';`,
+		`ALTER TABLE user_profiles ADD COLUMN family_type TEXT NOT NULL DEFAULT '';`,
+		`ALTER TABLE user_profiles ADD COLUMN accessibility_needs TEXT NOT NULL DEFAULT '';`,
+		`CREATE TABLE IF NOT EXISTS traveler_profiles (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id TEXT NOT NULL,
+			name TEXT NOT NULL,
+			gender TEXT NOT NULL DEFAULT '',
+			birth_date TEXT NOT NULL DEFAULT '',
+			document_type TEXT NOT NULL,
+			document_no_encrypted TEXT NOT NULL,
+			document_no_hash TEXT NOT NULL,
+			document_no_masked TEXT NOT NULL,
+			nationality TEXT NOT NULL DEFAULT '',
+			phone TEXT NOT NULL DEFAULT '',
+			email TEXT NOT NULL DEFAULT '',
+			is_default INTEGER NOT NULL DEFAULT 0,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			deleted_at TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_traveler_profiles_user ON traveler_profiles(user_id, deleted_at, is_default);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_traveler_profiles_user_doc_hash ON traveler_profiles(user_id, document_type, document_no_hash) WHERE deleted_at IS NULL;`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_traveler_profiles_default ON traveler_profiles(user_id) WHERE deleted_at IS NULL AND is_default = 1;`,
+		`CREATE TABLE IF NOT EXISTS memberships (
+			user_id TEXT PRIMARY KEY,
+			level TEXT NOT NULL,
+			points_balance INTEGER NOT NULL DEFAULT 0,
+			valid_until TEXT NOT NULL DEFAULT '',
+			benefits TEXT NOT NULL DEFAULT '[]',
+			updated_at TEXT NOT NULL
+		);`,
+		`CREATE TABLE IF NOT EXISTS roles (
+			code TEXT PRIMARY KEY,
+			name TEXT NOT NULL
+		);`,
+		`CREATE TABLE IF NOT EXISTS user_roles (
+			user_id TEXT NOT NULL,
+			role_code TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			PRIMARY KEY(user_id, role_code),
+			FOREIGN KEY(role_code) REFERENCES roles(code) ON DELETE CASCADE
+		);`,
+		`CREATE TABLE IF NOT EXISTS order_travelers (
+			id INTEGER NOT NULL,
+			user_id TEXT NOT NULL,
+			order_id INTEGER NOT NULL,
+			source_traveler_id INTEGER NOT NULL DEFAULT 0,
+			name TEXT NOT NULL,
+			gender TEXT NOT NULL DEFAULT '',
+			birth_date TEXT NOT NULL DEFAULT '',
+			document_type TEXT NOT NULL DEFAULT '',
+			document_no_masked TEXT NOT NULL DEFAULT '',
+			nationality TEXT NOT NULL DEFAULT '',
+			phone TEXT NOT NULL DEFAULT '',
+			email TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			PRIMARY KEY(user_id, order_id, id),
+			FOREIGN KEY(user_id, order_id) REFERENCES orders(user_id, id) ON DELETE CASCADE
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_order_travelers_user_order ON order_travelers(user_id, order_id);`,
+		`INSERT OR IGNORE INTO roles(code, name) VALUES('customer', 'Customer');`,
+		`INSERT OR IGNORE INTO roles(code, name) VALUES('operator', 'Operator');`,
+		`INSERT OR IGNORE INTO roles(code, name) VALUES('admin', 'Admin');`,
+		`INSERT OR IGNORE INTO roles(code, name) VALUES('merchant', 'Merchant');`,
 		`CREATE TABLE IF NOT EXISTS cms_articles (
 			id INTEGER PRIMARY KEY,
 			slug TEXT NOT NULL UNIQUE,

@@ -20,9 +20,10 @@ var (
 )
 
 type AuthService struct {
-	userRepo   *authInfra.FileUserRepo
-	tokenStore *authInfra.FileTokenStore
-	resetStore *authInfra.FileTokenStore
+	userRepo         *authInfra.FileUserRepo
+	tokenStore       *authInfra.FileTokenStore
+	resetStore       *authInfra.FileTokenStore
+	defaultsCallback func(userID, email string) error
 }
 
 func NewAuthService() *AuthService {
@@ -31,6 +32,10 @@ func NewAuthService() *AuthService {
 		tokenStore: authInfra.NewFileTokenStore(authInfra.TokensFile, authInfra.TokenTTL),
 		resetStore: authInfra.NewFileTokenStore(authInfra.ResetTokensFile, authInfra.ResetTokenTTL),
 	}
+}
+
+func (s *AuthService) SetUserDefaultsCallback(callback func(userID, email string) error) {
+	s.defaultsCallback = callback
 }
 
 const salt = "travel-api-auth-v1"
@@ -77,6 +82,11 @@ func (s *AuthService) Register(email, password string) (*domain.User, error) {
 	if err := s.userRepo.Create(u); err != nil {
 		return nil, err
 	}
+	if s.defaultsCallback != nil {
+		if err := s.defaultsCallback(u.ID, u.Email); err != nil {
+			return nil, err
+		}
+	}
 	return &u, nil
 }
 
@@ -90,6 +100,7 @@ func (s *AuthService) Login(email, password string) (token string, user *domain.
 		return "", nil, err
 	}
 	s.tokenStore.Set(token, u.ID)
+	s.userRepo.TouchLogin(u.ID)
 	return token, u, nil
 }
 

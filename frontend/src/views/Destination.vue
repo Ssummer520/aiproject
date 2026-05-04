@@ -143,6 +143,10 @@
             :cart-message="cartMessage"
             :itinerary-loading="itineraryLoading"
             :itinerary-message="itineraryMessage"
+            :travelers="travelers"
+            :selected-traveler-ids="selectedTravelerIds"
+            :travelers-loading="travelersLoading"
+            :traveler-message="travelerMessage"
             :today="today"
             @update:selected-package-id="selectedPackageId = $event"
             @update:selected-date="selectedDate = $event"
@@ -152,6 +156,7 @@
             @apply-coupon="applyCoupon"
             @add-to-cart="addToCart"
             @add-to-itinerary="addToItinerary"
+            @toggle-traveler="toggleTraveler"
             @reserve="reserve"
           />
           <div v-else class="booking-card booking-card--empty">
@@ -278,6 +283,10 @@ const {
   cartMessage,
   itineraryLoading,
   itineraryMessage,
+  travelers,
+  selectedTravelerIds,
+  travelersLoading,
+  travelerMessage,
   today,
   selectedPackage,
   selectedAvailability,
@@ -295,6 +304,7 @@ const {
   applyCoupon,
   addToCart,
   addToItinerary,
+  toggleTraveler,
   reserve,
 } = useBookingPanel({
   product: bookingProduct,

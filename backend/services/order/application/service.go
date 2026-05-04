@@ -22,6 +22,16 @@ type OrderService struct {
 	repo           *infrastructure.SQLiteOrderRepo
 	productService *productApp.ProductService
 	couponService  *couponApp.CouponService
+	snapshotter    TravelerSnapshotProvider
+}
+
+type TravelerSnapshotProvider interface {
+	BuildOrderSnapshots(userID string, req TravelerSnapshotRequest) ([]domain.Traveler, error)
+}
+
+type TravelerSnapshotRequest struct {
+	TravelerIDs []int
+	Travelers   []domain.TravelerInput
 }
 
 func NewOrderService(productService *productApp.ProductService) *OrderService {
@@ -30,6 +40,10 @@ func NewOrderService(productService *productApp.ProductService) *OrderService {
 
 func NewOrderServiceWithCoupon(productService *productApp.ProductService, couponService *couponApp.CouponService) *OrderService {
 	return &OrderService{repo: infrastructure.NewSQLiteOrderRepo(), productService: productService, couponService: couponService}
+}
+
+func (s *OrderService) SetTravelerSnapshotProvider(provider TravelerSnapshotProvider) {
+	s.snapshotter = provider
 }
 
 func (s *OrderService) List(userID string) ([]domain.Order, error) {
@@ -129,7 +143,18 @@ func (s *OrderService) Create(userID string, req domain.CreateOrderRequest) (dom
 		Subtotal:    subtotal,
 	}
 
-	created, err := s.repo.Create(userID, order, item)
+	travelers := []domain.Traveler{}
+	if s.snapshotter != nil {
+		travelers, err = s.snapshotter.BuildOrderSnapshots(userID, TravelerSnapshotRequest{TravelerIDs: req.TravelerIDs, Travelers: req.Travelers})
+		if err != nil {
+			return domain.Order{}, ErrInvalidOrderRequest
+		}
+	}
+	if len(travelers) > quantity {
+		return domain.Order{}, ErrInvalidOrderRequest
+	}
+
+	created, err := s.repo.Create(userID, order, item, travelers)
 	if err != nil {
 		return domain.Order{}, err
 	}

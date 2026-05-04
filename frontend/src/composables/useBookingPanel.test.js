@@ -10,7 +10,12 @@ vi.mock('./useProducts', () => ({
   validateCoupon: vi.fn(),
 }))
 
+vi.mock('./useUser', () => ({
+  fetchTravelers: vi.fn(),
+}))
+
 import { addCartItem, addItineraryItem, createItinerary, createOrder, fetchItineraries, validateCoupon } from './useProducts'
+import { fetchTravelers } from './useUser'
 import { useBookingPanel } from './useBookingPanel'
 
 function buildProduct() {
@@ -42,6 +47,7 @@ function createBookingPanelContext(overrides = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  fetchTravelers.mockResolvedValue([])
 })
 
 describe('useBookingPanel', () => {
@@ -87,6 +93,16 @@ describe('useBookingPanel', () => {
       contact_email: 'traveler@example.com',
     }, { Authorization: 'Bearer token' })
     expect(booking.onBooked).toHaveBeenCalledWith({ id: 77, status: 'paid' })
+  })
+
+  it('loads default traveler and sends traveler_ids in order payload', async () => {
+    fetchTravelers.mockResolvedValue([{ id: 3, name: 'Alan', document_no_masked: 'E1***5678', is_default: true }])
+    createOrder.mockResolvedValue({ id: 78, status: 'paid' })
+    const booking = createBookingPanelContext()
+    await booking.loadTravelers()
+    booking.syncInitialState()
+    await expect(booking.reserve()).resolves.toBe(true)
+    expect(createOrder).toHaveBeenCalledWith(expect.objectContaining({ traveler_ids: [3] }), { Authorization: 'Bearer token' })
   })
 
   it('maps availability closure errors to a user-facing message', async () => {

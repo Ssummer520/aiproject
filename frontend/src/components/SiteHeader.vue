@@ -9,14 +9,15 @@
     </router-link>
 
     <nav class="header-nav">
-      <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('guide')">{{ $t('nav.guides') }}</button>
+      <button type="button" class="header-nav-link header-nav-btn" @click="goHomeOrScroll('guide')">{{ $t('nav.guides') }}</button>
+      <router-link to="/search" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/search') }">{{ $t('nav.search') }}</router-link>
       <router-link to="/trips" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/trips') }">{{ $t('nav.myTrips') }}</router-link>
+      <router-link to="/account" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/account') }">{{ $t('nav.account') }}</router-link>
       <router-link to="/inbound" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/inbound') }">{{ $t('nav.inbound') }}</router-link>
-      <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('history')">{{ $t('nav.history') }}</button>
-      <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('wishlist')">{{ $t('nav.wishlist') }}</button>
     </nav>
 
     <div class="header-actions">
+      <router-link to="/" class="map-toggle-header">{{ $t('nav.home') }}</router-link>
       <button class="action-btn" @click="toggleLang" :title="$t('ui.switchLanguageCurrency')">🌐 {{ locale.toUpperCase() }}</button>
 
       <div class="currency-dropdown">
@@ -41,64 +42,8 @@
         <div class="user-avatar">{{ (user?.email || '?')[0].toUpperCase() }}</div>
         <button class="logout-btn" @click="logout">{{ $t('auth.logOut') }}</button>
       </div>
-      <button v-else class="signin-btn" @click="showAuthModal = 'login'">{{ $t('auth.signIn') }}</button>
+      <button v-else class="signin-btn" @click="emit('login-request')">{{ $t('auth.signIn') }}</button>
     </div>
-
-    <!-- Auth Modal -->
-    <Teleport to="body">
-      <div v-if="showAuthModal" class="modal-overlay auth-modal-overlay" @click.self="showAuthModal = null">
-        <div class="auth-modal-card">
-          <button class="modal-close" @click="showAuthModal = null">×</button>
-
-          <template v-if="showAuthModal === 'login'">
-            <h2 class="auth-modal-title">{{ $t('auth.signIn') }}</h2>
-            <form @submit.prevent="doLogin" class="auth-form">
-              <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
-              <input v-model="authPassword" type="password" :placeholder="$t('auth.password')" required class="auth-input" />
-              <p v-if="authError" class="auth-error">{{ authError }}</p>
-              <button type="submit" class="auth-submit">{{ $t('auth.signIn') }}</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'forgot'">{{ $t('auth.forgotPasswordQuestion') }}</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'register'">{{ $t('auth.createAccount') }}</button>
-            </form>
-          </template>
-
-          <template v-else-if="showAuthModal === 'register'">
-            <h2 class="auth-modal-title">{{ $t('auth.createAccount') }}</h2>
-            <form @submit.prevent="doRegister" class="auth-form">
-              <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
-              <input v-model="authPassword" type="password" :placeholder="$t('auth.passwordMin')" required minlength="6" class="auth-input" />
-              <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmPassword')" class="auth-input" />
-              <p v-if="authError" class="auth-error">{{ authError }}</p>
-              <button type="submit" class="auth-submit">{{ $t('auth.register') }}</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.alreadyHaveAccount') }}</button>
-            </form>
-          </template>
-
-          <template v-else-if="showAuthModal === 'forgot'">
-            <h2 class="auth-modal-title">{{ $t('auth.forgotPassword') }}</h2>
-            <form @submit.prevent="doForgotPassword" class="auth-form">
-              <input v-model="authEmail" type="email" :placeholder="$t('auth.email')" required class="auth-input" />
-              <p v-if="authError" class="auth-error">{{ authError }}</p>
-              <p v-if="authSuccess" class="auth-success">{{ authSuccess }}</p>
-              <button type="submit" class="auth-submit">{{ $t('auth.sendResetLink') }}</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.backToSignIn') }}</button>
-            </form>
-          </template>
-
-          <template v-else-if="showAuthModal === 'reset'">
-            <h2 class="auth-modal-title">{{ $t('auth.resetPassword') }}</h2>
-            <form @submit.prevent="doResetPassword" class="auth-form">
-              <input v-model="authResetToken" type="text" :placeholder="$t('auth.resetToken')" class="auth-input" />
-              <input v-model="authPassword" type="password" :placeholder="$t('auth.newPassword')" required minlength="6" class="auth-input" />
-              <input v-model="authConfirmPassword" type="password" :placeholder="$t('auth.confirmNewPassword')" class="auth-input" />
-              <p v-if="authError" class="auth-error">{{ authError }}</p>
-              <button type="submit" class="auth-submit">{{ $t('auth.resetPassword') }}</button>
-              <button type="button" class="auth-link" @click="showAuthModal = 'login'">{{ $t('auth.backToSignIn') }}</button>
-            </form>
-          </template>
-        </div>
-      </div>
-    </Teleport>
   </header>
 </template>
 
@@ -113,7 +58,7 @@ const props = defineProps({
   transparent: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['scrollTo', 'loginSuccess'])
+const emit = defineEmits(['scrollTo', 'login-request'])
 
 const { locale, t } = useI18n()
 const route = useRoute()
@@ -136,13 +81,6 @@ const currencies = [
   { code: 'HKD', name: 'Hong Kong Dollar' }
 ]
 
-const showAuthModal = ref(null)
-const authEmail = ref('')
-const authPassword = ref('')
-const authConfirmPassword = ref('')
-const authResetToken = ref('')
-const authError = ref('')
-const authSuccess = ref('')
 const showCurrencyMenu = ref(false)
 
 function toggleLang() {
@@ -155,7 +93,7 @@ function selectCurrency(code) {
   showCurrencyMenu.value = false
 }
 
-function goToSection(section) {
+function goHomeOrScroll(section) {
   showCurrencyMenu.value = false
   if (route.path === '/') {
     emit('scrollTo', section)
@@ -168,99 +106,6 @@ async function logout() {
   await fetch(API + '/auth/logout', { method: 'POST', headers: authHeaders() }).catch(() => {})
   const { clearAuth } = useAuth()
   clearAuth()
-}
-
-async function doLogin() {
-  authError.value = ''
-  try {
-    const res = await fetch(API + '/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: authEmail.value.trim().toLowerCase(), password: authPassword.value }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      authError.value = data.error === 'invalid_credentials' ? t('auth.invalidCredentials') : (data.error || t('auth.loginFailed'))
-      return
-    }
-    setAuth(data.token, data.user)
-    showAuthModal.value = null
-    authEmail.value = ''
-    authPassword.value = ''
-    emit('loginSuccess')
-  } catch (e) {
-    authError.value = t('auth.networkError')
-  }
-}
-
-async function doRegister() {
-  authError.value = ''
-  if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = t('auth.passwordsDoNotMatch')
-    return
-  }
-  try {
-    const res = await fetch(API + '/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: authEmail.value.trim().toLowerCase(), password: authPassword.value }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      authError.value = data.error === 'email_already_registered' ? t('auth.emailAlreadyRegistered') : (data.error || t('auth.registrationFailed'))
-      return
-    }
-    authSuccess.value = t('auth.accountCreated')
-    showAuthModal.value = 'login'
-  } catch (e) {
-    authError.value = t('auth.networkError')
-  }
-}
-
-async function doForgotPassword() {
-  authError.value = ''
-  authSuccess.value = ''
-  try {
-    const res = await fetch(API + '/auth/forgot-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: authEmail.value.trim().toLowerCase() }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      authError.value = data.error === 'user_not_found' ? t('auth.noAccount') : (data.error || t('auth.requestFailed'))
-      return
-    }
-    authSuccess.value = t('auth.checkEmailReset')
-    if (data.reset_token) authResetToken.value = data.reset_token
-    showAuthModal.value = 'reset'
-  } catch (e) {
-    authError.value = t('auth.networkError')
-  }
-}
-
-async function doResetPassword() {
-  authError.value = ''
-  if (authPassword.value !== authConfirmPassword.value) {
-    authError.value = t('auth.passwordsDoNotMatch')
-    return
-  }
-  try {
-    const res = await fetch(API + '/auth/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reset_token: authResetToken.value, new_password: authPassword.value }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      authError.value = data.error === 'invalid_or_expired_token' ? t('auth.invalidResetToken') : (data.error || t('auth.resetFailed'))
-      return
-    }
-    authSuccess.value = t('auth.passwordReset')
-    showAuthModal.value = 'login'
-  } catch (e) {
-    authError.value = t('auth.networkError')
-  }
 }
 
 // Close currency dropdown when clicking outside
@@ -277,5 +122,4 @@ watch(() => route.fullPath, () => {
   showCurrencyMenu.value = false
 })
 
-watch(showAuthModal, () => { authError.value = ''; authSuccess.value = '' })
 </script>

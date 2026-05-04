@@ -18,6 +18,8 @@ import (
 	itineraryApp "travel-api/services/itinerary/application"
 	orderApi "travel-api/services/order/api"
 	orderApp "travel-api/services/order/application"
+	platformApi "travel-api/services/platform/api"
+	platformApp "travel-api/services/platform/application"
 	productApi "travel-api/services/product/api"
 	productApp "travel-api/services/product/application"
 	reviewApi "travel-api/services/review/api"
@@ -54,6 +56,7 @@ func main() {
 	orderService := orderApp.NewOrderServiceWithCoupon(productService, couponService)
 	itineraryService := itineraryApp.NewItineraryService(productService)
 	cartService := cartApp.NewCartService(productService, orderService)
+	platformService := platformApp.NewPlatformService()
 	authHandler := authApi.NewAuthHandlerWithService(authService)
 	bffHandler := api.NewBFFHandler()
 	productHandler := productApi.NewProductHandlerWithService(productService)
@@ -62,6 +65,7 @@ func main() {
 	orderHandler := orderApi.NewOrderHandler(orderService)
 	itineraryHandler := itineraryApi.NewItineraryHandler(itineraryService)
 	cartHandler := cartApi.NewCartHandler(cartService)
+	platformHandler := platformApi.NewPlatformHandler(platformService)
 
 	mux := http.NewServeMux()
 
@@ -99,6 +103,8 @@ func main() {
 	mux.Handle("/api/v1/cart/checkout", authMiddleware(authService, http.HandlerFunc(cartHandler.HandleCheckout)))
 	mux.Handle("/api/v1/orders", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrders)))
 	mux.Handle("/api/v1/orders/", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrderActions)))
+	mux.Handle("/api/v1/platform", authMiddleware(authService, http.HandlerFunc(platformHandler.HandlePlatform)))
+	mux.Handle("/api/v1/platform/", authMiddleware(authService, http.HandlerFunc(platformHandler.HandlePlatformActions)))
 
 	const addr = ":8888"
 	log.Println("Server listening on http://localhost:8888")

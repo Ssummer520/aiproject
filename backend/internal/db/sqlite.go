@@ -293,6 +293,62 @@ func migrate(db *sql.DB) error {
 			PRIMARY KEY(user_id, id)
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_cart_items_user_created ON cart_items(user_id, created_at DESC);`,
+		`CREATE TABLE IF NOT EXISTS merchants (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			contact_email TEXT NOT NULL,
+			phone TEXT NOT NULL,
+			city TEXT NOT NULL,
+			status TEXT NOT NULL,
+			rating REAL NOT NULL DEFAULT 0,
+			created_at TEXT NOT NULL
+		);`,
+		`CREATE TABLE IF NOT EXISTS merchant_products (
+			product_id INTEGER PRIMARY KEY,
+			merchant_id INTEGER NOT NULL,
+			FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE,
+			FOREIGN KEY(merchant_id) REFERENCES merchants(id) ON DELETE CASCADE
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_merchant_products_merchant ON merchant_products(merchant_id);`,
+		`CREATE TABLE IF NOT EXISTS refund_requests (
+			id INTEGER PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			order_id INTEGER NOT NULL,
+			reason TEXT NOT NULL,
+			refund_amount REAL NOT NULL,
+			status TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_refund_requests_user_order ON refund_requests(user_id, order_id);`,
+		`CREATE TABLE IF NOT EXISTS user_profiles (
+			user_id TEXT PRIMARY KEY,
+			display_name TEXT NOT NULL,
+			avatar TEXT NOT NULL,
+			phone TEXT NOT NULL,
+			nationality TEXT NOT NULL,
+			passport_name TEXT NOT NULL,
+			language TEXT NOT NULL,
+			currency TEXT NOT NULL,
+			travel_preferences TEXT NOT NULL,
+			dietary_restrictions TEXT NOT NULL,
+			membership_level TEXT NOT NULL,
+			points_balance INTEGER NOT NULL DEFAULT 0,
+			updated_at TEXT NOT NULL
+		);`,
+		`CREATE TABLE IF NOT EXISTS cms_articles (
+			id INTEGER PRIMARY KEY,
+			slug TEXT NOT NULL UNIQUE,
+			title TEXT NOT NULL,
+			category TEXT NOT NULL,
+			city TEXT NOT NULL,
+			language TEXT NOT NULL,
+			summary TEXT NOT NULL,
+			content TEXT NOT NULL,
+			status TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_cms_articles_category_city ON cms_articles(category, city, status);`,
 	}
 	for _, statement := range statements {
 		if _, err := db.Exec(statement); err != nil {

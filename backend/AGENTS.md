@@ -10,7 +10,7 @@ These instructions apply to all files under `backend/`.
 - The server entrypoint is `cmd/server/main.go` and listens on `http://localhost:8888`.
 - APIs are mounted under `/api/v1` and are consumed by the Vite frontend proxy at `/api`.
 - The codebase uses mostly standard-library `net/http`; avoid introducing a web framework unless explicitly requested.
-- OTA phases 1-3 from `PRODUCT_ROADMAP.md` are complete: Product, ProductPackage, Availability, Order/OrderItem, Coupon, and Review are implemented with SQLite-backed demo persistence.
+- OTA phases 1-4 from `PRODUCT_ROADMAP.md` are complete: Product, ProductPackage, Availability, Order/OrderItem, Coupon, and Review are implemented with SQLite-backed demo persistence.
 
 ## Architecture
 
@@ -91,7 +91,14 @@ These instructions apply to all files under `backend/`.
 - Itinerary APIs support authenticated list/create/get, adding product/destination/custom timeline items, up/down item sorting, and local rule-based AI generation via `/api/v1/itineraries/generate`.
 - Cart APIs support authenticated summary, add item, clear cart, and multi-item checkout via `/api/v1/cart/checkout`; checkout creates product orders through `services/order` and clears the cart after success.
 - Keep order creation as the source of booking truth; itinerary and cart services should orchestrate but not duplicate product inventory/order pricing rules.
-- Future Phase 4 work should strengthen inventory locking, payment idempotency, merchant operations, CMS, and refund workflow depth.
+- Phase 4 backend MVP is complete through `services/platform`: merchant list, inventory updates, refund requests, membership profile, CMS articles, and dashboard metrics. Future work should strengthen role-based admin auth, inventory locking, payment idempotency, and refund workflow depth.
+
+## Phase 4 Completion Notes
+
+- Completed platform backend lives in `services/platform` with `api`, `application`, `domain`, and `infrastructure` layers.
+- SQLite migrations now include `merchants`, `merchant_products`, `refund_requests`, `user_profiles`, and `cms_articles`.
+- Active platform APIs live under `/api/v1/platform`, including metrics, merchants, inventory, orders, refunds, profile, and CMS.
+- Keep this as a demo operations console; production admin work still needs RBAC, audit logs, payment idempotency, and stronger inventory locking.
 
 ## Validation
 

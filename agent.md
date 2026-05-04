@@ -2,7 +2,7 @@
 
 ## Current Product Status
 
-- Phase 1-3 from `PRODUCT_ROADMAP.md` are completed through the OTA itinerary/cart milestone.
+- Phase 1-4 from `PRODUCT_ROADMAP.md` are completed through the OTA platformization milestone.
 - The app now supports a product-first booking path: Home product channels -> Search products -> Product detail -> package/date/traveller/coupon selection -> add to itinerary, add to cart, or reserve now -> Trips itinerary/cart/order management.
 - Keep legacy destination inspiration and `/api/v1/bookings` compatibility while using `/api/v1/orders`, `/api/v1/itineraries`, and `/api/v1/cart` for active OTA flows.
 
@@ -11,6 +11,7 @@
 - Phase 1: Product, ProductPackage, Availability, Order, and OrderItem models with SQLite persistence.
 - Phase 2: Advanced filters, coupons, verified reviews, product trust content, richer order states, Trips order actions, and review submission.
 - Phase 3: Itinerary, ItineraryItem, CartItem, AI itinerary generation, timeline sorting, shared add-to-itinerary/add-to-cart booking actions, and multi-product cart checkout.
+- Phase 4: Merchant, inventory operations, refund requests, membership profile/points, CMS articles, operating metrics, and `/platform` console.
 - Home has OTA product channels: Stays, Things to do, Tickets, Tours, Transport, and Deals.
 - Search is product-first and supports keyword, city, category, type, price, rating, date, travellers, availability, language, features, voucher type, and sorting.
 - Product detail and destination detail share `BookingPanel` for package/date/guest/coupon/cart/itinerary/order flows.
@@ -19,7 +20,7 @@
 ## Architecture Rules
 
 - Backend feature code should stay under `backend/services/<domain>/` with `api`, `application`, `domain`, and `infrastructure` layers.
-- Product, order, coupon, review, itinerary, and cart behavior should remain in their domain services; avoid bloating `services/bff`.
+- Product, order, coupon, review, itinerary, cart, and platform behavior should remain in their domain services; avoid bloating `services/bff`.
 - Frontend reusable booking UI belongs in `frontend/src/components/BookingPanel.vue`; shared state belongs in `frontend/src/composables/useBookingPanel.js`.
 - Product/order/itinerary/cart API helpers belong in `frontend/src/composables/useProducts.js`.
 - Preserve current UI language: rounded cards, soft shadows, gradient CTAs, bilingual copy, and currency display.
@@ -34,5 +35,5 @@ git diff --check
 
 ## Next Roadmap Focus
 
-- Phase 4 should focus on merchant/admin operations, inventory locking, real payment/refund idempotency, CMS, multi-language content management, and data dashboards.
+- Phase 5 should focus on China inbound travel differentiation: eSIM/WiFi, transfers, high-speed rail guidance, City Pass, payment/reservation guides, and cross-language AI concierge.
 - Do not remove legacy destination routes or bookings until a migration plan exists.

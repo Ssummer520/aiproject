@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"travel-api/services/product/domain"
 )
@@ -72,4 +73,57 @@ func TestProductServiceGetByDestinationID(t *testing.T) {
 	if _, err := service.GetByDestinationID(999999); err != ErrProductNotFound {
 		t.Fatalf("expected ErrProductNotFound, got %v", err)
 	}
+}
+
+func TestProductServiceAdvancedPhase2Filters(t *testing.T) {
+	service := NewProductService()
+	travelDate := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+
+	mobile, err := service.Search(domain.SearchFilters{Date: travelDate, Adults: 2, Children: 1, VoucherType: "mobile"})
+	if err != nil {
+		t.Fatalf("search mobile availability: %v", err)
+	}
+	if mobile.Total == 0 {
+		t.Fatal("expected date/guest/voucher availability matches")
+	}
+	for _, product := range mobile.Results {
+		found := false
+		for _, pkg := range product.Packages {
+			if pkg.VoucherType == "mobile" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("expected mobile voucher package in product %#v", product)
+		}
+	}
+
+	family, err := service.Search(domain.SearchFilters{AvailableTomorrow: boolPtr(true), Features: []string{"Family"}})
+	if err != nil {
+		t.Fatalf("search family tomorrow: %v", err)
+	}
+	if family.Total == 0 {
+		t.Fatal("expected available-tomorrow family products")
+	}
+}
+
+func TestProductServiceDiscountSort(t *testing.T) {
+	service := NewProductService()
+
+	result, err := service.Search(domain.SearchFilters{Sort: "discount"})
+	if err != nil {
+		t.Fatalf("discount sort: %v", err)
+	}
+	if result.Total < 2 {
+		t.Fatalf("expected multiple sorted products, got %d", result.Total)
+	}
+	left := result.Results[0].Packages[0].OriginalPrice - result.Results[0].Packages[0].Price
+	right := result.Results[len(result.Results)-1].Packages[0].OriginalPrice - result.Results[len(result.Results)-1].Packages[0].Price
+	if left < right {
+		t.Fatalf("expected descending discount sort, first=%v last=%v", left, right)
+	}
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

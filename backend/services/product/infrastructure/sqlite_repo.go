@@ -30,27 +30,49 @@ func NewSQLiteProductRepo() *SQLiteProductRepo {
 
 func (r *SQLiteProductRepo) Search(filters domain.SearchFilters) ([]domain.Product, error) {
 	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	rows, err := r.db.Query(`SELECT id, destination_id, city, category, type, name, subtitle, description, cover, images, tags, rating, review_count, booked_count, base_price, currency, instant_confirm, free_cancel, duration, meeting_point, included, excluded, usage, policy, status FROM products WHERE status = 'active'`)
 	if err != nil {
+		r.mu.RUnlock()
 		return nil, err
 	}
-	defer rows.Close()
 
-	products := make([]domain.Product, 0)
+	candidates := make([]domain.Product, 0)
 	for rows.Next() {
 		product, err := scanProduct(rows)
 		if err != nil {
+			_ = rows.Close()
+			r.mu.RUnlock()
 			return nil, err
 		}
+		candidates = append(candidates, product)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		r.mu.RUnlock()
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		r.mu.RUnlock()
+		return nil, err
+	}
+	r.mu.RUnlock()
+
+	products := make([]domain.Product, 0, len(candidates))
+	for _, product := range candidates {
+		packages, err := r.ListPackages(product.ID)
+		if err != nil {
+			return nil, err
+		}
+		availability, err := r.ListAvailability(product.ID, filters.Date)
+		if err != nil {
+			return nil, err
+		}
+		product.Packages = packages
+		product.Availability = availability
 		if !matchesFilters(product, filters) {
 			continue
 		}
 		products = append(products, product)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 
 	sortProducts(products, filters.Sort)
@@ -260,8 +282,6 @@ func (r *SQLiteProductRepo) seedAvailability() {
 	if err != nil {
 		return
 	}
-	defer packages.Close()
-
 	type seedPackage struct {
 		ID        int
 		ProductID int
@@ -274,6 +294,7 @@ func (r *SQLiteProductRepo) seedAvailability() {
 			items = append(items, item)
 		}
 	}
+	_ = packages.Close()
 
 	today := time.Now()
 	for _, item := range items {
@@ -321,7 +342,7 @@ func scanProduct(scanner interface {
 func matchesFilters(product domain.Product, filters domain.SearchFilters) bool {
 	query := strings.ToLower(strings.TrimSpace(filters.Query))
 	if query != "" {
-		haystack := strings.ToLower(strings.Join([]string{product.Name, product.Subtitle, product.Description, product.City, strings.Join(product.Tags, " ")}, " "))
+		haystack := strings.ToLower(strings.Join([]string{product.Name, product.Subtitle, product.Description, product.City, product.Category, product.Type, product.Duration, product.MeetingPoint, product.Usage, strings.Join(product.Tags, " "), strings.Join(product.Included, " ")}, " "))
 		if !strings.Contains(haystack, query) {
 			return false
 		}
@@ -334,6 +355,17 @@ func matchesFilters(product domain.Product, filters domain.SearchFilters) bool {
 	}
 	if filters.Type != "" && !strings.EqualFold(product.Type, filters.Type) {
 		return false
+	}
+	if filters.Duration != "" && !strings.Contains(strings.ToLower(product.Duration), strings.ToLower(filters.Duration)) {
+		return false
+	}
+	if filters.Language != "" && !containsAnyFold([]string{product.Description, product.Subtitle, strings.Join(product.Tags, " "), strings.Join(product.Included, " ")}, filters.Language) {
+		return false
+	}
+	for _, feature := range filters.Features {
+		if feature != "" && !containsAnyFold([]string{product.Description, product.Subtitle, product.Policy, product.Usage, strings.Join(product.Tags, " "), strings.Join(product.Included, " ")}, feature) {
+			return false
+		}
 	}
 	if filters.MinPrice > 0 && product.BasePrice < filters.MinPrice {
 		return false
@@ -350,6 +382,9 @@ func matchesFilters(product domain.Product, filters domain.SearchFilters) bool {
 	if filters.FreeCancel != nil && product.FreeCancel != *filters.FreeCancel {
 		return false
 	}
+	if filters.Date != "" || filters.AvailableToday != nil || filters.AvailableTomorrow != nil || filters.Adults+filters.Children > 0 || filters.VoucherType != "" {
+		return hasMatchingPackageAvailability(product, filters)
+	}
 	return true
 }
 
@@ -363,6 +398,10 @@ func sortProducts(products []domain.Product, sortBy string) {
 		sort.Slice(products, func(i, j int) bool { return products[i].Rating > products[j].Rating })
 	case "booked":
 		sort.Slice(products, func(i, j int) bool { return products[i].BookedCount > products[j].BookedCount })
+	case "discount":
+		sort.Slice(products, func(i, j int) bool { return maxPackageDiscount(products[i]) > maxPackageDiscount(products[j]) })
+	case "distance":
+		sort.Slice(products, func(i, j int) bool { return products[i].ID < products[j].ID })
 	default:
 		sort.Slice(products, func(i, j int) bool {
 			left := products[i].Rating*100 + float64(products[i].BookedCount)
@@ -442,4 +481,55 @@ func demoPackages() []domain.Package {
 		)
 	}
 	return packages
+}
+
+func containsAnyFold(values []string, target string) bool {
+	for _, value := range values {
+		if strings.Contains(strings.ToLower(value), strings.ToLower(target)) {
+			return true
+		}
+	}
+	return false
+}
+
+func maxPackageDiscount(product domain.Product) float64 {
+	best := 0.0
+	for _, pkg := range product.Packages {
+		if pkg.OriginalPrice > pkg.Price && pkg.OriginalPrice-pkg.Price > best {
+			best = pkg.OriginalPrice - pkg.Price
+		}
+	}
+	return best
+}
+
+func hasMatchingPackageAvailability(product domain.Product, filters domain.SearchFilters) bool {
+	date := strings.TrimSpace(filters.Date)
+	if filters.AvailableToday != nil && *filters.AvailableToday {
+		date = time.Now().Format("2006-01-02")
+	}
+	if filters.AvailableTomorrow != nil && *filters.AvailableTomorrow {
+		date = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	}
+	quantity := filters.Adults + filters.Children
+	if quantity <= 0 {
+		quantity = 1
+	}
+	for _, pkg := range product.Packages {
+		if filters.VoucherType != "" && !strings.EqualFold(pkg.VoucherType, filters.VoucherType) {
+			continue
+		}
+		if quantity < pkg.MinQuantity || quantity > pkg.MaxQuantity {
+			continue
+		}
+		for _, availability := range product.Availability {
+			if availability.PackageID != pkg.ID || availability.Status != "available" || availability.Stock < quantity {
+				continue
+			}
+			if date != "" && availability.Date != date {
+				continue
+			}
+			return true
+		}
+	}
+	return false
 }

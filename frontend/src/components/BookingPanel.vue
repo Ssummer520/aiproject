@@ -76,8 +76,27 @@
         <div :class="mode === 'product' ? '' : 'bk-pb-row'"><span>{{ locale === 'zh' ? '成人' : 'Adults' }} × {{ adults }}</span><span>{{ formatPrice(unitPrice * adults) }}</span></div>
         <div v-if="children" :class="mode === 'product' ? '' : 'bk-pb-row'"><span>{{ locale === 'zh' ? '儿童' : 'Children' }} × {{ children }}</span><span>{{ formatPrice(unitPrice * 0.7 * children) }}</span></div>
         <div v-if="mode === 'destination'" class="bk-pb-row"><span>{{ locale === 'zh' ? '服务费' : 'Service fee' }}</span><span>{{ formatPrice(0) }}</span></div>
+        <div v-if="discountAmount > 0" :class="mode === 'product' ? 'discount-row' : 'bk-pb-row discount-row'"><span>{{ locale === 'zh' ? '优惠抵扣' : 'Coupon discount' }}</span><span>-{{ formatPrice(discountAmount) }}</span></div>
         <hr :class="mode === 'product' ? '' : 'bk-div'" />
-        <div :class="mode === 'product' ? 'total' : 'bk-pb-row bk-total'"><span>{{ locale === 'zh' ? '总计' : 'Total' }}</span><span>{{ formatPrice(totalPrice) }}</span></div>
+        <div :class="mode === 'product' ? 'total' : 'bk-pb-row bk-total'"><span>{{ locale === 'zh' ? '总计' : 'Total' }}</span><span>{{ formatPrice(finalTotalPrice) }}</span></div>
+      </div>
+
+      <div :class="mode === 'product' ? 'coupon-box' : 'coupon-box coupon-box--compact'">
+        <div class="coupon-input-row">
+          <input
+            :value="couponCode"
+            type="text"
+            :placeholder="locale === 'zh' ? '输入优惠码，如 WELCOME80' : 'Coupon code, e.g. WELCOME80'"
+            :disabled="couponLoading || bookingLoading"
+            @input="emit('update:couponCode', $event.target.value)"
+            @keyup.enter="emit('applyCoupon')"
+          />
+          <button type="button" :disabled="couponLoading || bookingLoading || !couponCode" @click="emit('applyCoupon')">
+            {{ couponLoading ? (locale === 'zh' ? '验证中' : 'Checking') : (locale === 'zh' ? '使用' : 'Apply') }}
+          </button>
+        </div>
+        <p v-if="couponResult?.valid" class="coupon-success">✓ {{ couponResult.coupon?.name || (locale === 'zh' ? '优惠券已使用' : 'Coupon applied') }} · -{{ formatPrice(discountAmount) }}</p>
+        <p v-else-if="couponError" class="coupon-error">{{ couponError }}</p>
       </div>
 
       <p v-if="bookingError" :class="mode === 'product' ? 'booking-error' : 'bk-error'">{{ bookingError }}</p>
@@ -112,6 +131,12 @@ const props = defineProps({
   selectedAvailability: { type: Object, default: null },
   unitPrice: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
+  discountAmount: { type: Number, default: 0 },
+  finalTotalPrice: { type: Number, default: null },
+  couponCode: { type: String, default: '' },
+  couponLoading: { type: Boolean, default: false },
+  couponError: { type: String, default: '' },
+  couponResult: { type: Object, default: null },
   canBook: { type: Boolean, required: true },
   availabilityText: { type: String, required: true },
   bookingLoading: { type: Boolean, default: false },
@@ -119,7 +144,7 @@ const props = defineProps({
   today: { type: String, required: true },
 })
 
-const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'update:adults', 'update:children', 'reserve'])
+const emit = defineEmits(['update:selectedPackageId', 'update:selectedDate', 'update:adults', 'update:children', 'update:couponCode', 'applyCoupon', 'reserve'])
 const { locale } = useI18n()
 const { formatPrice } = useCurrency()
 
@@ -128,6 +153,7 @@ const canIncreaseAdults = computed(() => props.adults + props.children < maxGues
 const canIncreaseChildren = computed(() => props.adults + props.children < maxGuests.value)
 const panelClass = computed(() => (props.mode === 'product' ? 'product-booking-panel' : 'dest-sidebar'))
 const cardClass = computed(() => (props.mode === 'product' ? 'product-booking-card' : 'booking-card'))
+const finalTotalPrice = computed(() => props.finalTotalPrice ?? props.totalPrice)
 </script>
 
 <style scoped>
@@ -220,6 +246,65 @@ const cardClass = computed(() => (props.mode === 'product' ? 'product-booking-ca
   display: grid;
   gap: 10px;
   margin: 18px 0;
+}
+
+.discount-row {
+  color: #0f766e !important;
+  font-weight: 900;
+}
+
+.coupon-box {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px dashed rgba(255, 56, 92, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 56, 92, 0.05);
+}
+
+.coupon-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.coupon-input-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.coupon-input-row button {
+  border: none;
+  border-radius: 10px;
+  background: var(--text);
+  color: #fff;
+  font-weight: 900;
+  padding: 0 13px;
+  cursor: pointer;
+}
+
+.coupon-input-row button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.coupon-success,
+.coupon-error {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.coupon-success {
+  color: #0f766e;
+}
+
+.coupon-error {
+  color: var(--danger);
 }
 
 .bk-pb-row {

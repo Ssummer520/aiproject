@@ -10,7 +10,7 @@ These instructions apply to all files under `backend/`.
 - The server entrypoint is `cmd/server/main.go` and listens on `http://localhost:8888`.
 - APIs are mounted under `/api/v1` and are consumed by the Vite frontend proxy at `/api`.
 - The codebase uses mostly standard-library `net/http`; avoid introducing a web framework unless explicitly requested.
-- OTA phase 1 from `PRODUCT_ROADMAP.md` is complete: Product, ProductPackage, Availability, Order, and OrderItem are implemented with SQLite-backed demo persistence.
+- OTA phases 1-2 from `PRODUCT_ROADMAP.md` are complete: Product, ProductPackage, Availability, Order/OrderItem, Coupon, and Review are implemented with SQLite-backed demo persistence.
 
 ## Architecture
 
@@ -23,7 +23,9 @@ These instructions apply to all files under `backend/`.
 - Prefer updating the active `services/` implementation over the older `internal/handlers` and `internal/store` paths unless the task specifically targets legacy code.
 - For OTA product/order work, keep business domains as separate services instead of bloating `services/bff`:
   - `services/product/` owns products, packages, availability, search filters, and product detail data.
-  - `services/order/` owns product orders, order-item persistence, voucher/usage instructions, and cancellation.
+  - `services/order/` owns product orders, order-item persistence, voucher/usage instructions, coupon totals, and cancellation/completion/refund status transitions.
+  - `services/coupon/` owns coupon listing, validation, discount calculation, and seeded promotional codes.
+  - `services/review/` owns verified product reviews, score summaries, language filtering, and review permission checks.
   - `services/bff/` may aggregate homepage/city/category data, but should delegate product/order operations to their services.
 - Keep `cmd/server/main.go` as the composition root for wiring HTTP handlers and middleware.
 
@@ -59,22 +61,29 @@ These instructions apply to all files under `backend/`.
 - Preserve existing `/api/v1` route names unless the user asks for a breaking change.
 - Keep frontend compatibility in mind when changing response shapes; check `frontend/src/composables` and `frontend/src/views` for consumers.
 - Respect the `Accept-Language` header behavior and default to `en` where existing code does so.
-- Phase-1 OTA APIs should use these routes unless changed deliberately:
-  - `GET /api/v1/products`
+- Active OTA APIs should use these routes unless changed deliberately:
+  - `GET /api/v1/products` with phase-2 filters: `date`, `adults`, `children`, `duration`, `language`, `voucher_type`, `features`, `available_today`, `available_tomorrow`, `sort=discount|distance`.
   - `GET /api/v1/products/{id}`
   - `GET /api/v1/products/{id}/availability`
+  - `GET /api/v1/products/{id}/reviews`
+  - `POST /api/v1/products/{id}/reviews`
+  - `GET /api/v1/coupons`
+  - `POST /api/v1/coupons/validate`
   - `GET /api/v1/orders`
   - `POST /api/v1/orders`
   - `POST /api/v1/orders/{id}/cancel`
+  - `POST /api/v1/orders/{id}/complete`
+  - `POST /api/v1/orders/{id}/refund`
 - Keep legacy `/api/v1/bookings` behavior available while introducing `/api/v1/orders` for product orders.
 - Treat `/api/v1/orders` as the active OTA order flow; `/api/v1/bookings` is legacy compatibility and should not receive new product-order features.
 
-## Phase 1 Completion Notes
+## Phase 2 Completion Notes
 
-- The completed phase-1 backend flow is: product search/detail -> package availability -> authenticated order creation -> order listing/cancellation.
-- Product order items should include enough display data for Trips without extra joins, including product name, package name, city, cover, travel date, travellers, price, and usage instructions.
+- The completed OTA backend flow is: product search/detail -> advanced filters -> package availability -> coupon validation -> authenticated mock-paid order creation -> order listing/cancellation/completion/refund -> verified review creation.
+- Product order items should include enough display data for Trips without extra joins, including product name, package name, city, cover, travel date, travellers, price, coupon totals, and usage instructions.
+- Reviews are verified at the service boundary by checking matching user product orders; anonymous or unmatched reviews must be rejected.
 - Current inventory is lightweight demo inventory: order creation validates availability and increments `booked_count`, but does not yet lock/decrement stock or integrate real payment.
-- Phase 2 backend work should focus on reviews, coupons, richer trust metadata, payment/refund state transitions, and stronger inventory handling.
+- Phase 3 backend work should focus on itinerary, cart/bundle ordering, AI itinerary-to-order conversion, and stronger inventory locking.
 
 ## Validation
 

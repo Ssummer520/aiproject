@@ -11,13 +11,19 @@ function requestError(message, status, data = {}) {
   return error
 }
 
+function appendSearchParam(search, key, value) {
+  if (value === undefined || value === null || value === '') return
+  if (Array.isArray(value)) {
+    const joined = value.filter(item => item !== undefined && item !== null && item !== '').join(',')
+    if (joined) search.set(key, joined)
+    return
+  }
+  search.set(key, value)
+}
+
 export async function fetchProducts(params = {}) {
   const search = new URLSearchParams()
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      search.set(key, value)
-    }
-  })
+  Object.entries(params).forEach(([key, value]) => appendSearchParam(search, key, value))
   const suffix = search.toString() ? `?${search.toString()}` : ''
   const res = await fetch(`${API}/products${suffix}`)
   if (!res.ok) throw requestError('products_request_failed', res.status)
@@ -44,6 +50,55 @@ export async function fetchProductAvailability(id, date = '') {
   const res = await fetch(`${API}/products/${id}/availability${suffix}`)
   if (!res.ok) throw requestError('availability_request_failed', res.status)
   return res.json()
+}
+
+
+
+export async function fetchCoupons() {
+  const res = await fetch(`${API}/coupons`)
+  const data = await parseJSONSafe(res)
+  if (!res.ok) {
+    throw requestError(data.error || 'coupons_request_failed', res.status, data)
+  }
+  return data
+}
+
+export async function validateCoupon(code, amount) {
+  const res = await fetch(`${API}/coupons/validate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, amount }),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) {
+    throw requestError(data.error || 'coupon_validation_failed', res.status, data)
+  }
+  return data
+}
+
+export async function fetchProductReviews(id, params = {}, headers = {}) {
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => appendSearchParam(search, key, value))
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+  const res = await fetch(`${API}/products/${id}/reviews${suffix}`, { headers })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) {
+    throw requestError(data.error || 'reviews_request_failed', res.status, data)
+  }
+  return data
+}
+
+export async function createProductReview(id, payload, headers = {}) {
+  const res = await fetch(`${API}/products/${id}/reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(payload),
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) {
+    throw requestError(data.error || 'review_request_failed', res.status, data)
+  }
+  return data
 }
 
 export async function createOrder(payload, headers = {}) {
@@ -78,6 +133,28 @@ export async function cancelOrder(id, headers = {}) {
     throw requestError(data.error || 'cancel_order_failed', res.status, data)
   }
   return data
+}
+
+
+
+async function postOrderAction(id, action, headers = {}) {
+  const res = await fetch(`${API}/orders/${id}/${action}`, {
+    method: 'POST',
+    headers,
+  })
+  const data = await parseJSONSafe(res)
+  if (!res.ok) {
+    throw requestError(data.error || `${action}_order_failed`, res.status, data)
+  }
+  return data
+}
+
+export async function completeOrder(id, headers = {}) {
+  return postOrderAction(id, 'complete', headers)
+}
+
+export async function refundOrder(id, headers = {}) {
+  return postOrderAction(id, 'refund', headers)
 }
 
 export async function fetchBookings(headers = {}) {

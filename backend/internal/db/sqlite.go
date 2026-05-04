@@ -174,7 +174,10 @@ func migrate(db *sql.DB) error {
 			user_id TEXT NOT NULL,
 			status TEXT NOT NULL,
 			payment_status TEXT NOT NULL,
+			original_amount REAL NOT NULL DEFAULT 0,
+			discount_amount REAL NOT NULL DEFAULT 0,
 			total_amount REAL NOT NULL,
+			coupon_code TEXT NOT NULL DEFAULT '',
 			currency TEXT NOT NULL,
 			contact_name TEXT NOT NULL,
 			contact_email TEXT NOT NULL,
@@ -184,6 +187,9 @@ func migrate(db *sql.DB) error {
 			PRIMARY KEY(user_id, id)
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at DESC);`,
+		`ALTER TABLE orders ADD COLUMN original_amount REAL NOT NULL DEFAULT 0;`,
+		`ALTER TABLE orders ADD COLUMN discount_amount REAL NOT NULL DEFAULT 0;`,
+		`ALTER TABLE orders ADD COLUMN coupon_code TEXT NOT NULL DEFAULT '';`,
 		`CREATE TABLE IF NOT EXISTS order_items (
 			id INTEGER NOT NULL,
 			order_id INTEGER NOT NULL,
@@ -206,10 +212,43 @@ func migrate(db *sql.DB) error {
 		);`,
 		`ALTER TABLE order_items ADD COLUMN usage TEXT NOT NULL DEFAULT '';`,
 		`CREATE INDEX IF NOT EXISTS idx_order_items_user_order ON order_items(user_id, order_id);`,
+		`CREATE TABLE IF NOT EXISTS coupons (
+			id INTEGER PRIMARY KEY,
+			code TEXT NOT NULL UNIQUE,
+			name TEXT NOT NULL,
+			discount_type TEXT NOT NULL,
+			discount_value REAL NOT NULL,
+			min_spend REAL NOT NULL,
+			valid_from TEXT NOT NULL,
+			valid_to TEXT NOT NULL,
+			usage_limit INTEGER NOT NULL DEFAULT 0,
+			status TEXT NOT NULL
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_coupons_code_status ON coupons(code, status);`,
+		`CREATE TABLE IF NOT EXISTS reviews (
+			id INTEGER PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			product_id INTEGER NOT NULL,
+			order_id INTEGER NOT NULL DEFAULT 0,
+			rating REAL NOT NULL,
+			quality_score REAL NOT NULL DEFAULT 0,
+			service_score REAL NOT NULL DEFAULT 0,
+			value_score REAL NOT NULL DEFAULT 0,
+			transport_score REAL NOT NULL DEFAULT 0,
+			family_score REAL NOT NULL DEFAULT 0,
+			content TEXT NOT NULL,
+			images TEXT NOT NULL DEFAULT '[]',
+			language TEXT NOT NULL DEFAULT 'en',
+			verified INTEGER NOT NULL DEFAULT 0,
+			merchant_reply TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_reviews_product_created ON reviews(product_id, created_at DESC);`,
 	}
 	for _, statement := range statements {
 		if _, err := db.Exec(statement); err != nil {
-			if statement == `ALTER TABLE order_items ADD COLUMN usage TEXT NOT NULL DEFAULT '';` && strings.Contains(err.Error(), "duplicate column name") {
+			if strings.HasPrefix(statement, `ALTER TABLE`) && strings.Contains(err.Error(), "duplicate column name") {
 				continue
 			}
 			return err

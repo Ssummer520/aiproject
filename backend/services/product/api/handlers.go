@@ -49,18 +49,29 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 	minPrice, _ := strconv.ParseFloat(firstNonEmpty(query.Get("price_min"), query.Get("min_price")), 64)
 	maxPrice, _ := strconv.ParseFloat(firstNonEmpty(query.Get("price_max"), query.Get("max_price")), 64)
 	ratingMin, _ := strconv.ParseFloat(query.Get("rating_min"), 64)
+	adults, _ := strconv.Atoi(query.Get("adults"))
+	children, _ := strconv.Atoi(query.Get("children"))
 
 	result, err := h.service.Search(domain.SearchFilters{
-		Query:          query.Get("q"),
-		City:           query.Get("city"),
-		Category:       query.Get("category"),
-		Type:           query.Get("type"),
-		MinPrice:       minPrice,
-		MaxPrice:       maxPrice,
-		RatingMin:      ratingMin,
-		InstantConfirm: application.ParseBoolPointer(query.Get("instant_confirm")),
-		FreeCancel:     application.ParseBoolPointer(query.Get("free_cancel")),
-		Sort:           query.Get("sort"),
+		Query:             query.Get("q"),
+		City:              query.Get("city"),
+		Category:          query.Get("category"),
+		Type:              query.Get("type"),
+		Date:              query.Get("date"),
+		Duration:          query.Get("duration"),
+		Language:          query.Get("language"),
+		VoucherType:       query.Get("voucher_type"),
+		Features:          splitCSV(query.Get("features")),
+		Adults:            adults,
+		Children:          children,
+		MinPrice:          minPrice,
+		MaxPrice:          maxPrice,
+		RatingMin:         ratingMin,
+		InstantConfirm:    application.ParseBoolPointer(query.Get("instant_confirm")),
+		FreeCancel:        application.ParseBoolPointer(query.Get("free_cancel")),
+		AvailableToday:    application.ParseBoolPointer(query.Get("available_today")),
+		AvailableTomorrow: application.ParseBoolPointer(query.Get("available_tomorrow")),
+		Sort:              query.Get("sort"),
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -125,4 +136,19 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func splitCSV(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
 }

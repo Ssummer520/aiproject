@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { formatLocalDate } from './dateUtils'
-import { createOrder } from './useProducts'
+import { createOrder, validateCoupon } from './useProducts'
 
 function roundMoney(value) {
   return Math.round(value * 100) / 100
@@ -14,6 +14,10 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
   const children = ref(0)
   const bookingLoading = ref(false)
   const bookingError = ref('')
+  const couponCode = ref('')
+  const couponLoading = ref(false)
+  const couponError = ref('')
+  const couponResult = ref(null)
 
   const selectedPackage = computed(() => (product.value?.packages || []).find(pkg => pkg.id === selectedPackageId.value))
   const selectedAvailability = computed(() => (product.value?.availability || []).find(item => item.package_id === selectedPackageId.value && item.date === selectedDate.value))
@@ -25,6 +29,8 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
   })
   const unitPrice = computed(() => selectedAvailability.value?.price || selectedPackage.value?.price || product.value?.base_price || 0)
   const totalPrice = computed(() => roundMoney(unitPrice.value * adults.value + unitPrice.value * 0.7 * children.value))
+  const discountAmount = computed(() => couponResult.value?.valid ? roundMoney(Math.min(Number(couponResult.value.discount_amount) || 0, totalPrice.value)) : 0)
+  const finalTotalPrice = computed(() => roundMoney(Math.max(0, totalPrice.value - discountAmount.value)))
   const canBook = computed(() => Boolean(
     selectedPackage.value
       && selectedDate.value
@@ -107,6 +113,51 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
 
     clampGuests()
     bookingError.value = ''
+    clearCoupon(false)
+  }
+
+  function clearCoupon(clearCode = true) {
+    couponResult.value = null
+    couponError.value = ''
+    if (clearCode) couponCode.value = ''
+  }
+
+  function couponMessage(error) {
+    const code = error?.data?.error || error?.message || ''
+    if (code === 'coupon_min_spend_not_met') {
+      return locale.value === 'zh' ? '未达到该优惠券最低消费金额。' : 'Minimum spend not met for this coupon.'
+    }
+    if (code === 'coupon_not_found') {
+      return locale.value === 'zh' ? '优惠码不存在。' : 'Coupon code not found.'
+    }
+    return locale.value === 'zh' ? '优惠券不可用或已过期。' : 'Coupon is invalid or expired.'
+  }
+
+  async function applyCoupon() {
+    couponError.value = ''
+    couponResult.value = null
+    const code = couponCode.value.trim()
+    if (!code) {
+      couponError.value = locale.value === 'zh' ? '请输入优惠码。' : 'Enter a coupon code.'
+      return false
+    }
+    if (totalPrice.value <= 0) {
+      couponError.value = locale.value === 'zh' ? '请先选择套餐和日期。' : 'Choose a package and date first.'
+      return false
+    }
+
+    couponLoading.value = true
+    try {
+      const result = await validateCoupon(code, totalPrice.value)
+      couponResult.value = result
+      return true
+    } catch (e) {
+      couponResult.value = e.data?.result || null
+      couponError.value = couponMessage(e)
+      return false
+    } finally {
+      couponLoading.value = false
+    }
   }
 
   watch(selectedPackageId, () => {
@@ -118,6 +169,15 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
   watch([adults, children], () => {
     clampGuests()
   }, { flush: 'sync' })
+
+  watch([totalPrice, selectedPackageId, selectedDate], () => {
+    clearCoupon(false)
+  }, { flush: 'sync' })
+
+  watch(couponCode, () => {
+    couponError.value = ''
+    couponResult.value = null
+  })
 
   async function reserve() {
     bookingError.value = ''
@@ -147,7 +207,11 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
 
     bookingLoading.value = true
     try {
-      const order = await createOrder({
+      if (couponCode.value.trim() && !couponResult.value?.valid) {
+        const valid = await applyCoupon()
+        if (!valid) return false
+      }
+      const payload = {
         product_id: product.value.id,
         package_id: selectedPackageId.value,
         travel_date: selectedDate.value,
@@ -155,7 +219,11 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
         children: children.value,
         contact_name: user.value?.email?.split('@')?.[0] || 'Guest',
         contact_email: user.value?.email || '',
-      }, authHeaders())
+      }
+      if (couponResult.value?.valid) {
+        payload.coupon_code = couponCode.value.trim()
+      }
+      const order = await createOrder(payload, authHeaders())
       if (typeof onBooked === 'function') onBooked(order)
       return true
     } catch (e) {
@@ -175,6 +243,10 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     children,
     bookingLoading,
     bookingError,
+    couponCode,
+    couponLoading,
+    couponError,
+    couponResult,
     today,
     selectedPackage,
     selectedAvailability,
@@ -183,9 +255,13 @@ export function useBookingPanel({ product, locale, user, isLoggedIn, authHeaders
     maxGuests,
     unitPrice,
     totalPrice,
+    discountAmount,
+    finalTotalPrice,
     canBook,
     availabilityText,
     syncInitialState,
+    applyCoupon,
+    clearCoupon,
     reserve,
   }
 }

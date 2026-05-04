@@ -99,6 +99,50 @@
             </div>
 
             <div class="filter-group">
+              <label>{{ locale === 'zh' ? '出行日期' : 'Travel date' }}</label>
+              <input v-model="filters.date" type="date" />
+            </div>
+
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '人数' : 'Travellers' }}</label>
+              <div class="price-inputs">
+                <input v-model.number="filters.adults" type="number" min="0" :placeholder="locale === 'zh' ? '成人' : 'Adults'" />
+                <span>+</span>
+                <input v-model.number="filters.children" type="number" min="0" :placeholder="locale === 'zh' ? '儿童' : 'Children'" />
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '游玩时长' : 'Duration' }}</label>
+              <select v-model="filters.duration">
+                <option value="">{{ locale === 'zh' ? '不限' : 'Any duration' }}</option>
+                <option value="2">2 hours</option>
+                <option value="3">3 hours</option>
+                <option value="4">4 hours</option>
+                <option value="8">8 hours</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '语言服务' : 'Language service' }}</label>
+              <select v-model="filters.language">
+                <option value="">{{ locale === 'zh' ? '不限' : 'Any language' }}</option>
+                <option value="English">{{ locale === 'zh' ? '英文服务' : 'English service' }}</option>
+                <option value="Chinese">{{ locale === 'zh' ? '中文服务' : 'Chinese service' }}</option>
+                <option value="bilingual">{{ locale === 'zh' ? '双语服务' : 'Bilingual' }}</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '电子凭证' : 'Voucher' }}</label>
+              <select v-model="filters.voucherType">
+                <option value="">{{ locale === 'zh' ? '不限' : 'Any voucher' }}</option>
+                <option value="mobile">{{ locale === 'zh' ? '手机凭证' : 'Mobile voucher' }}</option>
+                <option value="qr">{{ locale === 'zh' ? '二维码凭证' : 'QR voucher' }}</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
               <label>{{ locale === 'zh' ? '排序方式' : 'Sort By' }}</label>
               <select v-model="filters.sortBy">
                 <option value="recommended">{{ locale === 'zh' ? '推荐' : 'Recommended' }}</option>
@@ -106,6 +150,8 @@
                 <option value="price_high">{{ locale === 'zh' ? '价格从高到低' : 'Price: High to Low' }}</option>
                 <option value="rating">{{ locale === 'zh' ? '评分最高' : 'Highest Rated' }}</option>
                 <option value="popular">{{ locale === 'zh' ? '销量最高' : 'Most Booked' }}</option>
+                <option value="discount">{{ locale === 'zh' ? '折扣最大' : 'Best discount' }}</option>
+                <option value="distance">{{ locale === 'zh' ? '距离最近' : 'Nearest' }}</option>
               </select>
             </div>
 
@@ -117,6 +163,24 @@
               <input v-model="filters.freeCancel" type="checkbox" />
               <span>{{ locale === 'zh' ? '免费取消' : 'Free cancellation' }}</span>
             </label>
+            <label class="filter-check">
+              <input v-model="filters.availableToday" type="checkbox" />
+              <span>{{ locale === 'zh' ? '今日可订' : 'Available today' }}</span>
+            </label>
+            <label class="filter-check">
+              <input v-model="filters.availableTomorrow" type="checkbox" />
+              <span>{{ locale === 'zh' ? '明日可订' : 'Available tomorrow' }}</span>
+            </label>
+
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '设施/特色' : 'Features' }}</label>
+              <div class="feature-chip-list">
+                <label v-for="feature in featureOptions" :key="feature.value" class="feature-chip" :class="{ active: filters.features.includes(feature.value) }">
+                  <input v-model="filters.features" type="checkbox" :value="feature.value" />
+                  <span>{{ locale === 'zh' ? feature.zh : feature.en }}</span>
+                </label>
+              </div>
+            </div>
 
             <button class="apply-filter-btn" @click="doSearch">{{ locale === 'zh' ? '应用筛选' : 'Apply Filters' }}</button>
           </div>
@@ -254,10 +318,27 @@ const filters = ref({
   minPrice: null,
   maxPrice: null,
   rating: '',
+  date: '',
+  adults: null,
+  children: null,
+  duration: '',
+  language: '',
+  voucherType: '',
+  features: [],
+  availableToday: false,
+  availableTomorrow: false,
   sortBy: 'recommended',
   instantConfirm: false,
   freeCancel: false
 })
+
+const featureOptions = [
+  { value: 'pickup', en: 'Pickup', zh: '接送' },
+  { value: 'Family', en: 'Family', zh: '亲子' },
+  { value: 'Accessible', en: 'Accessible', zh: '无障碍' },
+  { value: 'Vegetarian', en: 'Vegetarian', zh: '素食' },
+  { value: 'Night', en: 'Night open', zh: '夜间开放' },
+]
 
 const API = '/api/v1'
 let isSyncingFromRoute = false
@@ -279,6 +360,8 @@ function mapProductSort(sortBy) {
   if (sortBy === 'price_high') return 'price_desc'
   if (sortBy === 'popular') return 'booked'
   if (sortBy === 'rating') return 'rating'
+  if (sortBy === 'discount') return 'discount'
+  if (sortBy === 'distance') return 'distance'
   return ''
 }
 
@@ -300,6 +383,15 @@ async function doSearch() {
       price_min: filters.value.minPrice,
       price_max: filters.value.maxPrice,
       rating_min: filters.value.rating,
+      date: filters.value.date,
+      adults: filters.value.adults,
+      children: filters.value.children,
+      duration: filters.value.duration,
+      language: filters.value.language,
+      voucher_type: filters.value.voucherType,
+      features: filters.value.features,
+      available_today: filters.value.availableToday ? 'true' : '',
+      available_tomorrow: filters.value.availableTomorrow ? 'true' : '',
       instant_confirm: filters.value.instantConfirm ? 'true' : '',
       free_cancel: filters.value.freeCancel ? 'true' : '',
       sort: mapProductSort(filters.value.sortBy),
@@ -332,6 +424,9 @@ async function doSearch() {
         case 'popular':
           resultsList.sort((a, b) => (b.booked_count || 0) - (a.booked_count || 0))
           break
+        case 'distance':
+          resultsList.sort((a, b) => (a.id || 0) - (b.id || 0))
+          break
       }
     }
 
@@ -357,6 +452,15 @@ function syncRouteQuery() {
   if (filters.value.minPrice) nextQuery.min_price = String(filters.value.minPrice)
   if (filters.value.maxPrice) nextQuery.max_price = String(filters.value.maxPrice)
   if (filters.value.rating) nextQuery.rating = String(filters.value.rating)
+  if (filters.value.date) nextQuery.date = filters.value.date
+  if (filters.value.adults) nextQuery.adults = String(filters.value.adults)
+  if (filters.value.children) nextQuery.children = String(filters.value.children)
+  if (filters.value.duration) nextQuery.duration = filters.value.duration
+  if (filters.value.language) nextQuery.language = filters.value.language
+  if (filters.value.voucherType) nextQuery.voucher_type = filters.value.voucherType
+  if (filters.value.features.length) nextQuery.features = filters.value.features.join(',')
+  if (filters.value.availableToday) nextQuery.available_today = 'true'
+  if (filters.value.availableTomorrow) nextQuery.available_tomorrow = 'true'
   if (filters.value.sortBy && filters.value.sortBy !== 'recommended') nextQuery.sort = filters.value.sortBy
   if (filters.value.instantConfirm) nextQuery.instant_confirm = 'true'
   if (filters.value.freeCancel) nextQuery.free_cancel = 'true'
@@ -377,6 +481,15 @@ function hydrateFromRoute(query) {
   filters.value.minPrice = query.min_price ? Number(query.min_price) : null
   filters.value.maxPrice = query.max_price ? Number(query.max_price) : null
   filters.value.rating = query.rating || ''
+  filters.value.date = query.date || ''
+  filters.value.adults = query.adults ? Number(query.adults) : null
+  filters.value.children = query.children ? Number(query.children) : null
+  filters.value.duration = query.duration || ''
+  filters.value.language = query.language || ''
+  filters.value.voucherType = query.voucher_type || ''
+  filters.value.features = typeof query.features === 'string' && query.features ? query.features.split(',').filter(Boolean) : []
+  filters.value.availableToday = query.available_today === 'true'
+  filters.value.availableTomorrow = query.available_tomorrow === 'true'
   filters.value.sortBy = query.sort || 'recommended'
   filters.value.instantConfirm = query.instant_confirm === 'true'
   filters.value.freeCancel = query.free_cancel === 'true'
@@ -843,6 +956,36 @@ watch([keyword, filters], syncRouteQuery, { deep: true })
 
 .filter-check input {
   width: auto;
+}
+
+.feature-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feature-chip {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  margin: 0 !important;
+  padding: 7px 10px;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.feature-chip.active {
+  color: var(--primary) !important;
+  border-color: rgba(255, 56, 92, 0.28);
+  background: var(--accent-soft);
+}
+
+.feature-chip input {
+  display: none;
 }
 
 .search-products-section,

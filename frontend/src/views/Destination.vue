@@ -129,6 +129,12 @@
             :children="children"
             :unit-price="unitPrice"
             :total-price="totalPrice"
+            :discount-amount="discountAmount"
+            :final-total-price="finalTotalPrice"
+            :coupon-code="couponCode"
+            :coupon-loading="couponLoading"
+            :coupon-error="couponError"
+            :coupon-result="couponResult"
             :can-book="canBook"
             :availability-text="availabilityText"
             :booking-loading="bookingLoading"
@@ -138,6 +144,8 @@
             @update:selected-date="selectedDate = $event"
             @update:adults="adults = $event"
             @update:children="children = $event"
+            @update:coupon-code="couponCode = $event"
+            @apply-coupon="applyCoupon"
             @reserve="reserve"
           />
           <div v-else class="booking-card booking-card--empty">
@@ -263,9 +271,16 @@ const {
   selectedAvailability,
   unitPrice,
   totalPrice,
+  discountAmount,
+  finalTotalPrice,
+  couponCode,
+  couponLoading,
+  couponError,
+  couponResult,
   canBook,
   availabilityText,
   syncInitialState,
+  applyCoupon,
   reserve,
 } = useBookingPanel({
   product: bookingProduct,

@@ -57,16 +57,25 @@ type Availability struct {
 }
 
 type SearchFilters struct {
-	Query          string
-	City           string
-	Category       string
-	Type           string
-	MinPrice       float64
-	MaxPrice       float64
-	RatingMin      float64
-	InstantConfirm *bool
-	FreeCancel     *bool
-	Sort           string
+	Query             string
+	City              string
+	Category          string
+	Type              string
+	Date              string
+	Duration          string
+	Language          string
+	VoucherType       string
+	Features          []string
+	Adults            int
+	Children          int
+	MinPrice          float64
+	MaxPrice          float64
+	RatingMin         float64
+	InstantConfirm    *bool
+	FreeCancel        *bool
+	AvailableToday    *bool
+	AvailableTomorrow *bool
+	Sort              string
 }
 
 type SearchResult struct {

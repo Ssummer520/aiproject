@@ -10,7 +10,7 @@ These instructions apply to all files under `frontend/`.
 - The development server runs at `http://localhost:5173`.
 - `vite.config.js` proxies `/api` to the Go backend at `http://localhost:8888`.
 - The app uses Vue Router for pages and Vue I18n for Chinese/English copy.
-- OTA phase 1 from `PRODUCT_ROADMAP.md` is complete: the UI supports product channels, product-first search, product detail booking, destination-linked booking, and Trips order management.
+- OTA phases 1-2 from `PRODUCT_ROADMAP.md` are complete: the UI supports product channels, advanced product-first search, product detail booking with trust/reviews, destination-linked booking, coupons, and Trips order/review management.
 
 ## Architecture
 
@@ -41,18 +41,19 @@ These instructions apply to all files under `frontend/`.
 - Preserve login-aware behavior for favorites, history, trips, and account views.
 - If adding new authenticated requests, include `Authorization: Bearer <token>` consistently with `useAuth.js` patterns.
 - Keep the AI travel assistant client-side unless the user explicitly asks for backend/model integration.
-- OTA phase-1 booking flow should be: product card -> product detail -> package/date/guest selection -> login check -> create order -> Trips page.
+- OTA booking flow should be: product card/search filters -> product detail -> package/date/guest/coupon selection -> login check -> create mock-paid order -> Trips page.
 - Keep Home product channels (`Stays`, `Things to do`, `Tickets`, `Tours`, `Transport`, `Deals`) and Search product-first behavior intact when changing discovery UI.
-- Trips should continue to display product order package, travel date, travellers, price, status, usage instructions, cancellation, and book-again entry.
+- Trips should continue to display product order package, travel date, travellers, price/coupon breakdown, status, usage instructions, cancellation/completion/refund actions, review entry, and book-again entry.
 - Keep product prices compatible with `useCurrency.js`; store base prices from the API and convert only for display.
 - Do not replace existing destination routes; add product routes alongside them.
 
-## Phase 1 Completion Notes
+## Phase 2 Completion Notes
 
-- Completed phase-1 frontend flow is: Home product channel -> Search product result -> `/product/:id` -> `BookingPanel` -> `/api/v1/orders` -> `/trips`.
+- Completed OTA frontend flow is: Home product channel -> Search advanced filters -> `/product/:id` trust/reviews -> shared `BookingPanel` with coupon -> `/api/v1/orders` -> `/trips` order status/review management.
 - `Destination.vue` also uses the shared `BookingPanel` when a destination-linked product exists; do not reintroduce page-specific legacy booking logic there.
 - Legacy `/api/v1/bookings` remains only for old simple bookings in Trips; new OTA purchases should use `/api/v1/orders`.
-- Phase 2 frontend work should focus on reviews, coupons, richer trust blocks, advanced filters, clearer payment/refund states, and itinerary/AI conversion.
+- Product reviews should be fetched/created through `useProducts.js` helpers and displayed on `Product.vue`; review submission belongs in Trips for completed product orders.
+- Phase 3 frontend work should focus on itinerary timeline, cart/bundle ordering, AI itinerary-to-order conversion, and drag/drop trip planning.
 
 ## Build Artifacts
 
@@ -74,4 +75,4 @@ npm run preview
 
 - Vitest is configured; add focused tests for shared composables or API helpers when changing booking/product behavior.
 - When changing routes or API consumers, check corresponding backend endpoints under `backend/services/bff/api/handlers.go` and `backend/services/auth/api/handlers.go`.
-- For phase-1 OTA work, also check `backend/services/product` and `backend/services/order` endpoint contracts before changing front-end request/response shapes.
+- For OTA work, also check `backend/services/product`, `backend/services/order`, `backend/services/coupon`, and `backend/services/review` endpoint contracts before changing front-end request/response shapes.

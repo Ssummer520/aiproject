@@ -4004,3 +4004,180 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ========== OTA Phase 2: trust, coupons, reviews ========== */
+.product-badges .deal-badge {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.product-sales-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -2px 0 12px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.product-price {
+  display: inline-grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.product-price del {
+  color: var(--text-light);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.product-trust-grid,
+.product-faq-grid,
+.product-review-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.product-trust-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.product-trust-card,
+.product-faq-card,
+.review-card,
+.supplier-card {
+  padding: 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+
+.product-trust-card strong,
+.product-faq-card strong,
+.supplier-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.product-trust-card p,
+.product-faq-card p,
+.supplier-card p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.review-summary-card {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid rgba(255, 56, 92, 0.14);
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+}
+
+.review-score-big {
+  color: var(--primary);
+  font-size: 2.3rem;
+  font-weight: 950;
+}
+
+.review-score-label {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.review-dimensions {
+  display: grid;
+  gap: 8px;
+}
+
+.review-dimension {
+  display: grid;
+  grid-template-columns: 120px 1fr 36px;
+  gap: 10px;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.review-bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eee;
+}
+
+.review-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.review-filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.review-filter-row select {
+  padding: 9px 12px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.review-card {
+  display: grid;
+  gap: 10px;
+}
+
+.review-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.review-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.review-badges span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+}
+
+.review-merchant-reply {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.coupon-box .discount-row,
+.price-breakdown .discount-row {
+  color: #0f766e;
+}
+
+@media (max-width: 900px) {
+  .product-trust-grid,
+  .review-summary-card {
+    grid-template-columns: 1fr;
+  }
+}

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	couponApp "travel-api/services/coupon/application"
 	"travel-api/services/order/domain"
 	"travel-api/services/order/infrastructure"
 	productApp "travel-api/services/product/application"
@@ -20,10 +21,15 @@ var (
 type OrderService struct {
 	repo           *infrastructure.SQLiteOrderRepo
 	productService *productApp.ProductService
+	couponService  *couponApp.CouponService
 }
 
 func NewOrderService(productService *productApp.ProductService) *OrderService {
-	return &OrderService{repo: infrastructure.NewSQLiteOrderRepo(), productService: productService}
+	return &OrderService{repo: infrastructure.NewSQLiteOrderRepo(), productService: productService, couponService: couponApp.NewCouponService()}
+}
+
+func NewOrderServiceWithCoupon(productService *productApp.ProductService, couponService *couponApp.CouponService) *OrderService {
+	return &OrderService{repo: infrastructure.NewSQLiteOrderRepo(), productService: productService, couponService: couponService}
 }
 
 func (s *OrderService) List(userID string) ([]domain.Order, error) {
@@ -78,14 +84,27 @@ func (s *OrderService) Create(userID string, req domain.CreateOrderRequest) (dom
 
 	unitPrice := availability.Price
 	childrenDiscount := unitPrice * 0.7
-	subtotal := float64(req.Adults)*unitPrice + float64(req.Children)*childrenDiscount
+	subtotal := roundMoney(float64(req.Adults)*unitPrice + float64(req.Children)*childrenDiscount)
+	discountAmount := 0.0
+	couponCode := strings.TrimSpace(req.CouponCode)
+	if couponCode != "" {
+		validation, err := s.couponService.Validate(couponCode, subtotal)
+		if err != nil || !validation.Valid {
+			return domain.Order{}, ErrInvalidOrderRequest
+		}
+		discountAmount = validation.DiscountAmount
+		couponCode = validation.Coupon.Code
+	}
 	order := domain.Order{
-		Status:        "confirmed",
-		PaymentStatus: "paid_mock",
-		TotalAmount:   roundMoney(subtotal),
-		Currency:      product.Currency,
-		ContactName:   strings.TrimSpace(req.ContactName),
-		ContactEmail:  strings.TrimSpace(req.ContactEmail),
+		Status:         "paid",
+		PaymentStatus:  "paid_mock",
+		OriginalAmount: subtotal,
+		DiscountAmount: discountAmount,
+		TotalAmount:    roundMoney(subtotal - discountAmount),
+		CouponCode:     couponCode,
+		Currency:       product.Currency,
+		ContactName:    strings.TrimSpace(req.ContactName),
+		ContactEmail:   strings.TrimSpace(req.ContactEmail),
 	}
 	if order.ContactName == "" {
 		order.ContactName = "Guest"
@@ -107,7 +126,7 @@ func (s *OrderService) Create(userID string, req domain.CreateOrderRequest) (dom
 		Children:    req.Children,
 		Quantity:    quantity,
 		UnitPrice:   unitPrice,
-		Subtotal:    roundMoney(subtotal),
+		Subtotal:    subtotal,
 	}
 
 	created, err := s.repo.Create(userID, order, item)
@@ -129,4 +148,12 @@ func startOfToday() time.Time {
 
 func roundMoney(value float64) float64 {
 	return float64(int(value*100+0.5)) / 100
+}
+
+func (s *OrderService) Complete(userID string, orderID int) (domain.Order, bool, error) {
+	return s.repo.UpdateStatus(userID, orderID, "completed", "paid_mock")
+}
+
+func (s *OrderService) Refund(userID string, orderID int) (domain.Order, bool, error) {
+	return s.repo.UpdateStatus(userID, orderID, "refunded", "refunded")
 }

@@ -26,7 +26,7 @@ func (r *SQLiteOrderRepo) ListByUser(userID string) ([]domain.Order, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	rows, err := r.db.Query(`SELECT id, user_id, status, payment_status, total_amount, currency, contact_name, contact_email, created_at, updated_at, COALESCE(cancelled_at, '') FROM orders WHERE user_id = ? ORDER BY created_at DESC`, userID)
+	rows, err := r.db.Query(`SELECT id, user_id, status, payment_status, COALESCE(NULLIF(original_amount, 0), total_amount), COALESCE(discount_amount, 0), total_amount, COALESCE(coupon_code, ''), currency, contact_name, contact_email, created_at, updated_at, COALESCE(cancelled_at, '') FROM orders WHERE user_id = ? ORDER BY created_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,12 +80,15 @@ func (r *SQLiteOrderRepo) Create(userID string, order domain.Order, item domain.
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(`INSERT INTO orders(id, user_id, status, payment_status, total_amount, currency, contact_name, contact_email, created_at, updated_at, cancelled_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+	_, err = tx.Exec(`INSERT INTO orders(id, user_id, status, payment_status, original_amount, discount_amount, total_amount, coupon_code, currency, contact_name, contact_email, created_at, updated_at, cancelled_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
 		order.ID,
 		order.UserID,
 		order.Status,
 		order.PaymentStatus,
+		order.OriginalAmount,
+		order.DiscountAmount,
 		order.TotalAmount,
+		order.CouponCode,
 		order.Currency,
 		order.ContactName,
 		order.ContactEmail,
@@ -130,7 +133,7 @@ func (r *SQLiteOrderRepo) Cancel(userID string, orderID int) (domain.Order, bool
 	defer r.mu.Unlock()
 
 	now := time.Now().Format(time.RFC3339Nano)
-	result, err := r.db.Exec(`UPDATE orders SET status = 'cancelled', updated_at = ?, cancelled_at = ? WHERE user_id = ? AND id = ? AND status != 'cancelled'`, now, now, userID, orderID)
+	result, err := r.db.Exec(`UPDATE orders SET status = 'cancelled', updated_at = ?, cancelled_at = ? WHERE user_id = ? AND id = ? AND status NOT IN ('cancelled', 'refunded')`, now, now, userID, orderID)
 	if err != nil {
 		return domain.Order{}, false, err
 	}
@@ -144,7 +147,7 @@ func (r *SQLiteOrderRepo) Cancel(userID string, orderID int) (domain.Order, bool
 }
 
 func (r *SQLiteOrderRepo) get(userID string, orderID int) (domain.Order, bool, error) {
-	order, err := scanOrder(r.db.QueryRow(`SELECT id, user_id, status, payment_status, total_amount, currency, contact_name, contact_email, created_at, updated_at, COALESCE(cancelled_at, '') FROM orders WHERE user_id = ? AND id = ?`, userID, orderID))
+	order, err := scanOrder(r.db.QueryRow(`SELECT id, user_id, status, payment_status, COALESCE(NULLIF(original_amount, 0), total_amount), COALESCE(discount_amount, 0), total_amount, COALESCE(coupon_code, ''), currency, contact_name, contact_email, created_at, updated_at, COALESCE(cancelled_at, '') FROM orders WHERE user_id = ? AND id = ?`, userID, orderID))
 	if err == sql.ErrNoRows {
 		return domain.Order{}, false, nil
 	}
@@ -192,6 +195,23 @@ func scanOrder(scanner interface {
 	Scan(dest ...interface{}) error
 }) (domain.Order, error) {
 	var order domain.Order
-	err := scanner.Scan(&order.ID, &order.UserID, &order.Status, &order.PaymentStatus, &order.TotalAmount, &order.Currency, &order.ContactName, &order.ContactEmail, &order.CreatedAt, &order.UpdatedAt, &order.CancelledAt)
+	err := scanner.Scan(&order.ID, &order.UserID, &order.Status, &order.PaymentStatus, &order.OriginalAmount, &order.DiscountAmount, &order.TotalAmount, &order.CouponCode, &order.Currency, &order.ContactName, &order.ContactEmail, &order.CreatedAt, &order.UpdatedAt, &order.CancelledAt)
 	return order, err
+}
+
+func (r *SQLiteOrderRepo) UpdateStatus(userID string, orderID int, status string, paymentStatus string) (domain.Order, bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	now := time.Now().Format(time.RFC3339Nano)
+	result, err := r.db.Exec(`UPDATE orders SET status = ?, payment_status = ?, updated_at = ? WHERE user_id = ? AND id = ? AND status NOT IN ('cancelled', 'refunded')`, status, paymentStatus, now, userID, orderID)
+	if err != nil {
+		return domain.Order{}, false, err
+	}
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		order, ok, err := r.get(userID, orderID)
+		return order, ok, err
+	}
+	return r.get(userID, orderID)
 }

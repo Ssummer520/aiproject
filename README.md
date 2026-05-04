@@ -1,29 +1,29 @@
 # ChinaTravel OTA MVP
 
-ChinaTravel 是一个面向海外游客的中国旅行 OTA Web 示例项目。项目已经完成 `PRODUCT_ROADMAP.md` 中的一期 OTA 商品化 MVP：从目的地灵感展示升级为可搜索、可选择套餐/日期/人数、可创建商品订单、可在我的旅行中管理订单的交易闭环。
+ChinaTravel 是一个面向海外游客的中国旅行 OTA Web 示例项目。项目已经完成 `PRODUCT_ROADMAP.md` 中的一期 OTA 商品化 MVP 与二期搜索转化/信任体系：从目的地灵感展示升级为可搜索、可筛选、可选择套餐/日期/人数/优惠券、可创建商品订单、可管理订单状态并写 verified review 的交易闭环。
 
-## 一期状态
+## 二期状态
 
-- **阶段**：一期 OTA 商品化 MVP 已完成
+- **阶段**：二期 搜索转化与信任体系 已完成
 - **定位**：China Travel Super App Web 版雏形
-- **核心闭环**：首页商品频道 -> 商品搜索 -> 商品详情 -> 套餐/日期/人数 -> 登录检查 -> 创建订单 -> 我的旅行
-- **兼容策略**：保留旧 `/bookings` 简易预订接口，同时新增 `/orders` 商品订单接口
+- **核心闭环**：首页商品频道 -> 高级商品搜索 -> 商品详情信任/评价 -> 套餐/日期/人数/优惠券 -> 登录检查 -> 创建 mock paid 订单 -> 我的旅行状态管理 -> 完成订单后写评价
+- **兼容策略**：保留旧 `/bookings` 简易预订接口，新 OTA 交易走 `/orders`、`/coupons`、`/reviews`
 
 ## 技术栈
 
 - **前端**：Vue 3、Vite、Vue Router、Vue I18n、Vitest
 - **后端**：Go 1.21、标准库 `net/http`、SQLite 驱动 `github.com/mattn/go-sqlite3`
-- **数据存储**：SQLite 为商品、套餐、库存、订单等 OTA 状态的主存储；JSON/缓存继续服务部分演示数据
+- **数据存储**：SQLite 为商品、套餐、库存、订单、优惠券、评价等 OTA 状态的主存储；JSON/缓存继续服务部分演示数据
 - **开发代理**：Vite 将 `/api` 请求代理到 `http://localhost:8888`
 
 ## 功能亮点
 
 - **OTA 首页频道**：首页展示 Stays、Things to do、Tickets、Tours、Transport、Deals 等商品频道。
-- **商品搜索优先**：搜索页以可预订商品为主，支持关键词、城市、分类、类型、价格、评分、即时确认、免费取消和排序。
-- **商品详情页**：独立 `/product/:id` 页面展示标题、图片、评分、销量、信任标签、费用包含/不包含、集合地点、使用方式和取消政策。
-- **通用下单组件**：`BookingPanel` 同时服务 Product 页和 Destination 页，支持套餐、日期、成人/儿童人数、库存提示和总价计算。
-- **订单闭环**：登录用户可创建商品订单，订单包含商品、套餐、出行日期、人数、金额、使用方式和状态。
-- **我的旅行**：Trips 页面合并展示旧预订和新商品订单，支持取消、再次预订和电子凭证使用说明。
+- **商品搜索优先**：搜索页以可预订商品为主，支持关键词、城市、分类、类型、价格、评分、出行日期、成人/儿童、游玩时长、语言服务、设施、今日/明日可订、电子凭证和排序。
+- **商品详情页**：独立 `/product/:id` 页面展示标题、图片、评分、销量、信任标签、费用包含/不包含、集合地点、使用方式、取消政策、供应商、FAQ、评价摘要、评价列表和推荐搭配。
+- **通用下单组件**：`BookingPanel` 同时服务 Product 页和 Destination 页，支持套餐、日期、成人/儿童人数、库存提示、优惠券验证和订单价格明细。
+- **订单闭环**：登录用户可创建商品订单，订单包含商品、套餐、出行日期、人数、原价、优惠、实付、使用方式、订单状态和支付状态。
+- **我的旅行**：Trips 页面合并展示旧预订和新商品订单，支持取消、模拟完成、模拟退款、再次预订、电子凭证使用说明和完成后写评价。
 - **基础体验**：保留登录注册、收藏、浏览历史、通知、中英文切换、货币展示和 AI 旅行助手。
 
 ## 项目预览
@@ -109,13 +109,19 @@ Authorization: Bearer <token>
 
 | 接口 | 方法 | 说明 |
 | --- | --- | --- |
-| `/api/v1/products` | GET | 商品列表/搜索，支持 `q`、`city`、`category`、`type`、`price_min`、`price_max`、`rating_min`、`instant_confirm`、`free_cancel`、`sort` |
+| `/api/v1/products` | GET | 商品列表/搜索，支持 `q`、`city`、`category`、`type`、`price_min`、`price_max`、`rating_min`、`date`、`adults`、`children`、`duration`、`language`、`voucher_type`、`features`、`available_today`、`available_tomorrow`、`instant_confirm`、`free_cancel`、`sort` |
 | `/api/v1/products?destination_id={id}` | GET | 获取目的地关联的可购买商品 |
 | `/api/v1/products/{id}` | GET | 商品详情，包含套餐和日期库存 |
 | `/api/v1/products/{id}/availability` | GET | 商品日期库存，可传 `date` |
+| `/api/v1/products/{id}/reviews` | GET | 商品评价摘要和评价列表，可传 `language` |
+| `/api/v1/products/{id}/reviews` | POST | 登录用户对已购买商品写 verified review |
+| `/api/v1/coupons` | GET | 获取演示可用优惠券 |
+| `/api/v1/coupons/validate` | POST | 校验优惠码并计算优惠金额 |
 | `/api/v1/orders` | GET | 获取当前用户商品订单 |
 | `/api/v1/orders` | POST | 创建商品订单 |
 | `/api/v1/orders/{id}/cancel` | POST | 取消商品订单 |
+| `/api/v1/orders/{id}/complete` | POST | 将商品订单标记为已完成 |
+| `/api/v1/orders/{id}/refund` | POST | 将商品订单标记为已退款 |
 
 ### BFF 与兼容接口
 
@@ -144,7 +150,9 @@ backend/
     bff/                         # 面向前端页面的聚合 API
     destination/                 # 目的地缓存与数据读取
     interaction/                 # 收藏、浏览历史等用户互动
-    order/                       # 商品订单、订单明细、取消流程
+    order/                       # 商品订单、订单明细、优惠价格、状态流转
+    coupon/                      # 优惠券列表、校验和折扣计算
+    review/                      # 已验证订单评价、评分摘要和语言筛选
     product/                     # 商品、套餐、库存、搜索筛选
     promo/                       # 活动/促销缓存
 frontend/
@@ -173,7 +181,7 @@ cd backend && go test ./...
 cd frontend && npm test && npm run build
 ```
 
-验证结果：后端 Go 测试通过，前端 Vitest 15 个用例通过，Vite 构建通过。
+验证结果：后端 Go 测试通过，前端 Vitest 20 个用例通过，Vite 构建通过。
 
 ## 开发说明
 
@@ -181,4 +189,4 @@ cd frontend && npm test && npm run build
 - 后端支持 `Accept-Language` 请求头，未提供时默认使用 `en`。
 - 登录 token 保存在前端本地状态中，调用受保护接口时通过 `Authorization` 请求头传递。
 - 忘记密码接口当前会直接返回 `reset_token`，仅适合开发演示。
-- 当前一期库存为轻量模拟库存，下单校验库存可用性并累计 `booked_count`；未实现真实库存锁定和支付扣款。
+- 当前二期库存仍为轻量模拟库存，下单校验库存可用性并累计 `booked_count`；未实现真实库存锁定和支付扣款。

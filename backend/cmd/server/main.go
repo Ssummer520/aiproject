@@ -4,15 +4,20 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	"travel-api/internal/contextkeys"
 	authApi "travel-api/services/auth/api"
 	authApp "travel-api/services/auth/application"
 	"travel-api/services/bff/api"
+	couponApi "travel-api/services/coupon/api"
+	couponApp "travel-api/services/coupon/application"
 	orderApi "travel-api/services/order/api"
 	orderApp "travel-api/services/order/application"
 	productApi "travel-api/services/product/api"
 	productApp "travel-api/services/product/application"
+	reviewApi "travel-api/services/review/api"
+	reviewApp "travel-api/services/review/application"
 )
 
 func cors(next http.Handler) http.Handler {
@@ -40,10 +45,14 @@ func authMiddleware(authService *authApp.AuthService, next http.Handler) http.Ha
 func main() {
 	authService := authApp.NewAuthService()
 	productService := productApp.NewProductService()
-	orderService := orderApp.NewOrderService(productService)
+	couponService := couponApp.NewCouponService()
+	reviewService := reviewApp.NewReviewService()
+	orderService := orderApp.NewOrderServiceWithCoupon(productService, couponService)
 	authHandler := authApi.NewAuthHandlerWithService(authService)
 	bffHandler := api.NewBFFHandler()
 	productHandler := productApi.NewProductHandlerWithService(productService)
+	couponHandler := couponApi.NewCouponHandler(couponService)
+	reviewHandler := reviewApi.NewReviewHandler(reviewService)
 	orderHandler := orderApi.NewOrderHandler(orderService)
 
 	mux := http.NewServeMux()
@@ -66,7 +75,15 @@ func main() {
 	mux.Handle("/api/v1/bookings/", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleBookingActions)))
 	mux.Handle("/api/v1/notifications", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleNotifications)))
 	mux.HandleFunc("/api/v1/products", productHandler.HandleProducts)
-	mux.HandleFunc("/api/v1/products/", productHandler.HandleProductDetail)
+	mux.Handle("/api/v1/products/", authMiddleware(authService, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(strings.Trim(r.URL.Path, "/"), "/reviews") {
+			reviewHandler.HandleProductReviews(w, r)
+			return
+		}
+		productHandler.HandleProductDetail(w, r)
+	})))
+	mux.HandleFunc("/api/v1/coupons", couponHandler.HandleCoupons)
+	mux.HandleFunc("/api/v1/coupons/validate", couponHandler.HandleValidate)
 	mux.Handle("/api/v1/orders", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrders)))
 	mux.Handle("/api/v1/orders/", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrderActions)))
 

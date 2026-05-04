@@ -65,6 +65,7 @@
               <p class="trip-dates">{{ trip.display_dates }}</p>
               <p class="trip-guests">{{ trip.display_guests }}</p>
               <p v-if="trip.display_usage" class="trip-usage">🎫 {{ trip.display_usage }}</p>
+              <p v-if="trip.discount_amount" class="trip-discount">🎟️ {{ locale === 'zh' ? '优惠' : 'Discount' }} -{{ formatMoney(trip.currency, trip.discount_amount) }} · {{ trip.coupon_code }}</p>
               <p class="trip-price">{{ trip.display_price }}</p>
               <span v-if="trip.source === 'order'" class="trip-type-badge">{{ locale === 'zh' ? '商品订单' : 'Product order' }}</span>
             </div>
@@ -73,7 +74,7 @@
                 {{ formatTripStatus(trip.status) }}
               </div>
               <button
-                v-if="trip.status === 'confirmed' && activeTab === 'upcoming'"
+                v-if="canCancelTrip(trip) && activeTab === 'upcoming'"
                 type="button"
                 class="trip-action trip-action--danger"
                 :disabled="cancellingId === trip.id"
@@ -81,13 +82,67 @@
               >
                 {{ cancellingId === trip.id ? (locale === 'zh' ? '取消中...' : 'Cancelling...') : (locale === 'zh' ? '取消订单' : 'Cancel booking') }}
               </button>
-              <router-link v-else class="trip-action" :to="trip.action_link">
+              <button
+                v-if="trip.source === 'order' && trip.status === 'paid' && activeTab === 'upcoming'"
+                type="button"
+                class="trip-action"
+                :disabled="actionLoadingId === trip.id"
+                @click="completeTrip(trip)"
+              >
+                {{ actionLoadingId === trip.id ? (locale === 'zh' ? '处理中...' : 'Updating...') : (locale === 'zh' ? '模拟完成' : 'Mark completed') }}
+              </button>
+              <button
+                v-if="trip.source === 'order' && trip.status === 'completed'"
+                type="button"
+                class="trip-action"
+                @click="openReviewModal(trip)"
+              >
+                {{ locale === 'zh' ? '写评价' : 'Write review' }}
+              </button>
+              <button
+                v-if="trip.source === 'order' && ['paid', 'completed'].includes(trip.status)"
+                type="button"
+                class="trip-action"
+                :disabled="actionLoadingId === trip.id"
+                @click="refundTrip(trip)"
+              >
+                {{ locale === 'zh' ? '模拟退款' : 'Mock refund' }}
+              </button>
+              <router-link class="trip-action" :to="trip.action_link">
                 {{ locale === 'zh' ? '再次预订' : 'Book again' }}
               </router-link>
             </div>
           </div>
         </div>
       </template>
+    </div>
+
+
+    <div v-if="reviewModalTrip" class="modal-overlay" @click.self="closeReviewModal">
+      <div class="auth-modal-card review-modal-card">
+        <button class="modal-close" @click="closeReviewModal">×</button>
+        <h2 class="auth-modal-title">{{ locale === 'zh' ? '撰写商品评价' : 'Write a product review' }}</h2>
+        <p class="review-target">{{ reviewModalTrip.display_name }} · {{ reviewModalTrip.display_dates }}</p>
+        <form class="auth-form" @submit.prevent="submitReview">
+          <label class="review-form-label">
+            {{ locale === 'zh' ? '总评分' : 'Rating' }}
+            <select v-model.number="reviewForm.rating" class="auth-input">
+              <option v-for="score in [5, 4, 3, 2, 1]" :key="score" :value="score">{{ score }} ★</option>
+            </select>
+          </label>
+          <div class="review-score-grid">
+            <label v-for="item in reviewScoreFields" :key="item.key" class="review-form-label">
+              {{ item.label }}
+              <input v-model.number="reviewForm.scores[item.key]" class="auth-input" type="number" min="1" max="5" step="0.1" />
+            </label>
+          </div>
+          <textarea v-model="reviewForm.content" class="auth-input review-textarea" :placeholder="locale === 'zh' ? '分享你的真实体验、凭证使用、交通和服务感受。' : 'Share your real experience, voucher redemption, transport, and service notes.'" required></textarea>
+          <p v-if="reviewError" class="auth-error">{{ reviewError }}</p>
+          <button class="auth-submit" type="submit" :disabled="reviewSubmitting">
+            {{ reviewSubmitting ? (locale === 'zh' ? '提交中...' : 'Submitting...') : (locale === 'zh' ? '提交评价' : 'Submit review') }}
+          </button>
+        </form>
+      </div>
     </div>
 
     <div v-if="showAuthModal" class="modal-overlay auth-modal-overlay" @click.self="showAuthModal = null">
@@ -124,7 +179,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { fetchBookings, fetchOrders, cancelBooking, cancelOrder } from '../composables/useProducts'
+import { fetchBookings, fetchOrders, cancelBooking, cancelOrder, completeOrder, refundOrder, createProductReview } from '../composables/useProducts'
 
 const { locale } = useI18n()
 const router = useRouter()
@@ -140,11 +195,33 @@ const authPassword = ref('')
 const authConfirmPassword = ref('')
 const authError = ref('')
 const cancellingId = ref(null)
+const actionLoadingId = ref(null)
 const tripsError = ref('')
+const reviewModalTrip = ref(null)
+const reviewSubmitting = ref(false)
+const reviewError = ref('')
+const reviewForm = ref({
+  rating: 5,
+  content: '',
+  scores: { quality: 5, service: 5, value: 5, transport: 5, family: 5 },
+})
 
 const API = '/api/v1'
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'
+
+function formatMoney(currency = 'CNY', amount = 0) {
+  const symbol = currency === 'CNY' ? '¥' : currency
+  return `${symbol} ${Math.round(Number(amount || 0) * 100) / 100}`
+}
+
+const reviewScoreFields = computed(() => [
+  { key: 'quality', label: locale.value === 'zh' ? '体验质量' : 'Quality' },
+  { key: 'service', label: locale.value === 'zh' ? '服务' : 'Service' },
+  { key: 'value', label: locale.value === 'zh' ? '性价比' : 'Value' },
+  { key: 'transport', label: locale.value === 'zh' ? '交通便利' : 'Transport' },
+  { key: 'family', label: locale.value === 'zh' ? '适合亲子' : 'Family' },
+])
 
 function onImgError(e) {
   if (e?.target && e.target.src !== FALLBACK_IMAGE) {
@@ -160,9 +237,9 @@ const displayTrips = computed(() => {
   const now = new Date().toISOString().split('T')[0]
   const allTrips = [...normalizedProductOrders.value, ...normalizedBookings.value]
   if (activeTab.value === 'upcoming') {
-    return allTrips.filter(t => t.status === 'confirmed' && t.trip_date >= now)
+    return allTrips.filter(t => ['confirmed', 'paid'].includes(t.status) && t.trip_date >= now)
   } else {
-    return allTrips.filter(t => t.status !== 'confirmed' || t.trip_date < now)
+    return allTrips.filter(t => !['confirmed', 'paid'].includes(t.status) || t.trip_date < now)
   }
 })
 
@@ -191,20 +268,106 @@ const normalizedProductOrders = computed(() => productOrders.value.map((order) =
     display_dates: item.travel_date,
     display_guests: `${item.adults || 0} ${locale.value === 'zh' ? '成人' : 'adults'}${item.children ? ` · ${item.children} ${locale.value === 'zh' ? '儿童' : 'children'}` : ''}`,
     display_usage: item.usage || (locale.value === 'zh' ? '请在出行当天出示电子凭证。' : 'Show your mobile voucher on the travel date.'),
-    display_price: `${order.currency === 'CNY' ? '¥' : order.currency} ${order.total_amount}`,
+    display_price: formatMoney(order.currency, order.total_amount),
     trip_date: item.travel_date,
     action_link: `/product/${item.product_id}`,
+    product_id: item.product_id,
   }
 }))
 
 function formatTripStatus(status) {
-  if (status === 'cancelled') {
-    return locale.value === 'zh' ? '已取消' : 'Cancelled'
+  const labels = {
+    pending: locale.value === 'zh' ? '待确认' : 'Pending',
+    confirmed: locale.value === 'zh' ? '已确认' : 'Confirmed',
+    paid: locale.value === 'zh' ? '已支付' : 'Paid',
+    cancelled: locale.value === 'zh' ? '已取消' : 'Cancelled',
+    completed: locale.value === 'zh' ? '已完成' : 'Completed',
+    refunding: locale.value === 'zh' ? '退款中' : 'Refunding',
+    refunded: locale.value === 'zh' ? '已退款' : 'Refunded',
+    paid_mock: locale.value === 'zh' ? '模拟支付' : 'Mock paid',
   }
-  if (status === 'confirmed') {
-    return locale.value === 'zh' ? '已确认' : 'Confirmed'
+  return labels[status] || status || (locale.value === 'zh' ? '未知' : 'Unknown')
+}
+
+function canCancelTrip(trip) {
+  return ['confirmed', 'paid'].includes(trip.status)
+}
+
+function updateOrder(order) {
+  const idx = productOrders.value.findIndex(item => item.id === order.id)
+  if (idx >= 0) productOrders.value[idx] = order
+}
+
+async function completeTrip(trip) {
+  actionLoadingId.value = trip.id
+  try {
+    const data = await completeOrder(trip.id, authHeaders())
+    if (data.order) {
+      updateOrder(data.order)
+      activeTab.value = 'past'
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    actionLoadingId.value = null
   }
-  return locale.value === 'zh' ? '已完成' : 'Completed'
+}
+
+async function refundTrip(trip) {
+  actionLoadingId.value = trip.id
+  try {
+    const data = await refundOrder(trip.id, authHeaders())
+    if (data.order) {
+      updateOrder(data.order)
+      activeTab.value = 'past'
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+function openReviewModal(trip) {
+  reviewModalTrip.value = trip
+  reviewError.value = ''
+  reviewForm.value = {
+    rating: 5,
+    content: '',
+    language: locale.value,
+    scores: { quality: 5, service: 5, value: 5, transport: 5, family: 5 },
+  }
+}
+
+function closeReviewModal() {
+  reviewModalTrip.value = null
+  reviewError.value = ''
+}
+
+async function submitReview() {
+  if (!reviewModalTrip.value?.product_id) return
+  if (!reviewForm.value.content.trim()) {
+    reviewError.value = locale.value === 'zh' ? '请填写评价内容。' : 'Please enter review content.'
+    return
+  }
+  reviewSubmitting.value = true
+  reviewError.value = ''
+  try {
+    await createProductReview(reviewModalTrip.value.product_id, {
+      order_id: reviewModalTrip.value.id,
+      rating: reviewForm.value.rating,
+      scores: reviewForm.value.scores,
+      content: reviewForm.value.content.trim(),
+      language: locale.value,
+    }, authHeaders())
+    closeReviewModal()
+  } catch (e) {
+    reviewError.value = e.message === 'review_not_allowed'
+      ? (locale.value === 'zh' ? '只有完成对应订单后才能评价。' : 'Only verified completed orders can be reviewed.')
+      : (locale.value === 'zh' ? '评价提交失败，请稍后再试。' : 'Failed to submit review. Please try again.')
+  } finally {
+    reviewSubmitting.value = false
+  }
 }
 
 async function fetchTrips() {
@@ -285,8 +448,7 @@ async function cancelTrip(trip) {
     if (trip.source === 'order') {
       const data = await cancelOrder(trip.id, authHeaders())
       if (data.order) {
-        const idx = productOrders.value.findIndex(item => item.id === trip.id)
-        if (idx >= 0) productOrders.value[idx] = data.order
+        updateOrder(data.order)
         activeTab.value = 'past'
       }
       return
@@ -467,7 +629,8 @@ watch(isLoggedIn, (value) => {
   border-color: rgba(179, 38, 30, 0.25);
 }
 
-.trip-status.confirmed {
+.trip-status.confirmed,
+.trip-status.paid {
   background: #d4edda;
   color: #155724;
 }
@@ -475,6 +638,47 @@ watch(isLoggedIn, (value) => {
 .trip-status.completed {
   background: #e2e3e5;
   color: #383d41;
+}
+
+.trip-status.refunded,
+.trip-status.refunding {
+  background: #e8f4f8;
+  color: #0f4c81;
+}
+
+.trip-discount {
+  color: #0f766e;
+  font-size: 0.88rem;
+  font-weight: 800;
+  margin: 4px 0;
+}
+
+.review-modal-card {
+  max-width: 560px;
+}
+
+.review-target {
+  margin: -10px 0 18px;
+  color: var(--text-muted);
+}
+
+.review-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.review-form-label {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.review-textarea {
+  min-height: 120px;
+  resize: vertical;
 }
 
 .loading-state,

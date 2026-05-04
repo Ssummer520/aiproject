@@ -89,17 +89,31 @@ func (h *OrderHandler) HandleOrderActions(w http.ResponseWriter, r *http.Request
 	}
 
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/orders/"), "/")
-	if len(parts) < 2 || parts[1] != "cancel" {
+	if len(parts) < 2 {
 		http.NotFound(w, r)
 		return
 	}
+	action := parts[1]
 	orderID, _ := strconv.Atoi(parts[0])
 	if orderID <= 0 {
 		http.Error(w, "Invalid order ID", http.StatusBadRequest)
 		return
 	}
 
-	order, ok, err := h.service.Cancel(userID, orderID)
+	var order domain.Order
+	var ok bool
+	var err error
+	switch action {
+	case "cancel":
+		order, ok, err = h.service.Cancel(userID, orderID)
+	case "complete":
+		order, ok, err = h.service.Complete(userID, orderID)
+	case "refund":
+		order, ok, err = h.service.Refund(userID, orderID)
+	default:
+		http.NotFound(w, r)
+		return
+	}
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "server_error"})

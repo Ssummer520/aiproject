@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	couponApp "travel-api/services/coupon/application"
 	"travel-api/services/order/domain"
 	productApp "travel-api/services/product/application"
 )
@@ -38,7 +39,7 @@ func TestOrderServiceCreatePersistsPricedProductOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create order: %v", err)
 	}
-	if order.ID == 0 || order.Status != "confirmed" || order.PaymentStatus != "paid_mock" {
+	if order.ID == 0 || order.Status != "paid" || order.PaymentStatus != "paid_mock" {
 		t.Fatalf("unexpected order status: %#v", order)
 	}
 	if len(order.Items) != 1 {
@@ -132,5 +133,84 @@ func TestOrderServiceCancelOnlyUserOrder(t *testing.T) {
 	}
 	if cancelled.Status != "cancelled" || cancelled.CancelledAt == "" {
 		t.Fatalf("expected cancelled order with timestamp, got %#v", cancelled)
+	}
+}
+
+func TestOrderServiceCreateAppliesCouponDiscount(t *testing.T) {
+	service := NewOrderServiceWithCoupon(productApp.NewProductService(), couponApp.NewCouponService())
+
+	order, err := service.Create("user-coupon", domain.CreateOrderRequest{
+		ProductID:   101,
+		PackageID:   1011,
+		TravelDate:  nextTravelDate(),
+		Adults:      4,
+		Children:    0,
+		CouponCode:  "WELCOME80",
+		ContactName: "Coupon User",
+	})
+	if err != nil {
+		t.Fatalf("create order with coupon: %v", err)
+	}
+	if order.OriginalAmount <= 0 || order.DiscountAmount != 80 || order.TotalAmount != order.OriginalAmount-order.DiscountAmount {
+		t.Fatalf("unexpected coupon totals: %#v", order)
+	}
+	if order.CouponCode != "WELCOME80" {
+		t.Fatalf("expected normalized coupon code, got %q", order.CouponCode)
+	}
+
+	orders, err := service.List("user-coupon")
+	if err != nil {
+		t.Fatalf("list coupon orders: %v", err)
+	}
+	if len(orders) != 1 || orders[0].DiscountAmount != 80 || orders[0].CouponCode != "WELCOME80" {
+		t.Fatalf("expected persisted coupon totals, got %#v", orders)
+	}
+}
+
+func TestOrderServiceRejectsInvalidCoupon(t *testing.T) {
+	service := NewOrderServiceWithCoupon(productApp.NewProductService(), couponApp.NewCouponService())
+
+	_, err := service.Create("user-bad-coupon", domain.CreateOrderRequest{
+		ProductID:   101,
+		PackageID:   1011,
+		TravelDate:  nextTravelDate(),
+		Adults:      1,
+		CouponCode:  "MISSING",
+		ContactName: "Bad Coupon",
+	})
+	if err != ErrInvalidOrderRequest {
+		t.Fatalf("expected invalid order request for bad coupon, got %v", err)
+	}
+}
+
+func TestOrderServiceStatusTransitions(t *testing.T) {
+	service := newTestOrderService()
+	order, err := service.Create("user-status", domain.CreateOrderRequest{ProductID: 108, PackageID: 1081, TravelDate: nextTravelDate(), Adults: 1})
+	if err != nil {
+		t.Fatalf("create status order: %v", err)
+	}
+
+	completed, ok, err := service.Complete("user-status", order.ID)
+	if err != nil || !ok {
+		t.Fatalf("complete order: ok=%v err=%v", ok, err)
+	}
+	if completed.Status != "completed" || completed.PaymentStatus != "paid_mock" {
+		t.Fatalf("expected completed paid_mock order, got %#v", completed)
+	}
+
+	refunded, ok, err := service.Refund("user-status", order.ID)
+	if err != nil || !ok {
+		t.Fatalf("refund order: ok=%v err=%v", ok, err)
+	}
+	if refunded.Status != "refunded" || refunded.PaymentStatus != "refunded" {
+		t.Fatalf("expected refunded order, got %#v", refunded)
+	}
+
+	cancelled, ok, err := service.Cancel("user-status", order.ID)
+	if err != nil || !ok {
+		t.Fatalf("cancel refunded order should return existing order: ok=%v err=%v", ok, err)
+	}
+	if cancelled.Status != "refunded" {
+		t.Fatalf("refunded order should not become cancelled, got %#v", cancelled)
 	}
 }

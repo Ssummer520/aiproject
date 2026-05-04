@@ -10,7 +10,7 @@ These instructions apply to all files under `frontend/`.
 - The development server runs at `http://localhost:5173`.
 - `vite.config.js` proxies `/api` to the Go backend at `http://localhost:8888`.
 - The app uses Vue Router for pages and Vue I18n for Chinese/English copy.
-- OTA phases 1-4 from `PRODUCT_ROADMAP.md` are complete: the UI supports product channels, advanced product-first search, product detail booking with trust/reviews, destination-linked booking, coupons, and Trips order/review management.
+- OTA phases 1-5 from `PRODUCT_ROADMAP.md` are complete: the UI supports product channels, advanced product-first search, product detail booking with trust/reviews, destination-linked booking, coupons, and Trips order/review management.
 
 ## Architecture
 
@@ -69,6 +69,13 @@ These instructions apply to all files under `frontend/`.
 - Platform API helpers live in `src/composables/usePlatform.js` and cover snapshot, metrics, merchants, inventory, orders, refunds, profile, and CMS.
 - Preserve the current visual language for admin UI too: rounded cards, soft shadows, gradient CTAs, bilingual copy, and table/card hybrids.
 - `/platform` is a logged-in demo operations console, not a production-secured admin boundary yet.
+
+## Phase 5 Completion Notes
+
+- Completed inbound frontend lives in `src/views/Inbound.vue` and is routed at `/inbound`.
+- Inbound API helpers live in `src/composables/useInbound.js`.
+- `City.vue` now shows an overseas-traveller practical info section from `/api/v1/inbound/cities/{city}/guide`.
+- Preserve the current product/order flow: inbound products are additive and link to existing `/product/:id` booking pages.
 
 ## Build Artifacts
 

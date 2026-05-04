@@ -108,7 +108,7 @@ func (r *SQLiteProductRepo) GetByDestinationID(destinationID int) (domain.Produc
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	product, err := scanProduct(r.db.QueryRow(`SELECT id, destination_id, city, category, type, name, subtitle, description, cover, images, tags, rating, review_count, booked_count, base_price, currency, instant_confirm, free_cancel, duration, meeting_point, included, excluded, usage, policy, status FROM products WHERE destination_id = ? AND status = 'active' ORDER BY booked_count DESC, id ASC LIMIT 1`, destinationID))
+	product, err := scanProduct(r.db.QueryRow(`SELECT id, destination_id, city, category, type, name, subtitle, description, cover, images, tags, rating, review_count, booked_count, base_price, currency, instant_confirm, free_cancel, duration, meeting_point, included, excluded, usage, policy, status FROM products WHERE destination_id = ? AND status = 'active' ORDER BY CASE WHEN id < 109 THEN 0 ELSE 1 END ASC, CASE WHEN type = 'bundle' THEN 1 ELSE 0 END ASC, booked_count DESC, id ASC LIMIT 1`, destinationID))
 	if err == sql.ErrNoRows {
 		return domain.Product{}, false, nil
 	}
@@ -222,6 +222,12 @@ func (r *SQLiteProductRepo) seedDemoData() {
 		for _, pkg := range demoPackages() {
 			r.insertPackage(pkg)
 		}
+	}
+	for _, product := range inboundDemoProducts() {
+		r.insertProduct(product)
+	}
+	for _, pkg := range inboundDemoPackages() {
+		r.insertPackage(pkg)
 	}
 	r.seedAvailability()
 }
@@ -532,4 +538,26 @@ func hasMatchingPackageAvailability(product domain.Product, filters domain.Searc
 		}
 	}
 	return false
+}
+
+func inboundDemoProducts() []domain.Product {
+	return []domain.Product{
+		{ID: 109, DestinationID: 0, City: "China", Category: "Essentials", Type: "essential", Name: "China eSIM 7-Day Data Pack", Subtitle: "Landing-ready connectivity for overseas travellers", Description: "Install before departure and stay online after arrival in China. Includes English setup guide and hotel-address offline checklist.", Cover: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200", Images: []string{"https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200"}, Tags: []string{"Inbound", "eSIM", "WiFi", "English support"}, Rating: 4.7, ReviewCount: 86, BookedCount: 620, BasePrice: 68, Currency: "CNY", InstantConfirm: true, FreeCancel: true, Duration: "7 days", MeetingPoint: "Delivered by email", Included: []string{"7-day data pack", "English setup guide", "China arrival checklist"}, Excluded: []string{"Phone device", "Voice calls"}, Usage: "Install eSIM before departure and activate after landing.", Policy: "Free cancellation before activation.", Status: "active"},
+		{ID: 110, DestinationID: 0, City: "Hangzhou", Category: "Transport", Type: "transport", Name: "Shanghai Hongqiao to Hangzhou East Rail Helper", Subtitle: "High-speed rail guidance with station transfer tips", Description: "English rail guidance for Shanghai-Hangzhou trips, including passport checks, station navigation and timing reminders.", Cover: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=1200", Images: []string{"https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=1200"}, Tags: []string{"High-speed rail", "Inbound", "Shanghai", "Hangzhou"}, Rating: 4.6, ReviewCount: 42, BookedCount: 310, BasePrice: 73, Currency: "CNY", InstantConfirm: true, FreeCancel: true, Duration: "45-65 min", MeetingPoint: "Shanghai Hongqiao Railway Station", Included: []string{"Rail planning guide", "Chinese station phrases", "Passport timing reminder"}, Excluded: []string{"Physical rail ticket", "Station escort"}, Usage: "Use the guide before departure and keep passport ready for station checks.", Policy: "Planning service refundable before travel date.", Status: "active"},
+		{ID: 111, DestinationID: 1, City: "Hangzhou", Category: "Transport", Type: "transport", Name: "Hangzhou Airport to West Lake Transfer", Subtitle: "Private arrival transfer with Chinese hotel confirmation", Description: "Licensed car transfer for overseas travellers arriving at Hangzhou Xiaoshan Airport, with English pickup instructions and Chinese address confirmation.", Cover: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200", Images: []string{"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200"}, Tags: []string{"Airport transfer", "Inbound", "Family", "English support"}, Rating: 4.8, ReviewCount: 95, BookedCount: 520, BasePrice: 188, Currency: "CNY", InstantConfirm: true, FreeCancel: true, Duration: "1 hour", MeetingPoint: "Hangzhou Xiaoshan Airport arrivals", Included: []string{"5-seat car", "Driver contact", "Chinese hotel address check"}, Excluded: []string{"Extra waiting time", "Child seat unless selected"}, Usage: "Show mobile voucher and pickup name at arrivals.", Policy: "Free cancellation 24 hours before pickup.", Status: "active"},
+		{ID: 112, DestinationID: 3, City: "Beijing", Category: "Transport", Type: "transport", Name: "Beijing Airport Downtown Transfer", Subtitle: "Business van arrival service for long-haul flights", Description: "Airport-to-hotel transfer with terminal confirmation, driver contact and bilingual arrival message.", Cover: "https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=1200", Images: []string{"https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=1200"}, Tags: []string{"Airport transfer", "Beijing", "Inbound"}, Rating: 4.7, ReviewCount: 61, BookedCount: 280, BasePrice: 268, Currency: "CNY", InstantConfirm: true, FreeCancel: true, Duration: "1.5 hours", MeetingPoint: "Beijing airport arrivals", Included: []string{"Business van", "Driver contact", "Bilingual pickup note"}, Excluded: []string{"Tolls for route changes"}, Usage: "Confirm terminal and show voucher to driver.", Policy: "Free cancellation 24 hours before pickup.", Status: "active"},
+		{ID: 113, DestinationID: 1, City: "Hangzhou", Category: "City Pass", Type: "bundle", Name: "Hangzhou 2-Day Culture Pass", Subtitle: "West Lake, Lingyin route, transfer coupon and AI plan", Description: "A China inbound city pass combining scenic experiences, arrival essentials and AI route planning for Hangzhou.", Cover: "https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200", Images: []string{"https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200"}, Tags: []string{"City Pass", "Hangzhou", "Inbound", "AI itinerary"}, Rating: 4.9, ReviewCount: 132, BookedCount: 740, BasePrice: 399, Currency: "CNY", InstantConfirm: true, FreeCancel: true, Duration: "2 days", MeetingPoint: "Digital pass", Included: []string{"West Lake cruise", "Lingyin route guide", "Transfer coupon", "AI itinerary"}, Excluded: []string{"Meals unless stated"}, Usage: "Use digital pass QR and follow AI route in My Trips.", Policy: "Free cancellation before first redemption.", Status: "active"},
+		{ID: 114, DestinationID: 2, City: "Shanghai", Category: "City Pass", Type: "bundle", Name: "Shanghai Night Pass", Subtitle: "River cruise, night transfer and food street guide", Description: "A night-focused Shanghai pass for overseas travellers with transfer support and bilingual food guidance.", Cover: "https://images.unsplash.com/photo-1548115184-bc65ee498ad0?w=1200", Images: []string{"https://images.unsplash.com/photo-1548115184-bc65ee498ad0?w=1200"}, Tags: []string{"City Pass", "Shanghai", "Night", "Inbound"}, Rating: 4.8, ReviewCount: 77, BookedCount: 410, BasePrice: 299, Currency: "CNY", InstantConfirm: true, FreeCancel: true, Duration: "1 night", MeetingPoint: "The Bund", Included: []string{"Huangpu River cruise", "Night transfer", "Food guide"}, Excluded: []string{"Dinner bill"}, Usage: "Redeem digital pass at each listed stop.", Policy: "Free cancellation before first redemption.", Status: "active"},
+	}
+}
+
+func inboundDemoPackages() []domain.Package {
+	return []domain.Package{
+		{ID: 1091, ProductID: 109, Name: "7-day eSIM", Description: "Data pack with English setup guide", Price: 68, OriginalPrice: 88, Unit: "device", MinQuantity: 1, MaxQuantity: 5, AgeRule: "One device per QR", RefundPolicy: "Before activation", ConfirmType: "instant", VoucherType: "mobile"},
+		{ID: 1101, ProductID: 110, Name: "Rail helper", Description: "Shanghai-Hangzhou high-speed rail planning", Price: 73, OriginalPrice: 88, Unit: "person", MinQuantity: 1, MaxQuantity: 9, AgeRule: "Passport required", RefundPolicy: "Before travel date", ConfirmType: "instant", VoucherType: "mobile"},
+		{ID: 1111, ProductID: 111, Name: "5-seat car", Description: "Airport to West Lake hotels", Price: 188, OriginalPrice: 238, Unit: "car", MinQuantity: 1, MaxQuantity: 4, AgeRule: "Child seat on request", RefundPolicy: "24h free cancellation", ConfirmType: "instant", VoucherType: "mobile"},
+		{ID: 1121, ProductID: 112, Name: "Business van", Description: "Airport to downtown Beijing", Price: 268, OriginalPrice: 328, Unit: "van", MinQuantity: 1, MaxQuantity: 6, AgeRule: "Child seat on request", RefundPolicy: "24h free cancellation", ConfirmType: "instant", VoucherType: "mobile"},
+		{ID: 1131, ProductID: 113, Name: "2-day pass", Description: "Hangzhou inbound culture pass", Price: 399, OriginalPrice: 488, Unit: "person", MinQuantity: 1, MaxQuantity: 6, AgeRule: "Passport redemption", RefundPolicy: "Before first use", ConfirmType: "instant", VoucherType: "mobile"},
+		{ID: 1141, ProductID: 114, Name: "Night pass", Description: "Shanghai night route pass", Price: 299, OriginalPrice: 368, Unit: "person", MinQuantity: 1, MaxQuantity: 6, AgeRule: "Passport redemption", RefundPolicy: "Before first use", ConfirmType: "instant", VoucherType: "mobile"},
+	}
 }

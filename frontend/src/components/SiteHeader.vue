@@ -11,6 +11,7 @@
     <nav class="header-nav">
       <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('guide')">{{ $t('nav.guides') }}</button>
       <router-link to="/trips" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/trips') }">{{ $t('nav.myTrips') }}</router-link>
+      <router-link to="/inbound" class="header-nav-link" :class="{ 'is-active': route.path.startsWith('/inbound') }">{{ locale === 'zh' ? '入境工具包' : 'Inbound Kit' }}</router-link>
       <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('history')">{{ $t('nav.history') }}</button>
       <button type="button" class="header-nav-link header-nav-btn" @click="goToSection('wishlist')">{{ $t('nav.wishlist') }}</button>
     </nav>

@@ -47,16 +47,21 @@ func TestProductServiceFilters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("search all products: %v", err)
 	}
-	if result.Total != 8 {
-		t.Fatalf("expected 8 seeded products, got %d", result.Total)
+	if result.Total < 14 {
+		t.Fatalf("expected base and inbound seeded products, got %d", result.Total)
 	}
 
 	transport, err := service.Search(domain.SearchFilters{Type: "transport"})
 	if err != nil {
 		t.Fatalf("search transport: %v", err)
 	}
-	if transport.Total != 1 || transport.Results[0].Type != "transport" {
-		t.Fatalf("expected only transport product, got %#v", transport.Results)
+	if transport.Total == 0 {
+		t.Fatal("expected transport products")
+	}
+	for _, product := range transport.Results {
+		if product.Type != "transport" {
+			t.Fatalf("expected only transport products, got %#v", transport.Results)
+		}
 	}
 }
 

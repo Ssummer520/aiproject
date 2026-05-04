@@ -1,13 +1,13 @@
 # ChinaTravel OTA MVP
 
-ChinaTravel 是一个面向海外游客的中国旅行 OTA Web 示例项目。项目已经完成 `PRODUCT_ROADMAP.md` 中的一期 OTA 商品化 MVP、二期搜索转化/信任体系、三期行程规划与购物车闭环，以及四期平台化与增长体系：从目的地灵感展示升级为可搜索、可筛选、可选择套餐/日期/人数/优惠券、可创建商品订单、可生成行程、可加入购物车并打包下单、可管理订单状态、可写 verified review，并具备运营平台雏形的 OTA 系统。
+ChinaTravel 是一个面向海外游客的中国旅行 OTA Web 示例项目。项目已经完成 `PRODUCT_ROADMAP.md` 中的一期 OTA 商品化 MVP、二期搜索转化/信任体系、三期行程规划与购物车闭环，以及四期平台化与增长体系、五期中国入境游差异化：从目的地灵感展示升级为可搜索、可筛选、可选择套餐/日期/人数/优惠券、可创建商品订单、可生成行程、可加入购物车并打包下单、可管理订单状态、可写 verified review，并具备运营平台与中国入境游差异化能力的 OTA 系统。
 
-## 四期状态
+## 五期状态
 
-- **阶段**：四期 平台化与增长体系 MVP 已完成
+- **阶段**：五期 中国入境游差异化 MVP 已完成
 - **定位**：China Travel Super App Web 版雏形
-- **核心闭环**：首页商品频道 -> 高级商品搜索 -> 商品详情信任/评价 -> 加入行程/加入购物车/立即预订 -> AI 生成 day-by-day 行程 -> Trips 时间线排序 -> 购物车多商品打包下单 -> 商品订单售后与评价 -> 运营平台管理商家/库存/会员/CMS/指标
-- **兼容策略**：保留旧 `/bookings` 简易预订接口，新 OTA 交易走 `/orders`、`/coupons`、`/reviews`、`/itineraries`、`/cart`、`/platform`
+- **核心闭环**：首页商品频道 -> 高级商品搜索 -> 商品详情信任/评价 -> 加入行程/加入购物车/立即预订 -> AI 生成 day-by-day 行程 -> Trips 时间线排序 -> 购物车多商品打包下单 -> 商品订单售后与评价 -> 运营平台管理商家/库存/会员/CMS/指标 -> 入境工具包/eSIM/接送/高铁/City Pass/跨语言 AI 管家
+- **兼容策略**：保留旧 `/bookings` 简易预订接口，新 OTA 交易走 `/orders`、`/coupons`、`/reviews`、`/itineraries`、`/cart`、`/platform`、`/inbound`
 
 ## 技术栈
 
@@ -69,7 +69,7 @@ npm run dev
 
 浏览器访问 `http://localhost:5173`。开发环境下，前端请求 `/api` 会自动通过 Vite 代理转发到后端 `http://localhost:8888`。
 
-## 四期白盒回归
+## 五期白盒回归
 
 已通过以下验证：
 
@@ -147,6 +147,14 @@ Authorization: Bearer <token>
 | `/api/v1/cart` | POST | 加入商品套餐到购物车 |
 | `/api/v1/cart` | DELETE | 清空购物车 |
 | `/api/v1/cart/checkout` | POST | 多商品打包下单并生成商品订单 |
+
+### 入境游接口
+
+| 接口 | 方法 | 说明 |
+| --- | --- | --- |
+| `/api/v1/inbound` | GET | 获取入境游工具包、高铁、接送、City Pass、城市攻略聚合数据 |
+| `/api/v1/inbound/cities/{city}/guide` | GET | 获取城市海外游客实用攻略 |
+| `/api/v1/inbound/concierge` | POST | 规则型跨语言 AI 管家，生成中文沟通语、交通/预算/天气调整建议 |
 
 ### 平台化接口
 

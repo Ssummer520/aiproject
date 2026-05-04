@@ -10,7 +10,7 @@ These instructions apply to all files under `backend/`.
 - The server entrypoint is `cmd/server/main.go` and listens on `http://localhost:8888`.
 - APIs are mounted under `/api/v1` and are consumed by the Vite frontend proxy at `/api`.
 - The codebase uses mostly standard-library `net/http`; avoid introducing a web framework unless explicitly requested.
-- OTA phases 1-4 from `PRODUCT_ROADMAP.md` are complete: Product, ProductPackage, Availability, Order/OrderItem, Coupon, and Review are implemented with SQLite-backed demo persistence.
+- OTA phases 1-5 from `PRODUCT_ROADMAP.md` are complete: Product, ProductPackage, Availability, Order/OrderItem, Coupon, and Review are implemented with SQLite-backed demo persistence.
 
 ## Architecture
 
@@ -99,6 +99,13 @@ These instructions apply to all files under `backend/`.
 - SQLite migrations now include `merchants`, `merchant_products`, `refund_requests`, `user_profiles`, and `cms_articles`.
 - Active platform APIs live under `/api/v1/platform`, including metrics, merchants, inventory, orders, refunds, profile, and CMS.
 - Keep this as a demo operations console; production admin work still needs RBAC, audit logs, payment idempotency, and stronger inventory locking.
+
+## Phase 5 Completion Notes
+
+- Completed inbound backend lives in `services/inbound` with `api`, `application`, `domain`, and `infrastructure` layers.
+- SQLite migrations now include `inbound_toolkit`, `inbound_rails`, `inbound_transfers`, `city_passes`, and `inbound_city_guides`.
+- Active inbound APIs live under `/api/v1/inbound`, including snapshot, city guide, and rule-based concierge.
+- Inbound product seeds add eSIM, rail helper, airport transfers, and City Pass products without replacing the original destination-linked booking flow.
 
 ## Validation
 

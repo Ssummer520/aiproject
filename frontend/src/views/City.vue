@@ -18,6 +18,22 @@
         <router-link to="/" class="back-link">← {{ locale === 'zh' ? '返回首页' : 'Back to Home' }}</router-link>
       </div>
 
+
+      <section v-if="inboundGuide" class="city-section inbound-guide-section">
+        <div class="section-header">
+          <h2 class="section-title">{{ locale === 'zh' ? '海外游客实用信息' : 'Practical info for overseas travellers' }}</h2>
+          <router-link to="/inbound" class="inbound-more-link">{{ locale === 'zh' ? '查看入境工具包' : 'Open inbound toolkit' }}</router-link>
+        </div>
+        <div class="inbound-guide-grid">
+          <div class="inbound-guide-card"><strong>🌤️ {{ locale === 'zh' ? '季节天气' : 'Season & weather' }}</strong><p>{{ inboundGuide.best_season }} · {{ inboundGuide.weather }}</p></div>
+          <div class="inbound-guide-card"><strong>🚕 {{ locale === 'zh' ? '交通' : 'Transport' }}</strong><p>{{ inboundGuide.transport }}</p></div>
+          <div class="inbound-guide-card"><strong>💳 {{ locale === 'zh' ? '支付网络' : 'Payment & eSIM' }}</strong><p>{{ inboundGuide.payment }} · {{ inboundGuide.connectivity }}</p></div>
+          <div class="inbound-guide-card"><strong>🎫 {{ locale === 'zh' ? '预约规则' : 'Reservations' }}</strong><p>{{ inboundGuide.reservation }}</p></div>
+        </div>
+        <div class="inbound-tip-row">
+          <span v-for="tip in [...(inboundGuide.language_tips || []), ...(inboundGuide.safety_tips || [])].slice(0, 4)" :key="tip">{{ tip }}</span>
+        </div>
+      </section>
       <section class="city-section city-categories-section">
         <div class="section-header">
           <h2 class="section-title">{{ locale === 'zh' ? '按分类探索' : 'Explore by Category' }}</h2>
@@ -325,6 +341,7 @@ import { useAuth } from '../composables/useAuth'
 import { useTravelAssistant } from '../composables/useTravelAssistant'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
 import SiteHeader from '../components/SiteHeader.vue'
+import { fetchCityInboundGuide } from '../composables/useInbound'
 
 const { locale } = useI18n()
 const route = useRoute()
@@ -344,6 +361,7 @@ const showAllCategories = ref(false)
 const showAiHint = ref(false)
 const aiAssistantOpen = ref(false)
 const aiQuestion = ref('')
+const inboundGuide = ref(null)
 
 const cityMap = {
   'hangzhou': { name: 'Hangzhou', nameZh: '杭州', image: 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=1200' },
@@ -559,6 +577,15 @@ function onImgError(e) {
   }
 }
 
+async function fetchInboundGuide() {
+  try {
+    const city = cityMap[String(route.params.city || '').toLowerCase()]?.name || route.params.city
+    inboundGuide.value = await fetchCityInboundGuide(city)
+  } catch (e) {
+    inboundGuide.value = null
+  }
+}
+
 async function fetchCity() {
   loading.value = true
   try {
@@ -636,20 +663,72 @@ watch(() => route.params.city, () => {
   expandedParentCategory.value = 'all'
   fetchCity()
   fetchCityExtras()
+  fetchInboundGuide()
 })
 watch(locale, () => {
   fetchCity()
   fetchCityExtras()
+  fetchInboundGuide()
   resetTravelAssistantGreeting()
 })
 
 onMounted(() => {
   fetchCity()
   fetchCityExtras()
+  fetchInboundGuide()
 })
 </script>
 
 <style scoped>
+.inbound-guide-section {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 56, 92, 0.06), rgba(0, 122, 255, 0.06)), var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.inbound-more-link {
+  color: var(--primary);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.inbound-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inbound-guide-card {
+  padding: 14px;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.inbound-guide-card p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 8px 0 0;
+}
+
+.inbound-tip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.inbound-tip-row span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 /* ====== 全局 ====== */
 .city-page {
   min-height: 100vh;

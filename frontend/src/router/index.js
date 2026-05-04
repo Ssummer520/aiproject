@@ -48,6 +48,11 @@ const routes = [
     component: () => import('../views/Platform.vue')
   },
   {
+    path: '/inbound',
+    name: 'Inbound',
+    component: () => import('../views/Inbound.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../views/NotFound.vue')

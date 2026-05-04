@@ -349,6 +349,62 @@ func migrate(db *sql.DB) error {
 			updated_at TEXT NOT NULL
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_cms_articles_category_city ON cms_articles(category, city, status);`,
+		`CREATE TABLE IF NOT EXISTS inbound_toolkit (
+			id INTEGER PRIMARY KEY,
+			key TEXT NOT NULL UNIQUE,
+			title TEXT NOT NULL,
+			title_zh TEXT NOT NULL,
+			category TEXT NOT NULL,
+			description TEXT NOT NULL,
+			steps TEXT NOT NULL,
+			cta TEXT NOT NULL,
+			product_id INTEGER NOT NULL DEFAULT 0
+		);`,
+		`CREATE TABLE IF NOT EXISTS inbound_rails (
+			id INTEGER PRIMARY KEY,
+			from_station TEXT NOT NULL,
+			to_station TEXT NOT NULL,
+			duration TEXT NOT NULL,
+			frequency TEXT NOT NULL,
+			price_from REAL NOT NULL,
+			tip TEXT NOT NULL,
+			product_id INTEGER NOT NULL DEFAULT 0
+		);`,
+		`CREATE TABLE IF NOT EXISTS inbound_transfers (
+			id INTEGER PRIMARY KEY,
+			city TEXT NOT NULL,
+			from_place TEXT NOT NULL,
+			to_place TEXT NOT NULL,
+			vehicle TEXT NOT NULL,
+			price_from REAL NOT NULL,
+			driver_tip TEXT NOT NULL,
+			product_id INTEGER NOT NULL DEFAULT 0
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_inbound_transfers_city ON inbound_transfers(city);`,
+		`CREATE TABLE IF NOT EXISTS city_passes (
+			id INTEGER PRIMARY KEY,
+			city TEXT NOT NULL,
+			name TEXT NOT NULL,
+			duration TEXT NOT NULL,
+			includes TEXT NOT NULL,
+			price_from REAL NOT NULL,
+			product_id INTEGER NOT NULL DEFAULT 0,
+			ai_suggested INTEGER NOT NULL DEFAULT 0
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_city_passes_city ON city_passes(city);`,
+		`CREATE TABLE IF NOT EXISTS inbound_city_guides (
+			city TEXT PRIMARY KEY,
+			best_season TEXT NOT NULL,
+			weather TEXT NOT NULL,
+			transport TEXT NOT NULL,
+			payment TEXT NOT NULL,
+			connectivity TEXT NOT NULL,
+			reservation TEXT NOT NULL,
+			language_tips TEXT NOT NULL,
+			safety_tips TEXT NOT NULL,
+			dietary_tips TEXT NOT NULL,
+			family_tips TEXT NOT NULL
+		);`,
 	}
 	for _, statement := range statements {
 		if _, err := db.Exec(statement); err != nil {

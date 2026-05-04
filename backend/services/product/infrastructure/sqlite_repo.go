@@ -82,6 +82,31 @@ func (r *SQLiteProductRepo) Get(id int) (domain.Product, bool, error) {
 	return product, true, nil
 }
 
+func (r *SQLiteProductRepo) GetByDestinationID(destinationID int) (domain.Product, bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	product, err := scanProduct(r.db.QueryRow(`SELECT id, destination_id, city, category, type, name, subtitle, description, cover, images, tags, rating, review_count, booked_count, base_price, currency, instant_confirm, free_cancel, duration, meeting_point, included, excluded, usage, policy, status FROM products WHERE destination_id = ? AND status = 'active' ORDER BY booked_count DESC, id ASC LIMIT 1`, destinationID))
+	if err == sql.ErrNoRows {
+		return domain.Product{}, false, nil
+	}
+	if err != nil {
+		return domain.Product{}, false, err
+	}
+
+	packages, err := r.ListPackages(product.ID)
+	if err != nil {
+		return domain.Product{}, false, err
+	}
+	availability, err := r.ListAvailability(product.ID, "")
+	if err != nil {
+		return domain.Product{}, false, err
+	}
+	product.Packages = packages
+	product.Availability = availability
+	return product, true, nil
+}
+
 func (r *SQLiteProductRepo) ListPackages(productID int) ([]domain.Package, error) {
 	rows, err := r.db.Query(`SELECT id, product_id, name, description, price, original_price, unit, min_quantity, max_quantity, age_rule, refund_policy, confirm_type, voucher_type FROM product_packages WHERE product_id = ? ORDER BY price ASC`, productID)
 	if err != nil {

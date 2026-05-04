@@ -29,6 +29,23 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 	}
 
 	query := r.URL.Query()
+	if destinationID, _ := strconv.Atoi(query.Get("destination_id")); destinationID > 0 {
+		product, err := h.service.GetByDestinationID(destinationID)
+		if err == application.ErrProductNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "product_not_found"})
+			return
+		}
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "server_error"})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(product)
+		return
+	}
+
 	minPrice, _ := strconv.ParseFloat(firstNonEmpty(query.Get("price_min"), query.Get("min_price")), 64)
 	maxPrice, _ := strconv.ParseFloat(firstNonEmpty(query.Get("price_max"), query.Get("max_price")), 64)
 	ratingMin, _ := strconv.ParseFloat(query.Get("rating_min"), 64)

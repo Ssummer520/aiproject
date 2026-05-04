@@ -38,6 +38,17 @@ func (s *ProductService) Get(id int) (domain.Product, error) {
 	return product, nil
 }
 
+func (s *ProductService) GetByDestinationID(destinationID int) (domain.Product, error) {
+	product, ok, err := s.repo.GetByDestinationID(destinationID)
+	if err != nil {
+		return domain.Product{}, err
+	}
+	if !ok {
+		return domain.Product{}, ErrProductNotFound
+	}
+	return product, nil
+}
+
 func (s *ProductService) Availability(productID int, date string) ([]domain.Availability, error) {
 	return s.repo.ListAvailability(productID, date)
 }

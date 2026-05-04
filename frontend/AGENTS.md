@@ -19,6 +19,11 @@ These instructions apply to all files under `frontend/`.
 - Keep route registration in `src/router/index.js`.
 - Keep i18n copy in `src/i18n.js`; when adding user-facing text, add both `en` and `zh` entries when practical.
 - `src/style.css` contains global styling; avoid adding scattered style systems unless requested.
+- For OTA phase-1 work, add product-specific UI without rewriting existing pages wholesale:
+  - Product cards belong in `src/components/` if reused by Home/Search/City/Category.
+  - Product detail belongs in a dedicated `src/views/Product.vue` route at `/product/:id`.
+  - Product/order API helpers should live in composables when shared across views.
+- Preserve the current visual language: rounded cards, hero sections, soft shadows, gradient CTAs, and existing CSS variables.
 
 ## Coding Style
 
@@ -34,6 +39,9 @@ These instructions apply to all files under `frontend/`.
 - Preserve login-aware behavior for favorites, history, trips, and account views.
 - If adding new authenticated requests, include `Authorization: Bearer <token>` consistently with `useAuth.js` patterns.
 - Keep the AI travel assistant client-side unless the user explicitly asks for backend/model integration.
+- OTA phase-1 booking flow should be: product card -> product detail -> package/date/guest selection -> login check -> create order -> Trips page.
+- Keep product prices compatible with `useCurrency.js`; store base prices from the API and convert only for display.
+- Do not replace existing destination routes; add product routes alongside them.
 
 ## Build Artifacts
 
@@ -54,3 +62,4 @@ npm run preview
 
 - There is currently no configured lint/test script; do not invent one without being asked.
 - When changing routes or API consumers, check corresponding backend endpoints under `backend/services/bff/api/handlers.go` and `backend/services/auth/api/handlers.go`.
+- For phase-1 OTA work, also check `backend/services/product` and `backend/services/order` endpoint contracts before changing front-end request/response shapes.

@@ -9,6 +9,10 @@ import (
 	authApi "travel-api/services/auth/api"
 	authApp "travel-api/services/auth/application"
 	"travel-api/services/bff/api"
+	orderApi "travel-api/services/order/api"
+	orderApp "travel-api/services/order/application"
+	productApi "travel-api/services/product/api"
+	productApp "travel-api/services/product/application"
 )
 
 func cors(next http.Handler) http.Handler {
@@ -35,8 +39,12 @@ func authMiddleware(authService *authApp.AuthService, next http.Handler) http.Ha
 
 func main() {
 	authService := authApp.NewAuthService()
+	productService := productApp.NewProductService()
+	orderService := orderApp.NewOrderService(productService)
 	authHandler := authApi.NewAuthHandlerWithService(authService)
 	bffHandler := api.NewBFFHandler()
+	productHandler := productApi.NewProductHandlerWithService(productService)
+	orderHandler := orderApi.NewOrderHandler(orderService)
 
 	mux := http.NewServeMux()
 
@@ -57,6 +65,10 @@ func main() {
 	mux.Handle("/api/v1/bookings", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleBookings)))
 	mux.Handle("/api/v1/bookings/", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleBookingActions)))
 	mux.Handle("/api/v1/notifications", authMiddleware(authService, http.HandlerFunc(bffHandler.HandleNotifications)))
+	mux.HandleFunc("/api/v1/products", productHandler.HandleProducts)
+	mux.HandleFunc("/api/v1/products/", productHandler.HandleProductDetail)
+	mux.Handle("/api/v1/orders", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrders)))
+	mux.Handle("/api/v1/orders/", authMiddleware(authService, http.HandlerFunc(orderHandler.HandleOrderActions)))
 
 	const addr = ":8888"
 	log.Println("Server listening on http://localhost:8888")

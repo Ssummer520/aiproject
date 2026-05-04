@@ -182,6 +182,20 @@
             </div>
           </section>
 
+          <section class="section product-home-section">
+            <div class="section-header">
+              <div class="header-left">
+                <h2 class="section-title">{{ locale === 'zh' ? '热门门票与体验' : 'Top tickets & experiences' }}</h2>
+                <p class="section-subtitle section-subtitle--muted">{{ locale === 'zh' ? '选择套餐、日期和人数，像真正 OTA 一样预订' : 'Choose packages, dates, and guests like a real OTA' }}</p>
+              </div>
+              <router-link to="/search?mode=products" class="view-all-link">{{ locale === 'zh' ? '查看全部' : 'View all' }}</router-link>
+            </div>
+            <div v-if="productsLoading" class="loading">Loading...</div>
+            <div v-else-if="featuredProducts.length" class="product-home-grid">
+              <ProductCard v-for="product in featuredProducts" :key="product.id" :product="product" />
+            </div>
+          </section>
+
           <section class="section hot-activities-section">
             <div class="section-header">
               <div class="header-left">
@@ -528,7 +542,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useCurrency } from '../composables/useCurrency'
 import { useTravelAssistant } from '../composables/useTravelAssistant'
+import { fetchProducts } from '../composables/useProducts'
 import AiAssistantBubble from '../components/AiAssistantBubble.vue'
+import ProductCard from '../components/ProductCard.vue'
 
 const { locale } = useI18n()
 const router = useRouter()
@@ -862,6 +878,8 @@ const nearbyError = ref('')
 const deals = ref([])
 const trendingThisWeek = ref([])
 const mostViewedNearby = ref([])
+const featuredProducts = ref([])
+const productsLoading = ref(true)
 const assistantDestinations = computed(() => uniqueDestinations([
   ...recommendations.value,
   ...nearby.value,
@@ -926,6 +944,18 @@ async function fetchHomePage() {
   } finally {
     recLoading.value = false
     nearbyLoading.value = false
+  }
+}
+
+async function fetchFeaturedProducts() {
+  productsLoading.value = true
+  try {
+    const data = await fetchProducts({ sort: 'booked' })
+    featuredProducts.value = (data.results || []).slice(0, 6)
+  } catch (e) {
+    featuredProducts.value = []
+  } finally {
+    productsLoading.value = false
   }
 }
 
@@ -1046,6 +1076,7 @@ watch(() => route.query.focus, (focus) => {
 
 onMounted(() => {
   fetchHomePage()
+  fetchFeaturedProducts()
   startAiHintLoop()
   startSearchPlaceholderRotation()
   heroTimer = setInterval(() => {

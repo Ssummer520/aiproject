@@ -6,7 +6,7 @@
         <span>ChinaTravel</span>
       </router-link>
       <nav class="header-nav">
-        <a href="#" class="header-nav-link">{{ $t('nav.guides') }}</a>
+        <router-link to="/search" class="header-nav-link is-active">{{ $t('nav.search') }}</router-link>
         <router-link to="/trips" class="header-nav-link">{{ $t('nav.myTrips') }}</router-link>
       </nav>
       <div class="header-actions">
@@ -21,7 +21,6 @@
     </header>
 
     <div class="search-page-content">
-      <!-- 搜索栏 -->
       <div class="search-bar-section">
         <div class="search-bar-container">
           <div class="search-input-wrap">
@@ -30,7 +29,8 @@
               v-model="keyword"
               type="text"
               class="search-input"
-              :placeholder="locale === 'zh' ? '搜索目的地、景点、活动...' : 'Search destinations, attractions...'"
+              :placeholder="locale === 'zh' ? '搜索目的地、门票、体验、接送...' : 'Search destinations, tickets, experiences, transfers...'
+              "
               @keyup.enter="doSearch"
             />
             <button class="search-btn" @click="doSearch">{{ $t('nav.search') }}</button>
@@ -38,13 +38,11 @@
         </div>
       </div>
 
-      <!-- 搜索结果 -->
       <div class="results-layout">
-        <!-- 左侧过滤 -->
         <aside class="filters-sidebar">
           <div class="filter-card">
-            <h3>{{ locale === 'zh' ? '筛选条件' : 'Filters' }}</h3>
-            
+            <h3>{{ locale === 'zh' ? 'OTA 筛选' : 'OTA Filters' }}</h3>
+
             <div class="filter-group">
               <label>{{ locale === 'zh' ? '城市' : 'City' }}</label>
               <select v-model="filters.city">
@@ -61,10 +59,23 @@
               <label>{{ locale === 'zh' ? '分类' : 'Category' }}</label>
               <select v-model="filters.category">
                 <option value="">{{ locale === 'zh' ? '所有分类' : 'All Categories' }}</option>
-                <option value="nature">{{ locale === 'zh' ? '自然风光' : 'Nature' }}</option>
-                <option value="culture">{{ locale === 'zh' ? '文化历史' : 'Culture' }}</option>
-                <option value="city">{{ locale === 'zh' ? '城市景观' : 'City' }}</option>
-                <option value="history">{{ locale === 'zh' ? '历史遗迹' : 'History' }}</option>
+                <option value="Tickets">{{ locale === 'zh' ? '门票' : 'Tickets' }}</option>
+                <option value="Tours">{{ locale === 'zh' ? '一日游' : 'Tours' }}</option>
+                <option value="Experiences">{{ locale === 'zh' ? '当地体验' : 'Experiences' }}</option>
+                <option value="Transport">{{ locale === 'zh' ? '交通接送' : 'Transport' }}</option>
+                <option value="Nature">{{ locale === 'zh' ? '自然' : 'Nature' }}</option>
+                <option value="Culture">{{ locale === 'zh' ? '文化' : 'Culture' }}</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>{{ locale === 'zh' ? '商品类型' : 'Product Type' }}</label>
+              <select v-model="filters.type">
+                <option value="">{{ locale === 'zh' ? '全部' : 'All' }}</option>
+                <option value="ticket">{{ locale === 'zh' ? '景点门票' : 'Tickets' }}</option>
+                <option value="tour">{{ locale === 'zh' ? '一日游/半日游' : 'Tours' }}</option>
+                <option value="experience">{{ locale === 'zh' ? '当地体验' : 'Experiences' }}</option>
+                <option value="transport">{{ locale === 'zh' ? '交通接送' : 'Transport' }}</option>
               </select>
             </div>
 
@@ -81,9 +92,9 @@
               <label>{{ locale === 'zh' ? '评分' : 'Rating' }}</label>
               <select v-model="filters.rating">
                 <option value="">{{ locale === 'zh' ? '所有评分' : 'Any Rating' }}</option>
-                <option value="5">5 {{ locale === 'zh' ? '星' : 'stars' }}</option>
-                <option value="4">4+ {{ locale === 'zh' ? '星' : 'stars' }}</option>
-                <option value="3">3+ {{ locale === 'zh' ? '星' : 'stars' }}</option>
+                <option value="4.8">4.8+</option>
+                <option value="4.5">4.5+</option>
+                <option value="4">4+</option>
               </select>
             </div>
 
@@ -94,20 +105,28 @@
                 <option value="price_low">{{ locale === 'zh' ? '价格从低到高' : 'Price: Low to High' }}</option>
                 <option value="price_high">{{ locale === 'zh' ? '价格从高到低' : 'Price: High to Low' }}</option>
                 <option value="rating">{{ locale === 'zh' ? '评分最高' : 'Highest Rated' }}</option>
-                <option value="popular">{{ locale === 'zh' ? '最热门' : 'Most Popular' }}</option>
+                <option value="popular">{{ locale === 'zh' ? '销量最高' : 'Most Booked' }}</option>
               </select>
             </div>
+
+            <label class="filter-check">
+              <input v-model="filters.instantConfirm" type="checkbox" />
+              <span>{{ locale === 'zh' ? '即时确认' : 'Instant confirmation' }}</span>
+            </label>
+            <label class="filter-check">
+              <input v-model="filters.freeCancel" type="checkbox" />
+              <span>{{ locale === 'zh' ? '免费取消' : 'Free cancellation' }}</span>
+            </label>
 
             <button class="apply-filter-btn" @click="doSearch">{{ locale === 'zh' ? '应用筛选' : 'Apply Filters' }}</button>
           </div>
         </aside>
 
-        <!-- 搜索结果列表 -->
         <main class="results-main">
           <div class="results-header">
-            <h1 v-if="keyword">{{ locale === 'zh' ? `"${keyword}" 的搜索结果` : `Results for "${keyword}"` }}</h1>
-            <h1 v-else>{{ locale === 'zh' ? '所有目的地' : 'All Destinations' }}</h1>
-            <p class="results-count">{{ results.length }} {{ locale === 'zh' ? '个结果' : 'results found' }}</p>
+            <h1 v-if="keyword">{{ locale === 'zh' ? `“${keyword}” 的搜索结果` : `Results for "${keyword}"` }}</h1>
+            <h1 v-else>{{ locale === 'zh' ? '全站商品与目的地' : 'All products & destinations' }}</h1>
+            <p class="results-count">{{ productResults.length + results.length }} {{ locale === 'zh' ? '个结果' : 'results found' }}</p>
           </div>
 
           <div v-if="loading" class="loading-state">
@@ -115,51 +134,62 @@
             <p>{{ locale === 'zh' ? '加载中...' : 'Loading...' }}</p>
           </div>
 
-          <div v-else-if="results.length === 0" class="empty-state">
+          <div v-else-if="productResults.length === 0 && results.length === 0" class="empty-state">
             <div class="empty-icon">🔍</div>
             <h3>{{ locale === 'zh' ? '未找到结果' : 'No results found' }}</h3>
             <p>{{ locale === 'zh' ? '试试其他关键词或筛选条件' : 'Try different keywords or filters' }}</p>
           </div>
 
-          <div v-else class="results-grid">
-            <router-link
-              v-for="d in results"
-              :key="d.id"
-              :to="'/destination/' + d.id"
-              class="result-card"
-            >
-              <div class="card-cover">
-                <img :src="d.cover" :alt="d.name" @error="onImgError" />
-                <button 
-                  type="button" 
-                  class="fav-btn" 
-                  :class="{ favorited: d.is_favorite && isLoggedIn }" 
-                  @click.prevent.stop="toggleFav(d)"
+          <template v-else>
+            <section v-if="productResults.length" class="search-products-section">
+              <h2>{{ locale === 'zh' ? '可预订商品' : 'Bookable products' }}</h2>
+              <div class="search-products-grid">
+                <ProductCard v-for="product in productResults" :key="product.id" :product="product" />
+              </div>
+            </section>
+
+            <section v-if="results.length" class="search-destinations-section">
+              <h2>{{ locale === 'zh' ? '目的地灵感' : 'Destination inspiration' }}</h2>
+              <div class="results-grid">
+                <router-link
+                  v-for="d in results"
+                  :key="d.id"
+                  :to="'/destination/' + d.id"
+                  class="result-card"
                 >
-                  {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
-                </button>
+                  <div class="card-cover">
+                    <img :src="d.cover" :alt="d.name" @error="onImgError" />
+                    <button
+                      type="button"
+                      class="fav-btn"
+                      :class="{ favorited: d.is_favorite && isLoggedIn }"
+                      @click.prevent.stop="toggleFav(d)"
+                    >
+                      {{ (d.is_favorite && isLoggedIn) ? '♥' : '♡' }}
+                    </button>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-header">
+                      <h3 class="card-title">{{ d.name }}</h3>
+                      <div class="card-rating">★ {{ d.rating }}</div>
+                    </div>
+                    <p class="card-location">📍 {{ d.city }}</p>
+                    <div class="card-tags">
+                      <span v-for="t in d.tags" :key="t" class="tag">{{ t }}</span>
+                    </div>
+                    <div class="card-price">
+                      <span class="price-amount">¥{{ d.price }}</span>
+                      <span class="price-unit">{{ locale === 'zh' ? '/ 晚' : '/ night' }}</span>
+                    </div>
+                  </div>
+                </router-link>
               </div>
-              <div class="card-body">
-                <div class="card-header">
-                  <h3 class="card-title">{{ d.name }}</h3>
-                  <div class="card-rating">★ {{ d.rating }}</div>
-                </div>
-                <p class="card-location">📍 {{ d.city }}</p>
-                <div class="card-tags">
-                  <span v-for="t in d.tags" :key="t" class="tag">{{ t }}</span>
-                </div>
-                <div class="card-price">
-                  <span class="price-amount">¥{{ d.price }}</span>
-                  <span class="price-unit">{{ locale === 'zh' ? '/ 晚' : '/ night' }}</span>
-                </div>
-              </div>
-            </router-link>
-          </div>
+            </section>
+          </template>
         </main>
       </div>
     </div>
 
-    <!-- Auth Modal -->
     <div v-if="showAuthModal" class="modal-overlay auth-modal-overlay" @click.self="showAuthModal = null">
       <div class="auth-modal-card">
         <button class="modal-close" @click="showAuthModal = null">×</button>
@@ -194,6 +224,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { fetchProducts } from '../composables/useProducts'
+import ProductCard from '../components/ProductCard.vue'
 
 const { locale } = useI18n()
 const route = useRoute()
@@ -203,6 +235,7 @@ const { isLoggedIn, user, setAuth, clearAuth, authHeaders } = useAuth()
 const keyword = ref('')
 const loading = ref(false)
 const results = ref([])
+const productResults = ref([])
 const showAuthModal = ref(null)
 const authEmail = ref('')
 const authPassword = ref('')
@@ -212,10 +245,13 @@ const authError = ref('')
 const filters = ref({
   city: '',
   category: '',
+  type: '',
   minPrice: null,
   maxPrice: null,
   rating: '',
-  sortBy: 'recommended'
+  sortBy: 'recommended',
+  instantConfirm: false,
+  freeCancel: false
 })
 
 const API = '/api/v1'
@@ -233,6 +269,14 @@ function toggleLang() {
   locale.value = locale.value === 'en' ? 'zh' : 'en'
 }
 
+function mapProductSort(sortBy) {
+  if (sortBy === 'price_low') return 'price_asc'
+  if (sortBy === 'price_high') return 'price_desc'
+  if (sortBy === 'popular') return 'booked'
+  if (sortBy === 'rating') return 'rating'
+  return ''
+}
+
 async function doSearch() {
   loading.value = true
   try {
@@ -243,18 +287,32 @@ async function doSearch() {
     if (filters.value.minPrice) params.append('min_price', filters.value.minPrice)
     if (filters.value.maxPrice) params.append('max_price', filters.value.maxPrice)
 
-    const res = await fetch(`${API}/search?${params}`, {
-      headers: { 'Accept-Language': locale.value, ...authHeaders() }
-    })
-    let data = await res.json()
+    const productParams = {
+      q: keyword.value,
+      city: filters.value.city,
+      category: filters.value.category,
+      type: filters.value.type,
+      price_min: filters.value.minPrice,
+      price_max: filters.value.maxPrice,
+      rating_min: filters.value.rating,
+      instant_confirm: filters.value.instantConfirm ? 'true' : '',
+      free_cancel: filters.value.freeCancel ? 'true' : '',
+      sort: mapProductSort(filters.value.sortBy),
+    }
+
+    const [productsData, res] = await Promise.all([
+      fetchProducts(productParams).catch(() => ({ results: [] })),
+      fetch(`${API}/search?${params}`, {
+        headers: { 'Accept-Language': locale.value, ...authHeaders() }
+      })
+    ])
+    const data = await res.json()
     let resultsList = data.results || []
 
-    // Client-side filtering for rating
     if (filters.value.rating) {
       resultsList = resultsList.filter(d => d.rating >= parseFloat(filters.value.rating))
     }
 
-    // Client-side sorting
     if (filters.value.sortBy) {
       switch (filters.value.sortBy) {
         case 'price_low':
@@ -272,10 +330,12 @@ async function doSearch() {
       }
     }
 
+    productResults.value = productsData.results || []
     results.value = resultsList
   } catch (e) {
     console.error(e)
     results.value = []
+    productResults.value = []
   } finally {
     loading.value = false
   }
@@ -288,16 +348,16 @@ function syncRouteQuery() {
   if (keyword.value) nextQuery.q = keyword.value
   if (filters.value.city) nextQuery.city = filters.value.city
   if (filters.value.category) nextQuery.category = filters.value.category
+  if (filters.value.type) nextQuery.type = filters.value.type
   if (filters.value.minPrice) nextQuery.min_price = String(filters.value.minPrice)
   if (filters.value.maxPrice) nextQuery.max_price = String(filters.value.maxPrice)
   if (filters.value.rating) nextQuery.rating = String(filters.value.rating)
   if (filters.value.sortBy && filters.value.sortBy !== 'recommended') nextQuery.sort = filters.value.sortBy
+  if (filters.value.instantConfirm) nextQuery.instant_confirm = 'true'
+  if (filters.value.freeCancel) nextQuery.free_cancel = 'true'
 
   const currentQuery = route.query || {}
-  if (JSON.stringify(nextQuery) === JSON.stringify(currentQuery)) {
-    return
-  }
-
+  if (JSON.stringify(nextQuery) === JSON.stringify(currentQuery)) return
   router.replace({ query: nextQuery })
 }
 
@@ -306,10 +366,13 @@ function hydrateFromRoute(query) {
   keyword.value = query.q || ''
   filters.value.city = query.city || ''
   filters.value.category = query.category || ''
+  filters.value.type = query.type || ''
   filters.value.minPrice = query.min_price ? Number(query.min_price) : null
   filters.value.maxPrice = query.max_price ? Number(query.max_price) : null
   filters.value.rating = query.rating || ''
   filters.value.sortBy = query.sort || 'recommended'
+  filters.value.instantConfirm = query.instant_confirm === 'true'
+  filters.value.freeCancel = query.free_cancel === 'true'
   isSyncingFromRoute = false
 }
 
@@ -324,9 +387,7 @@ async function toggleFav(d) {
       headers: authHeaders(),
     })
     const data = await res.json()
-    if (data.ok) {
-      d.is_favorite = data.is_favorite
-    }
+    if (data.ok) d.is_favorite = data.is_favorite
   } catch (e) {
     console.error(e)
   }
@@ -759,5 +820,38 @@ watch([keyword, filters], syncRouteQuery, { deep: true })
   .results-layout {
     padding: 16px;
   }
+}
+</style>
+
+<style scoped>
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.filter-check input {
+  width: auto;
+}
+
+.search-products-section,
+.search-destinations-section {
+  margin-bottom: 30px;
+}
+
+.search-products-section h2,
+.search-destinations-section h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+}
+
+.search-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 </style>

@@ -20,6 +20,11 @@ These instructions apply to all files under `backend/`.
   - `infrastructure/` for file repositories, caches, stats, and persistence adapters.
 - Use `internal/` only for shared backend internals such as context keys, common models, DB helpers, or legacy code.
 - Prefer updating the active `services/` implementation over the older `internal/handlers` and `internal/store` paths unless the task specifically targets legacy code.
+- For the OTA phase-1 work, add new business domains as separate services instead of bloating `services/bff`:
+  - `services/product/` owns products, packages, availability, search filters, and product detail data.
+  - `services/order/` owns product orders and order-item persistence.
+  - `services/bff/` may aggregate homepage/city/category data, but should delegate product/order operations to their services.
+- Keep `cmd/server/main.go` as the composition root for wiring HTTP handlers and middleware.
 
 ## Coding Style
 
@@ -36,6 +41,9 @@ These instructions apply to all files under `backend/`.
 - Treat JSON files and SQLite files as development/demo storage.
 - Do not hardcode absolute machine paths; use relative paths or existing repository helpers.
 - Be careful when editing `data/*.json` because these files may contain local test/demo state.
+- New interactive/backend state should use SQLite via `internal/db.Open()` unless the user explicitly requests JSON-only storage.
+- Extend `internal/db/sqlite.go` migrations for new tables; keep migrations idempotent with `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, and safe seed logic.
+- Seed demo OTA product data through repository/service initialization so a fresh local database can run without manual setup.
 
 ## Auth And Security
 
@@ -49,6 +57,14 @@ These instructions apply to all files under `backend/`.
 - Preserve existing `/api/v1` route names unless the user asks for a breaking change.
 - Keep frontend compatibility in mind when changing response shapes; check `frontend/src/composables` and `frontend/src/views` for consumers.
 - Respect the `Accept-Language` header behavior and default to `en` where existing code does so.
+- Phase-1 OTA APIs should use these routes unless changed deliberately:
+  - `GET /api/v1/products`
+  - `GET /api/v1/products/{id}`
+  - `GET /api/v1/products/{id}/availability`
+  - `GET /api/v1/orders`
+  - `POST /api/v1/orders`
+  - `POST /api/v1/orders/{id}/cancel`
+- Keep legacy `/api/v1/bookings` behavior available while introducing `/api/v1/orders` for product orders.
 
 ## Validation
 

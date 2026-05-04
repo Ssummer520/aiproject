@@ -50,14 +50,15 @@
         </div>
 
         <div v-else class="trips-list">
-          <div v-for="trip in displayTrips" :key="trip.id" class="trip-card">
-            <img :src="trip.cover" :alt="trip.name" class="trip-cover" @error="onImgError" />
+          <div v-for="trip in displayTrips" :key="trip.key" class="trip-card">
+            <img :src="trip.cover" :alt="trip.display_name" class="trip-cover" @error="onImgError" />
             <div class="trip-info">
-              <h3>{{ trip.name }}</h3>
-              <p class="trip-location">📍 {{ trip.city }}</p>
-              <p class="trip-dates">{{ trip.check_in }} - {{ trip.check_out }}</p>
-              <p class="trip-guests">{{ trip.guests }} {{ locale === 'zh' ? '位客人' : 'guests' }}</p>
-              <p class="trip-price">¥{{ trip.total_price }}</p>
+              <h3>{{ trip.display_name }}</h3>
+              <p class="trip-location">📍 {{ trip.display_subtitle }}</p>
+              <p class="trip-dates">{{ trip.display_dates }}</p>
+              <p class="trip-guests">{{ trip.display_guests }}</p>
+              <p class="trip-price">{{ trip.display_price }}</p>
+              <span v-if="trip.source === 'order'" class="trip-type-badge">{{ locale === 'zh' ? '商品订单' : 'Product order' }}</span>
             </div>
             <div class="trip-side">
               <div class="trip-status" :class="trip.status">
@@ -72,7 +73,7 @@
               >
                 {{ cancellingId === trip.id ? (locale === 'zh' ? '取消中...' : 'Cancelling...') : (locale === 'zh' ? '取消订单' : 'Cancel booking') }}
               </button>
-              <router-link v-else class="trip-action" :to="'/destination/' + trip.destination_id">
+              <router-link v-else class="trip-action" :to="trip.action_link">
                 {{ locale === 'zh' ? '再次预订' : 'Book again' }}
               </router-link>
             </div>
@@ -115,6 +116,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { fetchOrders, cancelOrder } from '../composables/useProducts'
 
 const { locale } = useI18n()
 const router = useRouter()
@@ -122,6 +124,7 @@ const { isLoggedIn, user, setAuth, authHeaders } = useAuth()
 
 const loading = ref(true)
 const trips = ref([])
+const productOrders = ref([])
 const activeTab = ref('upcoming')
 const showAuthModal = ref(null)
 const authEmail = ref('')
@@ -146,12 +149,43 @@ function toggleLang() {
 
 const displayTrips = computed(() => {
   const now = new Date().toISOString().split('T')[0]
+  const allTrips = [...normalizedProductOrders.value, ...normalizedBookings.value]
   if (activeTab.value === 'upcoming') {
-    return trips.value.filter(t => t.status === 'confirmed' && t.check_in >= now)
+    return allTrips.filter(t => t.status === 'confirmed' && t.trip_date >= now)
   } else {
-    return trips.value.filter(t => t.status !== 'confirmed' || t.check_in < now)
+    return allTrips.filter(t => t.status !== 'confirmed' || t.trip_date < now)
   }
 })
+
+const normalizedBookings = computed(() => trips.value.map((trip) => ({
+  ...trip,
+  key: `booking-${trip.id}`,
+  source: 'booking',
+  display_name: trip.name,
+  display_subtitle: trip.city,
+  display_dates: `${trip.check_in} - ${trip.check_out}`,
+  display_guests: `${trip.guests} ${locale.value === 'zh' ? '位客人' : 'guests'}`,
+  display_price: `¥${trip.total_price}`,
+  trip_date: trip.check_in,
+  action_link: `/destination/${trip.destination_id}`,
+})))
+
+const normalizedProductOrders = computed(() => productOrders.value.map((order) => {
+  const item = order.items?.[0] || {}
+  return {
+    ...order,
+    key: `order-${order.id}`,
+    source: 'order',
+    cover: item.cover,
+    display_name: item.product_name,
+    display_subtitle: `${item.city} · ${item.package_name}`,
+    display_dates: item.travel_date,
+    display_guests: `${item.adults || 0} ${locale.value === 'zh' ? '成人' : 'adults'}${item.children ? ` · ${item.children} ${locale.value === 'zh' ? '儿童' : 'children'}` : ''}`,
+    display_price: `${order.currency === 'CNY' ? '¥' : order.currency} ${order.total_amount}`,
+    trip_date: item.travel_date,
+    action_link: `/product/${item.product_id}`,
+  }
+}))
 
 function formatTripStatus(status) {
   if (status === 'cancelled') {
@@ -170,12 +204,12 @@ async function fetchTrips() {
   }
   loading.value = true
   try {
-    const res = await fetch(`${API}/bookings`, {
-      headers: authHeaders()
-    })
-    if (res.ok) {
-      trips.value = await res.json()
-    }
+    const [bookingsRes, orders] = await Promise.all([
+      fetch(`${API}/bookings`, { headers: authHeaders() }),
+      fetchOrders(authHeaders()).catch(() => []),
+    ])
+    if (bookingsRes.ok) trips.value = await bookingsRes.json()
+    productOrders.value = orders
   } catch (e) {
     console.error(e)
   } finally {
@@ -231,6 +265,15 @@ async function cancelTrip(trip) {
   if (!trip?.id) return
   cancellingId.value = trip.id
   try {
+    if (trip.source === 'order') {
+      const data = await cancelOrder(trip.id, authHeaders())
+      if (data.order) {
+        const idx = productOrders.value.findIndex(item => item.id === trip.id)
+        if (idx >= 0) productOrders.value[idx] = data.order
+        activeTab.value = 'past'
+      }
+      return
+    }
     const res = await fetch(`${API}/bookings/${trip.id}/cancel`, {
       method: 'POST',
       headers: authHeaders(),
@@ -260,6 +303,7 @@ watch(isLoggedIn, (value) => {
     return
   }
   trips.value = []
+  productOrders.value = []
   loading.value = false
 })
 </script>
@@ -531,5 +575,20 @@ watch(isLoggedIn, (value) => {
   color: var(--danger);
   font-size: 0.9rem;
   margin: 0;
+}
+</style>
+
+<style scoped>
+.trip-type-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 5px 9px;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  border-radius: 999px;
+  background: var(--accent-soft);
 }
 </style>
